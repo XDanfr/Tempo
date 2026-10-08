@@ -56,6 +56,7 @@ data class Timetable(
     val schemaVersion: Int = 1,
     val name: String = "My timetable",
     val onboarded: Boolean = false,
+    val onboardingStep: Int = 0,
     val subjects: List<Subject> = emptyList(),
     val sessions: List<Session> = emptyList(),
     val days: List<DayHours> = (1..5).map { DayHours(it, TimeSpan(540, 990)) },
@@ -68,6 +69,7 @@ data class Timetable(
     val appearance: Appearance = Appearance(),
 ) {
     init {
+        require(onboardingStep in 0..2)
         require(schemaVersion == 1) { "Unsupported timetable version" }
         require(name.isNotBlank())
         require(subjects.map { it.id }.distinct().size == subjects.size)
