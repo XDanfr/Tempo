@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.*
 import java.time.LocalDateTime
@@ -103,12 +104,13 @@ private fun ScheduleItem(block: ScheduleBlock, showIcons: Boolean, current: Bool
                 Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", color = content, style = MaterialTheme.typography.labelMedium)
             }
         } else if (block is ScheduleBlock.Lesson) Surface(color = colour, contentColor = content, modifier = Modifier.fillMaxSize().clickable { edit(block.session) }) {
-            Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            val compact = block.time.minutes < 45
+            Row(Modifier.padding(horizontal = if (compact) 12.dp else 18.dp, vertical = if (compact) 6.dp else 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 if (showIcons) block.subject.icon.vector()?.let { Icon(it, null, Modifier.size(26.dp)) }
                 Column(Modifier.weight(1f)) {
-                    Text(block.subject.name, style = MaterialTheme.typography.titleMedium, maxLines = 2)
-                    Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", style = MaterialTheme.typography.labelLarge)
-                    if (block.location.isNotBlank() && block.time.minutes >= 45) Text(block.location, style = MaterialTheme.typography.bodySmall)
+                    Text(block.subject.name, style = if (compact) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleMedium, maxLines = if (block.time.minutes < 75) 1 else 2, overflow = TextOverflow.Ellipsis)
+                    Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelLarge)
+                    if (block.location.isNotBlank() && block.time.minutes >= 75) Text(block.location, style = MaterialTheme.typography.bodySmall)
                     if (current && block.time.minutes >= 60) Text("NOW", style = MaterialTheme.typography.labelSmall)
                 }
                 Icon(Icons.Outlined.ChevronRight, "Edit session", Modifier.size(20.dp))

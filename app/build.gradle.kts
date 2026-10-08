@@ -27,6 +27,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.icons)
     implementation(libs.activity.compose)
+    implementation("androidx.core:core-ktx:1.17.0")
     implementation(libs.lifecycle.compose)
     implementation(libs.lifecycle.viewmodel)
     debugImplementation(libs.compose.tooling)
