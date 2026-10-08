@@ -35,7 +35,8 @@ fun TempoApp(model: TempoViewModel) {
             } else {
                 var destination by rememberSaveable { mutableStateOf(Destination.TODAY) }
                 var day by rememberSaveable { mutableIntStateOf(LocalDateTime.now().dayOfWeek.value) }
-                var editingSession by remember { mutableStateOf<Session?>(null) }
+                var editingSessionId by rememberSaveable { mutableStateOf<String?>(null) }
+                val editingSession = timetable.sessions.firstOrNull { it.id == editingSessionId }
                 var showEditor by rememberSaveable { mutableStateOf(false) }
                 var now by remember { mutableStateOf(LocalDateTime.now()) }
                 LaunchedEffect(Unit) { while (true) { now = LocalDateTime.now(); delay(30_000) } }
@@ -53,13 +54,13 @@ fun TempoApp(model: TempoViewModel) {
                     } },
                     floatingActionButton = {
                         if (destination == Destination.TODAY || destination == Destination.TIMETABLE) ExtendedFloatingActionButton(
-                            onClick = { editingSession = null; showEditor = true }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Add session") })
+                            onClick = { editingSessionId = null; showEditor = true }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Add session") })
                     },
                 ) { padding ->
                     Box(Modifier.padding(padding).fillMaxSize()) {
                         when (destination) {
-                            Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSession = it; showEditor = true })
-                            Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSession = it; showEditor = true })
+                            Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSessionId = it.id; showEditor = true })
+                            Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSessionId = it.id; showEditor = true })
                             Destination.LIBRARY -> LibraryScreen(timetable, model::update)
                             Destination.SETTINGS -> SettingsScreen(timetable, model::update)
                         }
