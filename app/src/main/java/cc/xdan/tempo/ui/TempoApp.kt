@@ -52,6 +52,14 @@ fun TempoApp(model: TempoViewModel) {
                 var editingSessionId by rememberSaveable { mutableStateOf<String?>(null) }
                 val editingSession = timetable.sessions.firstOrNull { it.id == editingSessionId }
                 var showEditor by rememberSaveable { mutableStateOf(false) }
+                var initialStart by rememberSaveable { mutableStateOf<Int?>(null) }
+                var initialEnd by rememberSaveable { mutableStateOf<Int?>(null) }
+                var slotDay by rememberSaveable { mutableIntStateOf(day) }
+                var showFree by rememberSaveable { mutableStateOf(false) }
+                var showBreak by rememberSaveable { mutableStateOf(false) }
+                var breakId by rememberSaveable { mutableStateOf<String?>(null) }
+                val editFree: (Int, TimeSpan) -> Unit = { d, time -> slotDay = d; initialStart = time.start; initialEnd = time.end; showFree = true }
+                val editPause: (ScheduledBreak) -> Unit = { pause -> breakId = pause.id; initialStart = null; initialEnd = null; showBreak = true }
                 var now by remember { mutableStateOf(LocalDateTime.now()) }
                 LaunchedEffect(Unit) { while (true) { now = LocalDateTime.now(); delay(30_000) } }
                 Scaffold(
@@ -68,23 +76,31 @@ fun TempoApp(model: TempoViewModel) {
                     } },
                     floatingActionButton = {
                         if (destination == Destination.TODAY || destination == Destination.TIMETABLE) ExtendedFloatingActionButton(
-                            onClick = { editingSessionId = null; showEditor = true }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Add session") })
+                            onClick = { editingSessionId = null; initialStart = null; initialEnd = null; showEditor = true }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Add session") })
                     },
                 ) { padding ->
                     Box(Modifier.padding(padding).fillMaxSize()) {
                         when (destination) {
-                            Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSessionId = it.id; showEditor = true })
-                            Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSessionId = it.id; showEditor = true })
+                            Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
+                            Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.LIBRARY -> LibraryScreen(timetable, model::update)
                             Destination.SETTINGS -> SettingsScreen(timetable, model::update)
                         }
                     }
                 }
-                if (showEditor) SessionEditor(timetable, editingSession, if (destination == Destination.TODAY) now.dayOfWeek.value else day,
+                if (showEditor) SessionEditor(timetable, editingSession, if (initialStart != null) slotDay else if (destination == Destination.TODAY) now.dayOfWeek.value else day,
+                    initialTime = initialStart?.let { a -> initialEnd?.let { b -> TimeSpan(a, b) } },
                     onDismiss = { showEditor = false },
                     onSave = { session -> model.update { it.copy(sessions = it.sessions.filterNot { s -> s.id == session.id } + session) }; showEditor = false },
                     onDelete = { id -> model.update { it.copy(sessions = it.sessions.filterNot { s -> s.id == id }) }; showEditor = false },
                     onAddSubject = { subject -> model.update { it.copy(subjects = it.subjects + subject) } })
+                if (showFree) FreeSlotEditor(slotDay, TimeSpan(initialStart!!, initialEnd!!), { showFree = false },
+                    { showFree = false; editingSessionId = null; showEditor = true }, { showFree = false; breakId = null; showBreak = true })
+                if (showBreak) BreakEditor(timetable, timetable.breaks.firstOrNull { it.id == breakId },
+                    initialDay = if (initialStart != null) slotDay else null,
+                    initialTime = initialStart?.let { a -> initialEnd?.let { b -> TimeSpan(a, b) } },
+                    dismiss = { showBreak = false }, save = { pause -> model.update { it.copy(breaks = it.breaks.filterNot { b -> b.id == pause.id } + pause) }; showBreak = false },
+                    delete = { id -> model.update { it.copy(breaks = it.breaks.filterNot { b -> b.id == id }) }; showBreak = false })
             }
             if (state.error != null && timetable != null) AlertDialog(onDismissRequest = model::dismissError,
                 title = { Text("Change not saved") }, text = { Text(state.error!!) },
