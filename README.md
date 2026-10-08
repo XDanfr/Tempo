@@ -4,10 +4,10 @@ A native Android timetable maker, part of **Axis**. Kotlin, Jetpack Compose and 
 
 ## Build
 
-Open this directory in Android Studio with JDK 17, Android SDK 36 and **Gradle 8.13**. Until a generated Gradle wrapper is checked in, install Gradle 8.13 and run:
+Open this directory in Android Studio with JDK 17, Android SDK 36 and the included **Gradle 8.13 wrapper**, then run:
 
 ```sh
-gradle :core:schedule:test :core:data:testDebugUnitTest :app:lintDebug :app:assembleDebug
+./gradlew :core:schedule:test :core:data:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
 CI installs the pinned Gradle version and publishes a debug APK for each successful build. Android 8.0 (API 26) or newer is required. Package: `cc.xdan.tempo`.
@@ -22,6 +22,6 @@ CI installs the pinned Gradle version and publishes a debug APK for each success
 - Forest, Ocean, Amber, light/dark/system and Android 12+ dynamic colour.
 - Atomic device-local saving and validated versioned snapshots.
 
-Widgets, recurrence, free tags, portable presets, calendar/PNG exports and Outfit are tracked next. The launcher icon is an initial vector direction.
+Widgets, recurrence, free tags, portable presets, calendar/PNG exports are tracked next. Outfit is bundled under the SIL Open Font Licence. The rounded timetable icon includes adaptive and monochrome variants.
 
 See [roadmap](docs/ROADMAP.md) and [architecture](docs/ARCHITECTURE.md). Early development; not a release.
