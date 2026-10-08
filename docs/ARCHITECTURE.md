@@ -11,3 +11,5 @@ One coherent change per commit. Add behavioural tests around schedule edge cases
 No accounts, analytics or network permissions. No licence has been assumed; the owner can choose one before public distribution.
 
 AI assistance: initial project and implementation authored with OpenAI Codex, reviewed through build checks and domain tests. Device testing remains necessary.
+
+Material 3 Expressive is pinned to `1.5.0-alpha04`: stable 1.4 hides its Expressive theme APIs. The experimental dependency is isolated in the design system and should be revisited as APIs stabilise.
