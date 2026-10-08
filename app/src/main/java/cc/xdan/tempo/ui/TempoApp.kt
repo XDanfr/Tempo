@@ -83,7 +83,8 @@ fun TempoApp(model: TempoViewModel) {
                 if (showEditor) SessionEditor(timetable, editingSession, if (destination == Destination.TODAY) now.dayOfWeek.value else day,
                     onDismiss = { showEditor = false },
                     onSave = { session -> model.update { it.copy(sessions = it.sessions.filterNot { s -> s.id == session.id } + session) }; showEditor = false },
-                    onDelete = { id -> model.update { it.copy(sessions = it.sessions.filterNot { s -> s.id == id }) }; showEditor = false })
+                    onDelete = { id -> model.update { it.copy(sessions = it.sessions.filterNot { s -> s.id == id }) }; showEditor = false },
+                    onAddSubject = { subject -> model.update { it.copy(subjects = it.subjects + subject) } })
             }
             if (state.error != null && timetable != null) AlertDialog(onDismissRequest = model::dismissError,
                 title = { Text("Change not saved") }, text = { Text(state.error!!) },

@@ -18,8 +18,6 @@ import java.util.UUID
 @Composable
 fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit) {
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
-    var selectedPeriod by remember { mutableStateOf<PeriodTemplate?>(null) }
-    var showPeriod by remember { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             Text("Your Tempo", style = MaterialTheme.typography.headlineMedium)
@@ -42,41 +40,11 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
                 }
             }
         }
-        item {
-            Text("Usual periods", style = MaterialTheme.typography.titleLarge)
-            Text("Time shortcuts for new sessions. Editing a shortcut keeps existing sessions at their saved times.", style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = { selectedPeriod = null; showPeriod = true }) { Text("Add period") }
-        }
-        items(timetable.periods, key = { it.id }) { period ->
-            ElevatedCard(onClick = { selectedPeriod = period; showPeriod = true }, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) { Text(period.name, style = MaterialTheme.typography.titleMedium); Text("${minuteLabel(period.time.start)}–${minuteLabel(period.time.end)}") }
-            }
-        }
+        item { PeriodSetup(timetable, update) }
         item { Text("Tempo 0.1 · Early development", style = MaterialTheme.typography.labelMedium) }
     }
     editingDay?.let { hours ->
         HoursEditor(hours, { editingDay = null }) { new -> update { t -> t.copy(days = t.days.filterNot { it.day == new.day } + new) }; editingDay = null }
-    }
-    if (showPeriod) PeriodEditor(selectedPeriod, { showPeriod = false },
-        { period -> update { it.copy(periods = it.periods.filterNot { p -> p.id == period.id } + period) }; showPeriod = false },
-        { id -> update { it.copy(periods = it.periods.filterNot { p -> p.id == id }) }; showPeriod = false })
-}
-
-@Composable
-fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Appearance", style = MaterialTheme.typography.titleLarge)
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ThemePreset.entries.forEach { preset -> FilterChip(appearance.preset == preset, { change(appearance.copy(preset = preset, dynamicColour = false)) }, label = { Text(preset.name.lowercase().replaceFirstChar { it.titlecase() }) }) }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ThemeMode.entries.forEach { mode -> FilterChip(appearance.mode == mode, { change(appearance.copy(mode = mode)) }, label = { Text(mode.name.lowercase().replaceFirstChar { it.titlecase() }) }) }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) { Text("Material You"); Text(if (Build.VERSION.SDK_INT >= 31) "Use your wallpaper colours" else "Available on Android 12 or newer", style = MaterialTheme.typography.bodySmall) }
-            Switch(checked = appearance.dynamicColour, enabled = Build.VERSION.SDK_INT >= 31, onCheckedChange = { change(appearance.copy(dynamicColour = it)) })
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Show subject icons", Modifier.weight(1f)); Switch(appearance.showIcons, { change(appearance.copy(showIcons = it)) }) }
     }
 }
 
@@ -85,23 +53,7 @@ private fun HoursEditor(hours: DayHours, dismiss: () -> Unit, save: (DayHours) -
     var start by rememberSaveable { mutableStateOf(minuteLabel(hours.time.start)) }
     var end by rememberSaveable { mutableStateOf(minuteLabel(hours.time.end)) }
     val time = validSpan(start, end)
-    AlertDialog(onDismissRequest = dismiss, title = { Text("${weekdayNames[hours.day - 1]} hours") }, text = { Column { TimeFields(start, end, { start = it }, { end = it }) } },
-        confirmButton = { TextButton(enabled = time != null, onClick = { time?.let { save(hours.copy(time = it)) } }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = dismiss) { Text("Cancel") } })
-}
-
-@Composable
-private fun PeriodEditor(period: PeriodTemplate?, dismiss: () -> Unit, save: (PeriodTemplate) -> Unit, delete: (String) -> Unit) {
-    val id = rememberSaveable { period?.id ?: UUID.randomUUID().toString() }
-    var name by rememberSaveable { mutableStateOf(period?.name ?: "") }
-    var start by rememberSaveable { mutableStateOf(minuteLabel(period?.time?.start ?: 540)) }
-    var end by rememberSaveable { mutableStateOf(minuteLabel(period?.time?.end ?: 630)) }
-    val time = validSpan(start, end)
-    AlertDialog(onDismissRequest = dismiss, title = { Text(if (period == null) "New usual period" else "Edit usual period") },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true)
-            TimeFields(start, end, { start = it }, { end = it })
-            if (period != null) TextButton(onClick = { delete(id) }) { Text("Remove shortcut") }
-        } }, confirmButton = { TextButton(enabled = time != null && name.isNotBlank(), onClick = { time?.let { save(PeriodTemplate(id, name.trim(), it)) } }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = dismiss) { Text("Cancel") } })
+    EditorSheet("${weekdayNames[hours.day - 1]} hours", dismiss, confirm = { time?.let { save(hours.copy(time = it)) } }, enabled = time != null) {
+        TimeFields(start, end, { start = it }, { end = it })
+    }
 }
