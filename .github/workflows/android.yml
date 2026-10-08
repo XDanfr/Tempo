@@ -1,6 +1,7 @@
 name: Android
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -27,3 +28,13 @@ jobs:
         with:
           name: Tempo-debug
           path: app/build/outputs/apk/debug/*.apk
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tempo-check-reports
+          if-no-files-found: ignore
+          path: |
+            core/schedule/build/test-results/
+            core/data/build/test-results/
+            app/build/reports/lint-results-debug.*
