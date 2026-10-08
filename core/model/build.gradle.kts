@@ -1,3 +1,6 @@
-plugins { alias(libs.plugins.kotlin.jvm) }
+plugins {
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+}
 kotlin { jvmToolchain(17) }
-dependencies { testImplementation(libs.junit) }
+dependencies { implementation(libs.serialization); testImplementation(libs.junit) }
