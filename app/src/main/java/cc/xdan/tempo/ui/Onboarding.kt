@@ -1,5 +1,13 @@
 package cc.xdan.tempo.ui
 
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +30,17 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit)
     var start by rememberSaveable { mutableStateOf(minuteLabel(timetable.days.firstOrNull()?.time?.start ?: 540)) }
     var end by rememberSaveable { mutableStateOf(minuteLabel(timetable.days.firstOrNull()?.time?.end ?: 990)) }
     var subjectEditor by remember { mutableStateOf(false) }
+    val backProgress = remember { Animatable(0f) }
+    val latestStep by rememberUpdatedState(step)
+    PredictiveBackHandler(enabled = step > 0 && !subjectEditor) { events ->
+        try {
+            events.collect { event -> backProgress.snapTo(event.progress) }
+            update { it.copy(onboardingStep = (latestStep - 1).coerceAtLeast(0)) }
+            backProgress.snapTo(0f)
+        } catch (cancelled: CancellationException) {
+            withContext(NonCancellable) { backProgress.animateTo(0f, spring(dampingRatio = .85f, stiffness = 550f)) }
+        }
+    }
     val selectedDays = days.split(",").mapNotNull { it.toIntOrNull() }
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -29,8 +48,16 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit)
             Column { Text("Tempo", style = MaterialTheme.typography.headlineLarge); Text("Part of Axis", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
         LinearProgressIndicator(progress = { (step + 1) / 4f }, modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp))
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            when (step) {
+        AnimatedContent(step, modifier = Modifier.weight(1f).graphicsLayer {
+            scaleX = 1f - .05f * backProgress.value; scaleY = scaleX
+            alpha = 1f - .15f * backProgress.value
+        }, label = "setup step", transitionSpec = {
+            val direction = if (targetState > initialState) 1 else -1
+            (slideInHorizontally(spring(dampingRatio = .88f, stiffness = 500f)) { it * direction / 4 } + fadeIn(tween(170))) togetherWith
+                (slideOutHorizontally(tween(130)) { -it * direction / 5 } + fadeOut(tween(100)))
+        }) { shownStep ->
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            when (shownStep) {
                 0 -> {
                     Text("A week that works for you", style = MaterialTheme.typography.headlineMedium)
                     Text("College, work or whatever fills your day. Start with your usual hours; each day can be adjusted later.")
@@ -61,6 +88,7 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit)
                     Text("Your timetable stays on this device. Setup can be changed whenever you need.")
                 }
             }
+        }
         }
         Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             if (step > 0) TextButton(onClick = { update { it.copy(onboardingStep = step - 1) } }) { Text("Back") } else Text("1 / 4")
