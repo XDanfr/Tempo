@@ -20,8 +20,8 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit)
     val step = timetable.onboardingStep
     var name by rememberSaveable { mutableStateOf(timetable.name) }
     var days by rememberSaveable { mutableStateOf(timetable.days.map { it.day }.joinToString(",")) }
-    var start by rememberSaveable { mutableStateOf("09:00") }
-    var end by rememberSaveable { mutableStateOf("16:30") }
+    var start by rememberSaveable { mutableStateOf(minuteLabel(timetable.days.firstOrNull()?.time?.start ?: 540)) }
+    var end by rememberSaveable { mutableStateOf(minuteLabel(timetable.days.firstOrNull()?.time?.end ?: 990)) }
     var subjectEditor by remember { mutableStateOf(false) }
     val selectedDays = days.split(",").mapNotNull { it.toIntOrNull() }
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp)) {
