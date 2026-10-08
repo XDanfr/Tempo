@@ -41,7 +41,7 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
             }
         }
         item { PeriodSetup(timetable, update) }
-        item { Text("Tempo 0.1 · Early development", style = MaterialTheme.typography.labelMedium) }
+        item { Text("Tempo 0.2 · Early development", style = MaterialTheme.typography.labelMedium) }
     }
     editingDay?.let { hours ->
         HoursEditor(hours, { editingDay = null }) { new -> update { t -> t.copy(days = t.days.filterNot { it.day == new.day } + new) }; editingDay = null }
