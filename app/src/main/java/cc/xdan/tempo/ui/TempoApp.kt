@@ -80,11 +80,13 @@ fun TempoApp(model: TempoViewModel) {
                     },
                 ) { padding ->
                     Box(Modifier.padding(padding).fillMaxSize()) {
-                        when (destination) {
+                        PredictiveRouteHost(destination, enabled = !showEditor && !showFree && !showBreak, navigate = { destination = it }) { shown ->
+                        when (shown) {
                             Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.LIBRARY -> LibraryScreen(timetable, model::update)
                             Destination.SETTINGS -> SettingsScreen(timetable, model::update)
+                        }
                         }
                     }
                 }
