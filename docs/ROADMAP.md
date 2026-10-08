@@ -1,15 +1,15 @@
 # Tempo roadmap
 
 ## Milestone 1: editable weekly timetable
-- [ ] Android project and CI
-- [ ] Subject, session, day window and usual-period models
-- [ ] Shared gap and overlap resolver with tests
-- [ ] Versioned atomic local persistence
-- [ ] Resumable onboarding and optional demo
-- [ ] Readable day view with proportional sessions and subtle dashed frees
-- [ ] Subject editing, optional icons and session editing
-- [ ] Independent day hours and usual period templates
-- [ ] Forest, Ocean, Amber and Material You themes
+- [x] Android project and CI
+- [x] Subject, session, day window and usual-period models
+- [x] Shared gap and overlap resolver with tests
+- [x] Versioned atomic local persistence
+- [x] Resumable onboarding and optional demo
+- [x] Readable day view with proportional sessions and subtle dashed frees
+- [x] Subject editing, optional icons and session editing
+- [x] Independent day hours and usual period templates
+- [x] Forest, Ocean, Amber and Material You themes
 
 ## Following milestones
 - [ ] Room, multiple timetables and combined view

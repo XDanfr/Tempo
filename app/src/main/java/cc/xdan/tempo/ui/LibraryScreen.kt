@@ -34,7 +34,7 @@ fun LibraryScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Un
         items(timetable.subjects, key = { it.id }) { subject ->
             ElevatedCard(onClick = { selected = subject; editor = true }, modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Box(Modifier.size(20.dp).background(Color(subject.colour.toULong()), CircleShape))
+                    Box(Modifier.size(20.dp).background(Color(subject.colour), CircleShape))
                     if (timetable.appearance.showIcons) subject.icon.vector()?.let { Icon(it, null) }
                     Column { Text(subject.name, style = MaterialTheme.typography.titleMedium)
                         Text("${timetable.sessions.count { it.subjectId == subject.id }} sessions" + if (subject.location.isNotBlank()) " · ${subject.location}" else "", style = MaterialTheme.typography.bodySmall) }
@@ -62,7 +62,7 @@ fun SubjectEditor(existing: Subject?, sessionCount: Int, onDismiss: () -> Unit, 
             OutlinedTextField(location, { location = it }, label = { Text("Default location") }, singleLine = true)
             Text("Subject colour", style = MaterialTheme.typography.labelLarge)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                colours.forEach { value -> FilterChip(colour == value, { colour = value }, label = { Box(Modifier.size(24.dp).background(Color(value.toULong()), CircleShape)) }) }
+                colours.forEach { value -> FilterChip(colour == value, { colour = value }, label = { Box(Modifier.size(24.dp).background(Color(value), CircleShape)) }) }
             }
             Text("Optional icon", style = MaterialTheme.typography.labelLarge)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

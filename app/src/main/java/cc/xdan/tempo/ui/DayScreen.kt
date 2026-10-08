@@ -85,8 +85,8 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
 @Composable
 private fun ScheduleItem(block: ScheduleBlock, showIcons: Boolean, current: Boolean, edit: (Session) -> Unit) {
     // A shared time scale keeps the 60-minute Tutor / 30-minute Free split proportional.
-    val height = (block.time.minutes * 1.6f).coerceAtLeast(52f).dp
-    val colour = if (block is ScheduleBlock.Lesson) Color(block.subject.colour.toULong()) else MaterialTheme.colorScheme.surface
+    val height = (block.time.minutes * 1.6f).coerceAtLeast(48f).dp
+    val colour = if (block is ScheduleBlock.Lesson) Color(block.subject.colour) else MaterialTheme.colorScheme.surface
     val content = if (block is ScheduleBlock.Lesson) Color(0xFF172116) else MaterialTheme.colorScheme.onSurfaceVariant
     Box(Modifier.fillMaxWidth().height(height).animateContentSize().clip(RoundedCornerShape(24.dp))) {
         if (block is ScheduleBlock.Free) {
