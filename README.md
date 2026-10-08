@@ -14,14 +14,19 @@ CI installs the pinned Gradle version and publishes a debug APK for each success
 
 ## First milestone
 
-- Resumable three-step onboarding and an optional fictional demo.
+- Resumable four-step onboarding: day hours, usual periods/breaks, subjects and appearance.
 - Today summary, weekday timeline, editable sessions and overlap warnings.
-- Subjects/activities with optional icons, six colours and default locations.
-- Independent day hours and editable usual-period shortcuts.
-- Real-duration timelines, evenly rounded blocks and subtle dashed frees.
-- Forest, Ocean, Amber, light/dark/system and Android 12+ dynamic colour.
-- Atomic device-local saving and validated versioned snapshots.
+- Subjects/activities with a searchable 63-option icon picker, six colours and default locations.
+- Independent day hours, editable usual-period shortcuts, and repeating Break/Lunch/Changeover/custom breaks.
+- Real-duration timelines, filled or outlined blocks, and tappable dashed frees that prefill the exact time range.
+- Forest, Ocean, Amber and Material You theme options, plus light/dark/system modes.
+- Atomic device-local saving and validated versioned snapshots, including v1 → v2 migration.
+- Stronger Outfit typography using genuine Medium/Semibold/Bold font files.
+- Spring day/tab transitions, animated timeline changes and predictive back progress/cancellation.
+- Predictive modal editor sheets; Back from a top-level tab returns to Today, then system Back exits the app.
 
 Widgets, recurrence, free tags, portable presets, calendar/PNG exports are tracked next. Outfit is bundled under the SIL Open Font Licence. The rounded timetable icon includes adaptive and monochrome variants.
 
-See [roadmap](docs/ROADMAP.md) and [architecture](docs/ARCHITECTURE.md). Early development; not a release.
+CI APKs are development builds using the runner's debug signing key. Until a persistent signing key is configured, a new build may require uninstalling the previous build; uninstalling deletes local timetable data. This is not a release/update distribution channel yet.
+
+See [device testing](docs/DEVICE_TESTING.md), [roadmap](docs/ROADMAP.md) and [architecture](docs/ARCHITECTURE.md). Early development; not a release.
