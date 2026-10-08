@@ -45,6 +45,7 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                 if (today) item {
                     val headline = when {
                         current is ScheduleBlock.Lesson -> current.subject.name
+                        current is ScheduleBlock.Break -> current.scheduled.name
                         current is ScheduleBlock.Free -> "Time for yourself"
                         lessons.isEmpty() -> "Nothing scheduled today"
                         next != null -> "Up next: ${next.subject.name}"
@@ -57,6 +58,7 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                             Text(headline, style = MaterialTheme.typography.headlineSmall)
                             val detail = when {
                                 current is ScheduleBlock.Lesson -> "${current.location.ifBlank { "No location set" }} · ends ${minuteLabel(current.time.end)}"
+                                current is ScheduleBlock.Break -> "Until ${minuteLabel(current.time.end)}"
                                 current is ScheduleBlock.Free -> "Free until ${minuteLabel(current.time.end)}"
                                 next != null -> "Starts at ${minuteLabel(next.time.start)}"
                                 else -> "Make room for what matters."
@@ -75,7 +77,7 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                         Text("Add a session or enable this day in Settings.")
                     }
                 }
-                items(dayBlocks, key = { when (it) { is ScheduleBlock.Lesson -> it.session.id; is ScheduleBlock.Free -> "free-${it.time.start}" } }) { block ->
+                items(dayBlocks, key = { when (it) { is ScheduleBlock.Lesson -> it.session.id; is ScheduleBlock.Break -> "break-${it.scheduled.id}"; is ScheduleBlock.Free -> "free-${it.time.start}" } }) { block ->
                     ScheduleItem(block, timetable.appearance.showIcons, block == current, edit)
                 }
             }
@@ -102,6 +104,11 @@ private fun ScheduleItem(block: ScheduleBlock, showIcons: Boolean, current: Bool
             Row(Modifier.fillMaxSize().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Free", color = content, style = MaterialTheme.typography.titleMedium)
                 Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", color = content, style = MaterialTheme.typography.labelMedium)
+            }
+        } else if (block is ScheduleBlock.Break) Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxSize()) {
+            Row(Modifier.padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(block.scheduled.name, style = MaterialTheme.typography.titleMedium)
+                Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", style = MaterialTheme.typography.labelMedium)
             }
         } else if (block is ScheduleBlock.Lesson) Surface(color = colour, contentColor = content, modifier = Modifier.fillMaxSize().clickable { edit(block.session) }) {
             val compact = block.time.minutes < 45

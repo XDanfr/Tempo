@@ -39,7 +39,7 @@ data class PeriodTemplate(val id: String, val name: String, val time: TimeSpan) 
 }
 
 @Serializable
-enum class ThemePreset { FOREST, OCEAN, AMBER }
+enum class ThemePreset { FOREST, OCEAN, AMBER, MATERIAL_YOU }
 @Serializable
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
@@ -49,16 +49,41 @@ data class Appearance(
     val mode: ThemeMode = ThemeMode.DARK,
     val dynamicColour: Boolean = false,
     val showIcons: Boolean = true,
-)
+    val blockStyle: BlockStyle = BlockStyle.FILLED,
+) {
+    // Keep the first milestone's wallpaper switch readable when migrating saved state.
+    val selectedPreset: ThemePreset get() = if (dynamicColour) ThemePreset.MATERIAL_YOU else preset
+}
+
+@Serializable
+enum class BlockStyle { FILLED, OUTLINED }
+
+@Serializable
+enum class BreakKind { BREAK, LUNCH, CHANGEOVER, CUSTOM }
+
+@Serializable
+data class ScheduledBreak(
+    val id: String,
+    val name: String,
+    val days: List<Int>,
+    val time: TimeSpan,
+    val kind: BreakKind = BreakKind.BREAK,
+) {
+    init {
+        require(id.isNotBlank() && name.isNotBlank())
+        require(days.isNotEmpty() && days.all { it in 1..7 } && days.distinct().size == days.size)
+    }
+}
 
 @Serializable
 data class Timetable(
-    val schemaVersion: Int = 1,
+    val schemaVersion: Int = 2,
     val name: String = "My timetable",
     val onboarded: Boolean = false,
     val onboardingStep: Int = 0,
     val subjects: List<Subject> = emptyList(),
     val sessions: List<Session> = emptyList(),
+    val breaks: List<ScheduledBreak> = emptyList(),
     val days: List<DayHours> = (1..5).map { DayHours(it, TimeSpan(540, 990)) },
     val periods: List<PeriodTemplate> = listOf(
         PeriodTemplate("p1", "Period 1", TimeSpan(540, 630)),
@@ -69,11 +94,12 @@ data class Timetable(
     val appearance: Appearance = Appearance(),
 ) {
     init {
-        require(onboardingStep in 0..2)
-        require(schemaVersion == 1) { "Unsupported timetable version" }
+        require(onboardingStep in 0..3)
+        require(schemaVersion == 2) { "Unsupported timetable version" }
         require(name.isNotBlank())
         require(subjects.map { it.id }.distinct().size == subjects.size)
         require(sessions.map { it.id }.distinct().size == sessions.size)
+        require(breaks.map { it.id }.distinct().size == breaks.size)
         require(days.map { it.day }.distinct().size == days.size)
         require(periods.map { it.id }.distinct().size == periods.size)
         require(sessions.all { s -> subjects.any { it.id == s.subjectId } }) { "Unknown session subject" }
