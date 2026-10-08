@@ -9,6 +9,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.luminance
+import androidx.core.view.WindowCompat
+import android.app.Activity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cc.xdan.tempo.TempoViewModel
 import cc.xdan.tempo.design.TempoTheme
@@ -24,6 +28,16 @@ fun TempoApp(model: TempoViewModel) {
     val state by model.state.collectAsStateWithLifecycle()
     val timetable = state.timetable
     TempoTheme(timetable?.appearance ?: Appearance()) {
+        val view = LocalView.current
+        val lightBars = MaterialTheme.colorScheme.background.luminance() > .5f
+        SideEffect {
+            (view.context as? Activity)?.let { activity ->
+                WindowCompat.getInsetsController(activity.window, view).apply {
+                    isAppearanceLightStatusBars = lightBars
+                    isAppearanceLightNavigationBars = lightBars
+                }
+            }
+        }
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             if (timetable == null) {
                 Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
