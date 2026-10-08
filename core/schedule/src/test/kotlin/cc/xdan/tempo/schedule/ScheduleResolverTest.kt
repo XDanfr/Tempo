@@ -47,6 +47,26 @@ class ScheduleResolverTest {
         assertNotNull(ScheduleResolver.nextLesson(blocks, 539))
         assertNull(ScheduleResolver.nextLesson(blocks, 540))
     }
+    @Test fun lunchOccupiesTimeInsteadOfBecomingFree() {
+        val t = timetable().copy(breaks = listOf(ScheduledBreak("l", "Lunch", listOf(3), TimeSpan(570, 600), BreakKind.LUNCH)))
+        val blocks = ScheduleResolver.resolve(t, 3)
+        assertEquals(listOf(30, 30, 30), blocks.map { it.time.minutes })
+        assertTrue(blocks[1] is ScheduleBlock.Break)
+        assertEquals(60, blocks.filterIsInstance<ScheduleBlock.Free>().sumOf { it.time.minutes })
+    }
+    @Test fun breakOnlyAppliesToSelectedDays() {
+        val t = timetable().copy(breaks = listOf(ScheduledBreak("b", "Break", listOf(1), TimeSpan(570, 600))))
+        assertTrue(ScheduleResolver.resolve(t, 3).none { it is ScheduleBlock.Break })
+    }
+    @Test fun nestedBreakAndLessonDoNotCreateFalseFrees() {
+        val t = timetable(listOf(session("1", 540, 620))).copy(breaks = listOf(ScheduledBreak("b", "Changeover", listOf(3), TimeSpan(560, 580), BreakKind.CHANGEOVER)))
+        assertEquals(listOf(TimeSpan(620, 630)), ScheduleResolver.resolve(t, 3).filterIsInstance<ScheduleBlock.Free>().map { it.time })
+        assertEquals(1, ScheduleResolver.blockConflicts(t, 3).size)
+    }
+    @Test fun currentCanBeLunch() {
+        val t = timetable().copy(breaks = listOf(ScheduledBreak("l", "Lunch", listOf(3), TimeSpan(570, 600), BreakKind.LUNCH)))
+        assertTrue(ScheduleResolver.current(ScheduleResolver.resolve(t, 3), 580) is ScheduleBlock.Break)
+    }
     @Test fun midnightEndSupported() { assertEquals(60, TimeSpan(1380, 1440).minutes); assertEquals(1440, parseMinute("24:00")) }
     @Test fun invalidTimesRejected() { assertNull(parseMinute("12:99")); assertNull(parseMinute("25:00")); assertNull(parseMinute("-1:30")) }
     @Test(expected = IllegalArgumentException::class) fun zeroDurationRejected() { TimeSpan(540, 540) }
