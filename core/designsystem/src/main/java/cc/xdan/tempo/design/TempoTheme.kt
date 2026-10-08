@@ -33,6 +33,7 @@ fun TempoTheme(appearance: Appearance, content: @Composable () -> Unit) {
     )
     MaterialExpressiveTheme(
         colorScheme = scheme,
+        typography = TempoTypography,
         shapes = Shapes(
             extraSmall = RoundedCornerShape(12.dp), small = RoundedCornerShape(16.dp),
             medium = RoundedCornerShape(24.dp), large = RoundedCornerShape(28.dp), extraLarge = RoundedCornerShape(32.dp),

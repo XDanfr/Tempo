@@ -22,7 +22,7 @@
 - [ ] Calendar `.ics`, calendar handoff and managed bulk export
 - [ ] PNG day/week/day-card renderer with preview and configurable dimensions
 - [ ] Reminders, travel buffers, subject-hours summaries and version history
-- [ ] Outfit font bundling with its licence; final rounded adaptive and monochrome icon
+- [x] Outfit font bundling with its licence; rounded adaptive and monochrome icon
 - [ ] Release packaging and device tests
 
 The demo is fictional; it is not a reconstruction of Dan's timetable. Axis is the ecosystem, Tempo is the app. Schedule items are sessions, never cards.
