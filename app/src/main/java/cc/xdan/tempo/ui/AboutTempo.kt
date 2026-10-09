@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.BuildConfig
+import cc.xdan.tempo.R
+import androidx.compose.ui.res.painterResource
 
 @Composable
 fun AboutTempo() {
@@ -20,6 +22,9 @@ fun AboutTempo() {
             Icon(Icons.Outlined.FavoriteBorder, null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp)); Text("Sponsor XDan")
         }
-        TextButton(onClick = { uri.openUri("https://github.com/XDanfr/Tempo") }) { Text("Tempo on GitHub") }
+        TextButton(onClick = { uri.openUri("https://github.com/XDanfr/Tempo") }) {
+            Icon(painterResource(R.drawable.ic_github), null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp)); Text("Tempo on GitHub")
+        }
     }
 }

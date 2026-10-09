@@ -98,7 +98,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 summary?.boundary?.atZone(now.zone)?.let { nextRefresh = minOf(nextRefresh, it.toInstant().toEpochMilli()) }
                 val block = summary?.block
                 val accent = block?.accent(scheme.primary) ?: scheme.primary
-                val outlined = block != null && (if (block is ScheduleBlock.Break) appearance.effectiveBreakStyle else appearance.blockStyle) == BlockStyle.OUTLINED
+                val outlined = settings.outlined ?: (block != null && (if (block is ScheduleBlock.Break) appearance.effectiveBreakStyle else appearance.blockStyle) == BlockStyle.OUTLINED)
                 val blockColour = if (outlined) scheme.surfaceContainerHigh else lerp(scheme.surfaceContainerHigh, accent, if (dark) .38f else .65f)
                 val foreground = if (dark) Color(0xFFF2F6EE) else Color(0xFF152015)
                 val title = when {
@@ -126,7 +126,8 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 if (current && block is ScheduleBlock.Break && summary?.next != null) {
                     detail += "\nNext: ${summary.next.lesson.subject.name} · ${summary.next.starts.format(DateTimeFormatter.ofPattern("EEE HH:mm"))}"
                 }
-                val showIcon = appearance.showIcons
+                val showIcon = settings.showIcons ?: appearance.showIcons
+                val iconColour = if (dark) accent else lerp(Color.Black, accent, .45f)
                 val icon = when (summary?.status) {
                     WeekStatus.DONE -> Icons.Outlined.CheckCircle
                     WeekStatus.EMPTY -> Icons.Outlined.EventAvailable
@@ -136,7 +137,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 views.setImageViewBitmap(R.id.widget_background, widgetShape(width * 2, height * 2, bg.toArgb(), if (pill) height.toFloat() else 56f, if (pill && outlined) accent.toArgb() else null))
                 if (!pill) views.setImageViewBitmap(R.id.widget_block_background, widgetShape(width * 2, height * 2, blockColour.toArgb(), 40f, accent.copy(alpha = .65f).toArgb()))
                 views.setViewVisibility(R.id.widget_icon, if (showIcon) View.VISIBLE else View.GONE)
-                views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, accent.toArgb()))
+                views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, iconColour.toArgb()))
                 views.setTextViewText(R.id.widget_label, when (summary?.status) {
                     WeekStatus.DONE -> "THIS WEEK · ${timetable?.name}"
                     WeekStatus.CURRENT -> "NOW · ${timetable?.name}"
@@ -172,7 +173,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                     if (showNext && secondary != null) {
                         val nextAccent = secondary.lesson.accent(scheme.primary)
                         views.setImageViewBitmap(R.id.widget_next_background, widgetShape(264, height * 2, lerp(scheme.surfaceContainerHigh, nextAccent, if (dark) .24f else .45f).toArgb(), 40f, nextAccent.copy(alpha = .45f).toArgb()))
-                        views.setImageViewBitmap(R.id.widget_next_icon, widgetIcon(secondary.lesson.symbol() ?: Icons.Outlined.CalendarMonth, nextAccent.toArgb()))
+                        views.setImageViewBitmap(R.id.widget_next_icon, widgetIcon(secondary.lesson.symbol() ?: Icons.Outlined.CalendarMonth, (if (dark) nextAccent else lerp(Color.Black, nextAccent, .45f)).toArgb()))
                         views.setViewVisibility(R.id.widget_next_icon, if (showIcon) View.VISIBLE else View.GONE)
                         views.setTextViewText(R.id.widget_next_label, if (current) "UP NEXT" else "AFTER THAT")
                         views.setTextViewText(R.id.widget_next_title, secondary.lesson.subject.name)

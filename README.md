@@ -16,7 +16,7 @@ A signed release can update an earlier release in place when both use the same s
 - Set day hours, usual periods and custom session times. Add breaks, lunch and changeover time.
 - Give subjects names, colours, locations and optional icons from a searchable picker.
 - See Today and proportional day timelines, with dashed frees you can tap to fill.
-- Compare timetables on aligned intervals and find when everyone is free together.
+- Open comparison from Your timetables: view coloured schedules side by side, or combine people’s lessons into one agenda and find shared frees.
 - Choose Forest, Ocean, Amber or wallpaper-based Material You, with light, dark and system modes. Style subjects and breaks independently as filled blocks or outlines.
 - Import a timetable during setup, or export a complete `.tempo.json` file including subjects, times, breaks, notes, icons and appearance.
 
@@ -24,9 +24,9 @@ A signed release can update an earlier release in place when both use the same s
 
 Add Tempo from your launcher’s widget picker. Choose the **2×1 pill**, **2×2 rounded square** or **4×2 rounded rectangle**. Launcher grid sizes can vary.
 
-Each widget can follow your current timetable or stay on a fixed one. It shows the current session or break and time left, or the next activity and time until it starts. For activities more than a day away, it shows the weekday and start time. During a break, larger widgets also show what’s next.
+Each widget can follow your current timetable or stay on a fixed one. It shows the current session or break and time left, or the next activity and time until it starts. For activities more than a day away within this week, it shows the weekday and start time. After the final lesson of the week, it shows All done until the new week begins. During a break, larger widgets also show what’s next.
 
-Use the widget’s menu to choose its own theme or follow the timetable, hide locations and customise its empty message. Android’s battery-saving modes may delay activity changes; the countdown runs through the launcher without Tempo waking every second.
+Use the widget’s menu to choose its own theme or follow the timetable, choose filled/outlined blocks and icon visibility, hide locations and customise its empty message. Subject colours and icons carry through to the widget. Android’s battery-saving modes may delay activity changes; the countdown runs through the launcher without Tempo waking every second.
 
 ## Updates and privacy
 

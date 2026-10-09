@@ -141,7 +141,7 @@ private fun ComparisonBlock(block: ScheduleBlock, appearance: Appearance, modifi
     Surface(modifier, color = fill, shape = RoundedCornerShape(14.dp), border = BorderStroke(if (free) .6.dp else 1.dp, accent.copy(alpha = if (free) .25f else .70f))) {
         Column(Modifier.padding(if (compact) 6.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                if (!compact && appearance.showIcons) block.symbol()?.let { Icon(it, null, Modifier.size(18.dp), tint = accent) }
+                if (!compact && appearance.showIcons) block.symbol()?.let { Icon(it, null, Modifier.size(18.dp), tint = if (dark) accent else lerp(Color.Black, accent, .45f)) }
                 Text(block.title(), style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleSmall, maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
             }
             if (!compact) {
