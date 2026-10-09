@@ -161,7 +161,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                     completion -> {
                         val ink = widgetForeground(themeBackground)
                         badge(R.id.widget_badge, R.id.widget_badge_background, R.id.widget_icon, Icons.Outlined.CheckCircle, completionBadge,
-                            showIcon && (messageOnly || height >= if (wide) 190 else 245))
+                            showIcon && (messageOnly || height >= if (wide) 190 else 300))
                         text(R.id.widget_title, "Done for today!", ink, if (wide) { if (height < 190) 26f else 30f } else if (height < 200) 22f else 24f)
                         views.setViewVisibility(R.id.widget_next_pill, if (messageOnly) View.GONE else View.VISIBLE)
                         val next = summary?.next?.lesson
@@ -170,7 +170,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                         views.setInt(R.id.widget_next_pill_background, "setColorFilter", nextColour.toArgb())
                         val nextBadge = lerp(nextColour, Color.White, .30f)
                         badge(R.id.widget_next_badge, R.id.widget_next_badge_background, R.id.widget_next_icon,
-                            next?.symbol() ?: Icons.Outlined.CalendarMonth, nextBadge, showIcon && height >= if (wide) 190 else 220)
+                            next?.symbol() ?: Icons.Outlined.CalendarMonth, nextBadge, showIcon && height >= if (wide) 190 else 250)
                         text(R.id.widget_next_title, next?.title().orEmpty(), nextInk, if (wide) 24f else if (height < 200) 18f else 20f, if (!wide && height < 200) 1 else 2)
                         timer(R.id.widget_next_timer, nextInk, if (wide) 20f else 16f)
                     }
@@ -201,14 +201,14 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                             summary?.status == WeekStatus.EMPTY -> Icons.Outlined.EventAvailable
                             else -> block?.symbol() ?: Icons.Outlined.CalendarMonth
                         }
-                        val showBadge = showIcon && (if (weekDone) height >= 150 else height >= 210)
+                        val showBadge = showIcon && (if (weekDone) height >= 150 else height >= 240)
                         if (!pill) badge(R.id.widget_badge, R.id.widget_badge_background, R.id.widget_icon, icon,
                             if (weekDone || block == null) completionBadge else lerp(accent, Color.White, .30f), showBadge)
                         else {
                             views.setViewVisibility(R.id.widget_icon, if (showIcon) View.VISIBLE else View.GONE)
                             views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, foreground.toArgb()))
                         }
-                        val roomPill = !pill && location != null && (height >= 240 || !wide && !showBadge && height >= 150)
+                        val roomPill = !pill && location != null && (height >= 280 || !wide && !showBadge && height >= 150)
                         text(R.id.widget_title, title, foreground, when {
                             pill -> 14f
                             weekDone -> if (height < 180) 28f else if (wide) 36f else 32f
