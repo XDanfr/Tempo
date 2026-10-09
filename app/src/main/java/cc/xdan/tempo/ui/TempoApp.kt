@@ -1,6 +1,7 @@
 package cc.xdan.tempo.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -38,14 +39,22 @@ fun TempoApp(model: TempoViewModel) {
                 }
             }
         }
+        val files = timetableFileActions(model, state)
+        var showTimetables by rememberSaveable { mutableStateOf(false) }
+        val snackbar = remember { SnackbarHostState() }
+        LaunchedEffect(state.message) {
+            state.message?.let { snackbar.showSnackbar(it); model.dismissMessage() }
+        }
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Box(Modifier.fillMaxSize()) {
+            key(state.collection?.activeId) {
             if (timetable == null) {
                 Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
                     if (state.error != null) Text(state.error!!, Modifier.padding(24.dp))
                     else CircularProgressIndicator()
                 }
             } else if (!timetable.onboarded) {
-                Onboarding(timetable, model::update)
+                Onboarding(timetable, model::update, files.import, if ((state.collection?.timetables?.size ?: 0) > 1) ({ showTimetables = true }) else null)
             } else {
                 var destination by rememberSaveable { mutableStateOf(Destination.TODAY) }
                 var day by rememberSaveable { mutableIntStateOf(LocalDateTime.now().dayOfWeek.value) }
@@ -65,8 +74,12 @@ fun TempoApp(model: TempoViewModel) {
                 Scaffold(
                     topBar = { TopAppBar(title = { Column {
                         Text(if (destination == Destination.TODAY) "Tempo" else destination.name.lowercase().replaceFirstChar { it.titlecase() })
-                        Text(timetable.name, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } }) },
+                        Row(Modifier.clickable(onClickLabel = "Manage timetables") { showTimetables = true }, verticalAlignment = Alignment.CenterVertically) {
+                            Text(timetable.name, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
+                                modifier = Modifier.weight(1f, fill = false), overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            Icon(Icons.Outlined.ArrowDropDown, null, Modifier.size(18.dp))
+                        }
+                    } }, actions = { IconButton(onClick = { showTimetables = true }) { Icon(Icons.Outlined.CalendarMonth, "Manage timetables") } }) },
                     bottomBar = { NavigationBar {
                         val icons = listOf(Icons.Outlined.Today, Icons.Outlined.CalendarViewWeek, Icons.Outlined.CollectionsBookmark, Icons.Outlined.Settings)
                         Destination.entries.forEachIndexed { index, item ->
@@ -85,7 +98,7 @@ fun TempoApp(model: TempoViewModel) {
                             Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.LIBRARY -> LibraryScreen(timetable, model::update)
-                            Destination.SETTINGS -> SettingsScreen(timetable, model::update)
+                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, files, { showTimetables = true }, state.fileBusy)
                         }
                         }
                     }
@@ -104,9 +117,18 @@ fun TempoApp(model: TempoViewModel) {
                     dismiss = { showBreak = false }, save = { pause -> model.update { it.copy(breaks = it.breaks.filterNot { b -> b.id == pause.id } + pause) }; showBreak = false },
                     delete = { id -> model.update { it.copy(breaks = it.breaks.filterNot { b -> b.id == id }) }; showBreak = false })
             }
+            }
+            if (showTimetables) state.collection?.let { TimetableManager(it, model, files) { showTimetables = false } }
+            if (state.fileBusy) Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp), shape = MaterialTheme.shapes.medium) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CircularProgressIndicator(Modifier.size(24.dp)); Text("Working with your timetable file…")
+                }
+            }
+            SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(16.dp))
             if (state.error != null && timetable != null) AlertDialog(onDismissRequest = model::dismissError,
-                title = { Text("Change not saved") }, text = { Text(state.error!!) },
+                title = { Text("Something needs attention") }, text = { Text(state.error!!) },
                 confirmButton = { TextButton(onClick = model::dismissError) { Text("Close") } })
+            }
         }
     }
 }

@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
 
 @Composable
-fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit) {
+fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, importTimetable: () -> Unit, manageTimetables: (() -> Unit)? = null) {
     val step = timetable.onboardingStep
     var name by rememberSaveable { mutableStateOf(timetable.name) }
     var days by rememberSaveable { mutableStateOf(timetable.days.map { it.day }.joinToString(",")) }
@@ -61,6 +61,9 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit)
                 0 -> {
                     Text("A week that works for you", style = MaterialTheme.typography.headlineMedium)
                     Text("College, work or whatever fills your day. Start with your usual hours; each day can be adjusted later.")
+                    OutlinedButton(onClick = importTimetable, modifier = Modifier.fillMaxWidth()) { Text("Import a Tempo timetable") }
+                    manageTimetables?.let { manage -> TextButton(onClick = manage) { Text("Choose another timetable") } }
+                    HorizontalDivider()
                     OutlinedTextField(name, { name = it }, label = { Text("Timetable name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         weekdayNames.forEachIndexed { i, day -> FilterChip(i + 1 in selectedDays, {
