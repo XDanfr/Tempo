@@ -1,12 +1,14 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent">
-    <ImageView android:id="@+id/widget_background" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_preview_pill" android:scaleType="fitXY" android:contentDescription="@null"/>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="22dp" android:paddingEnd="14dp" android:paddingTop="6dp" android:paddingBottom="6dp">
+    <ImageView android:id="@+id/widget_background" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:src="@drawable/widget_preview_pill" android:contentDescription="@null"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="16dp" android:paddingEnd="10dp" android:paddingTop="6dp" android:paddingBottom="6dp">
+        <ImageView android:id="@+id/widget_icon" android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="8dp" android:contentDescription="@null"/>
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-            <TextView android:textColor="#E2EADF" android:id="@+id/widget_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:maxLines="1"/>
-            <TextView android:textColor="#E2EADF" android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tempo" android:fontFamily="@font/outfit_semibold" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end"/>
-            <Chronometer android:textColor="#B7F397" android:id="@+id/widget_timer" android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/outfit_medium" android:textSize="12sp" android:textStyle="bold"/>
-            <TextView android:textColor="#E2EADF" android:id="@+id/widget_detail" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:fontFamily="@font/outfit_medium" android:textSize="11sp" android:maxLines="1" android:ellipsize="end"/>
+            <TextView android:id="@+id/widget_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:maxLines="1"/>
+            <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/outfit_semibold" android:text="Tempo" android:textColor="#E2EADF" android:textSize="14sp" android:maxLines="1" android:ellipsize="end"/>
+            <Chronometer android:id="@+id/widget_timer" android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/outfit_semibold" android:textColor="#B7F397" android:textSize="12sp"/>
+            <TextView android:id="@+id/widget_detail" android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/outfit_medium" android:textSize="11sp" android:maxLines="1" android:ellipsize="end"/>
+            <TextView android:id="@+id/widget_time" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:fontFamily="@font/outfit_medium" android:textSize="11sp" android:maxLines="1"/>
         </LinearLayout>
-        <TextView android:textColor="#E2EADF" android:id="@+id/widget_settings" android:layout_width="24dp" android:layout_height="match_parent" android:gravity="center" android:text="⋮" android:textSize="20sp" android:contentDescription="Widget settings"/>
+        <TextView android:id="@+id/widget_settings" android:layout_width="20dp" android:layout_height="match_parent" android:gravity="center" android:text="⋮" android:textColor="#E2EADF" android:textSize="20sp" android:contentDescription="Widget settings"/>
     </LinearLayout>
 </FrameLayout>
