@@ -37,7 +37,7 @@ Portable JSON has `format: cc.xdan.tempo.timetable`, `formatVersion: 1`, and one
 complete `timetable` object. Files include subject colours/icons/locations,
 sessions and notes, repeated breaks, day hours, periods and appearance. Imports
 also accept legacy schema-1/2 snapshots. They reject unknown versions/fields,
-invalid IDs/references/times/colours, files above 2 MiB and nesting beyond 32.
+invalid IDs/references/times/colours, damaged UTF-8, files above 2 MiB and nesting beyond 32.
 Decode precedes preview; users choose a new timetable or explicitly confirm
 replacement. Empty onboarding can use an imported timetable directly. File I/O
 runs off the main thread through Android's document picker; no storage permission
