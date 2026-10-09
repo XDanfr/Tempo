@@ -144,6 +144,18 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 }
                 // Native drawables retain their corner radius/stroke at the actual launcher bounds.
                 fun surface(target: RemoteViews, fillId: Int, outlineId: Int, fill: Color, colour: Color, border: Boolean) {
+                    val shape = when (fillId) {
+                        R.id.widget_background -> if (pill) R.drawable.widget_shape_pill else R.drawable.widget_shape_surface
+                        R.id.widget_block_background -> R.drawable.widget_shape_block
+                        else -> R.drawable.widget_shape_row
+                    }
+                    val edge = when (outlineId) {
+                        R.id.widget_outline -> if (pill) R.drawable.widget_shape_pill_outline else R.drawable.widget_shape_surface_outline
+                        R.id.widget_block_outline -> R.drawable.widget_shape_block_outline
+                        else -> R.drawable.widget_shape_row_outline
+                    }
+                    target.setImageViewResource(fillId, shape)
+                    target.setImageViewResource(outlineId, edge)
                     target.setInt(fillId, "setColorFilter", fill.toArgb())
                     target.setInt(outlineId, "setColorFilter", widgetOutline(colour, fill).toArgb())
                     target.setViewVisibility(outlineId, if (border) View.VISIBLE else View.GONE)
