@@ -96,7 +96,8 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 listOf(R.id.widget_title, R.id.widget_detail, R.id.widget_settings).forEach { views.setTextColor(it, scheme.onSurface.toArgb()) }
                 views.setTextColor(R.id.widget_label, scheme.onSurfaceVariant.toArgb())
                 views.setTextColor(R.id.widget_timer, scheme.primary.toArgb())
-                views.setViewVisibility(R.id.widget_detail, if (height < 100) View.GONE else View.VISIBLE)
+                views.setInt(R.id.widget_title, "setMaxLines", if (height < 150) 1 else 2)
+                views.setViewVisibility(R.id.widget_detail, if (pill || height < 145) View.GONE else View.VISIBLE)
                 views.setTextViewText(R.id.widget_label, timetable?.name ?: "Tempo")
                 var title = if (timetable == null) "Choose a timetable" else if (!timetable.onboarded) "Finish setting up Tempo" else settings.emptyText
                 var detail = if (timetable == null) "This widget’s timetable was removed. Open widget settings." else ""
