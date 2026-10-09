@@ -36,4 +36,19 @@ class WidgetColoursTest {
             assertTrue(contrast(completion, widgetForeground(completion)) >= 4.5f)
         }
     }
+    @Test fun themeLessonPanelsStayDistinctFromTheRootAndFromEachOther() {
+        for (preset in ThemePreset.entries) for (dark in listOf(false, true)) {
+            val scheme = presetColorScheme(preset, dark)
+            val root = widgetThemeBackground(scheme, dark)
+            val primary = widgetLessonBackground(scheme, Color.Magenta, dark, true, true)
+            val secondary = widgetLessonBackground(scheme, Color.Cyan, dark, true, false)
+            assertTrue(primary.luminance() < root.luminance())
+            assertTrue(secondary.luminance() < primary.luminance())
+            assertTrue(contrast(primary, widgetForeground(primary)) >= 4.5f)
+            assertTrue(contrast(secondary, widgetForeground(secondary)) >= 4.5f)
+            assertEquals(Color.Magenta, widgetLessonBackground(scheme, Color.Magenta, dark, false, true))
+            assertEquals(scheme.primary, widgetOutline(scheme))
+        }
+    }
+
 }

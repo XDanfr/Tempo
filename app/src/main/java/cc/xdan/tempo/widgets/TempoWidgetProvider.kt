@@ -99,23 +99,26 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 val dayComplete = timetable != null && summary != null && widgetDayComplete(timetable, now.toLocalDateTime(), summary)
                 val completion = !pill && dayComplete
                 val weekDone = summary?.status == WeekStatus.DONE
-                val pillDone = pill && weekDone
+                val pillDone = pill && (weekDone || dayComplete && settings.doneForDayMessage)
                 val messageOnly = completion && !wide && settings.doneForDayMessage
                 val plan = if (wide && !completion && timetable != null && summary != null) widgetDayPlan(timetable, now.toLocalDateTime(), summary) else null
                 val agendaLayout = plan?.later?.isNotEmpty() == true
+                val block = summary?.block
+                val lessonPanel = wide && !completion && block != null
                 val views = RemoteViews(context.packageName, when {
                     pillDone -> R.layout.tempo_widget_pill_done
                     pill -> R.layout.tempo_widget_pill
                     completion && wide -> R.layout.tempo_widget_done_today_wide
                     completion -> R.layout.tempo_widget_done_today
                     agendaLayout -> R.layout.tempo_widget_wide
+                    lessonPanel -> R.layout.tempo_widget_wide_single
                     else -> R.layout.tempo_widget
                 })
-                val block = summary?.block
                 val accent = block?.accent(scheme.primaryFixed) ?: scheme.primaryFixed
                 val themeBackground = widgetThemeBackground(scheme, dark)
-                val background = if (!wide && !completion && block != null && settings.lessonBackground) accent else themeBackground
-                val foreground = widgetForeground(if (agendaLayout) accent else background)
+                val background = if (!wide && !completion && !pillDone && block != null && settings.lessonBackground) accent else themeBackground
+                val lessonFill = widgetLessonBackground(scheme, accent, dark, wide && settings.themedLessons, true)
+                val foreground = widgetForeground(if (lessonPanel) lessonFill else background)
                 val current = summary?.status == WeekStatus.CURRENT
                 val lesson = block as? ScheduleBlock.Lesson
                 val target = if (current && block != null) now.toLocalDate().atStartOfDay().plusMinutes(block.time.end.toLong()).atZone(now.zone)
@@ -142,21 +145,21 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                     views.setChronometerCountDown(id, true)
                     views.setChronometer(id, SystemClock.elapsedRealtime() + (until ?: 0), if (current) "%s left" else "In %s", ticking)
                 }
-                fun surface(target: RemoteViews, fillId: Int, outlineId: Int, fill: Color, colour: Color, border: Boolean) {
+                fun surface(target: RemoteViews, fillId: Int, outlineId: Int, fill: Color, border: Boolean) {
                     val root = fillId == R.id.widget_background
                     val shape = if (root) { if (pill) R.drawable.widget_shape_pill else R.drawable.widget_shape_surface } else R.drawable.widget_shape_block
                     val edge = if (root) { if (pill) R.drawable.widget_shape_pill_outline else R.drawable.widget_shape_surface_outline } else R.drawable.widget_shape_block_outline
                     target.setImageViewResource(fillId, shape)
                     target.setImageViewResource(outlineId, edge)
                     target.setInt(fillId, "setColorFilter", fill.toArgb())
-                    target.setInt(outlineId, "setColorFilter", widgetOutline(colour, fill).toArgb())
+                    target.setInt(outlineId, "setColorFilter", widgetOutline(scheme).toArgb())
                     target.setViewVisibility(outlineId, if (border) View.VISIBLE else View.GONE)
                 }
-                surface(views, R.id.widget_background, R.id.widget_outline, background, scheme.primaryFixed, !wide && settings.showOutline)
+                surface(views, R.id.widget_background, R.id.widget_outline, background, settings.showOutline && (!wide || !completion && !weekDone))
                 when {
                     pillDone -> {
                         badge(R.id.widget_badge, R.id.widget_badge_background, R.id.widget_icon, Icons.Outlined.CheckCircle, completionBadge, showIcon)
-                        text(R.id.widget_title, "All done", foreground, 22f, 1)
+                        text(R.id.widget_title, if (weekDone) "All done" else "Done for today", foreground, if (weekDone) 22f else 16f, 1)
                     }
                     completion -> {
                         val ink = widgetForeground(themeBackground)
@@ -165,9 +168,9 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                         text(R.id.widget_title, "Done for today!", ink, if (wide) { if (height < 190) 26f else 30f } else if (height < 200) 22f else 24f)
                         views.setViewVisibility(R.id.widget_next_pill, if (messageOnly) View.GONE else View.VISIBLE)
                         val next = summary?.next?.lesson
-                        val nextColour = next?.accent(scheme.primaryFixed) ?: scheme.primaryFixed
+                        val nextColour = widgetLessonBackground(scheme, next?.accent(scheme.primaryFixed) ?: scheme.primaryFixed, dark, wide && settings.themedLessons, false)
                         val nextInk = widgetForeground(nextColour)
-                        views.setInt(R.id.widget_next_pill_background, "setColorFilter", nextColour.toArgb())
+                        surface(views, R.id.widget_next_pill_background, R.id.widget_next_pill_outline, nextColour, wide && settings.showOutline)
                         val nextBadge = lerp(nextColour, Color.White, .30f)
                         badge(R.id.widget_next_badge, R.id.widget_next_badge_background, R.id.widget_next_icon,
                             next?.symbol() ?: Icons.Outlined.CalendarMonth, nextBadge, showIcon && height >= if (wide) 190 else 250)
@@ -175,7 +178,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                         timer(R.id.widget_next_timer, nextInk, if (wide) 20f else 16f)
                     }
                     else -> {
-                        if (agendaLayout) surface(views, R.id.widget_block_background, R.id.widget_block_outline, accent, accent, false)
+                        if (lessonPanel) surface(views, R.id.widget_block_background, R.id.widget_block_outline, lessonFill, settings.showOutline)
                         val title = when {
                             timetable == null -> "Choose a timetable"
                             !timetable.onboarded -> "Finish setup"
@@ -203,7 +206,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                         }
                         val showBadge = showIcon && (if (weekDone) height >= 150 else height >= 240)
                         if (!pill) badge(R.id.widget_badge, R.id.widget_badge_background, R.id.widget_icon, icon,
-                            if (weekDone || block == null) completionBadge else lerp(accent, Color.White, .30f), showBadge)
+                            if (weekDone || block == null) completionBadge else lerp(if (lessonPanel) lessonFill else accent, Color.White, .30f), showBadge)
                         else {
                             views.setViewVisibility(R.id.widget_icon, if (showIcon) View.VISIBLE else View.GONE)
                             views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, foreground.toArgb()))
@@ -222,7 +225,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                         timer(R.id.widget_timer, foreground, if (pill) 12f else if (height < 150) 20f else 26f)
                         views.setViewVisibility(R.id.widget_detail, if (pill && ticking) View.GONE else View.VISIBLE)
                         if (!pill) {
-                            val roomColour = lerp(accent, Color.White, .30f)
+                            val roomColour = lerp(if (lessonPanel) lessonFill else accent, Color.White, .30f)
                             views.setInt(R.id.widget_location_background, "setColorFilter", roomColour.toArgb())
                             text(R.id.widget_location_text, location.orEmpty(), widgetForeground(roomColour), 13f, 1)
                             views.setViewVisibility(R.id.widget_location, if (roomPill) View.VISIBLE else View.GONE)
@@ -234,8 +237,8 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                             text(R.id.widget_day_summary, "Finish ${minuteLabel(plan.finish)} · ${plan.lessonsLeft} left", widgetForeground(themeBackground), 12f, 1)
                             later.forEachIndexed { index, activity ->
                                 val row = RemoteViews(context.packageName, R.layout.tempo_widget_agenda_row)
-                                val colour = activity.accent(scheme.primaryFixed)
-                                surface(row, R.id.widget_row_background, R.id.widget_row_outline, colour, colour, false)
+                                val colour = widgetLessonBackground(scheme, activity.accent(scheme.primaryFixed), dark, settings.themedLessons, false)
+                                surface(row, R.id.widget_row_background, R.id.widget_row_outline, colour, settings.showOutline)
                                 row.setTextViewText(R.id.widget_row_title, activity.title())
                                 val room = if (settings.showLocation) (activity as? ScheduleBlock.Lesson)?.location?.takeIf { it.isNotBlank() } else null
                                 val overflow = if (index == later.lastIndex && hidden > 0) "+$hidden more" else room

@@ -21,5 +21,8 @@ internal fun widgetForeground(background: Color): Color {
     return if (contrast(preferred) >= 4.5f) preferred else Color.Black
 }
 
-internal fun widgetOutline(accent: Color, background: Color): Color =
-    if (background.luminance() > .20f) lerp(Color.Black, accent, .38f) else accent
+internal fun widgetOutline(scheme: ColorScheme): Color = scheme.primary
+
+internal fun widgetLessonBackground(scheme: ColorScheme, accent: Color, dark: Boolean,
+    themed: Boolean, prominent: Boolean): Color =
+    if (!themed) accent else lerp(widgetThemeBackground(scheme, dark), Color.Black, if (prominent) .30f else .43f)
