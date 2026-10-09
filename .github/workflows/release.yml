@@ -78,7 +78,7 @@ jobs:
           badging=$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk")
           grep -F "package: name='cc.xdan.tempo'" <<< "$badging"
           bundle_signature=$(jarsigner -verify "$aab")
-          printf '%s\\n' "$bundle_signature"
+          printf '%s\n' "$bundle_signature"
           grep -F 'jar verified.' <<< "$bundle_signature"
           test -s app/build/outputs/mapping/release/mapping.txt
       - name: Prepare release metadata
@@ -93,7 +93,7 @@ jobs:
           shutil.copy('app/build/outputs/apk/release/app-release.apk', apk)
           shutil.copy('app/build/outputs/bundle/release/app-release.aab', directory / f'Tempo-{version}.aab')
           manifest = dict(formatVersion=1, versionCode=code, versionName=version, apk=apk.name, sha256=hashlib.sha256(apk.read_bytes()).hexdigest())
-          (directory / 'tempo-update.json').write_text(json.dumps(manifest, indent=2) + '\\n')
+          (directory / 'tempo-update.json').write_text(json.dumps(manifest, indent=2) + '\n')
       - name: Publish stable GitHub release
         if: inputs.publish
         env:
