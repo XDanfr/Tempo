@@ -133,7 +133,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 views.setViewVisibility(R.id.widget_timer, if (until != null && until in 1..86_400_000) View.VISIBLE else View.GONE)
                 views.setChronometerCountDown(R.id.widget_timer, true)
                 views.setChronometer(R.id.widget_timer, SystemClock.elapsedRealtime() + (until ?: 0), format, until != null && until in 1..86_400_000)
-                val open = Intent(context, MainActivity::class.java)
+                val open = Intent(context, MainActivity::class.java).putExtra("widgetTimetableId", settings.timetableId)
                 views.setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                 val configure = Intent(context, WidgetConfigureActivity::class.java).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
                 views.setOnClickPendingIntent(R.id.widget_settings, PendingIntent.getActivity(context, id + 100000, configure, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))

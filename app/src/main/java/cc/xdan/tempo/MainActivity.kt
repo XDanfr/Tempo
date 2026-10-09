@@ -25,6 +25,12 @@ class MainActivity : ComponentActivity() {
             TempoApp(model)
             val current by model.state.collectAsStateWithLifecycle()
             LaunchedEffect(current.collection) { cc.xdan.tempo.widgets.WidgetRefresh.start(applicationContext) }
+            LaunchedEffect(current.collection != null) {
+                val id = intent.getStringExtra("widgetTimetableId")
+                current.collection?.let { collection ->
+                    if (id != null && collection.activeId != id && collection.timetables.any { it.id == id }) model.select(id)
+                }
+            }
         }
     }
 }
