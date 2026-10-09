@@ -52,8 +52,10 @@ data class Appearance(
     val dynamicColour: Boolean = false,
     val showIcons: Boolean = true,
     val blockStyle: BlockStyle = BlockStyle.FILLED,
+    val breakStyle: BlockStyle? = null,
 ) {
     // Keep the first milestone's wallpaper switch readable when migrating saved state.
+    val effectiveBreakStyle: BlockStyle get() = breakStyle ?: blockStyle
     val selectedPreset: ThemePreset get() = if (dynamicColour) ThemePreset.MATERIAL_YOU else preset
 }
 

@@ -65,15 +65,26 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                         next != null -> "Starts at ${minuteLabel(next.time.start)}"
                         else -> "Make room for what matters."
                     }
-                    val outlined = timetable.appearance.blockStyle == BlockStyle.OUTLINED
+                    val upcoming = if (current is ScheduleBlock.Break || current is ScheduleBlock.Free) {
+                        next?.let { "Up next: ${it.subject.name} · ${minuteLabel(it.time.start)}" + if (it.location.isNotBlank()) " · ${it.location}" else "" }
+                            ?: "No more sessions today"
+                    } else null
+                    val outlined = (if (current is ScheduleBlock.Break) timetable.appearance.effectiveBreakStyle else timetable.appearance.blockStyle) == BlockStyle.OUTLINED
                     Surface(color = if (outlined) Color.Transparent else MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(28.dp),
                         border = if (outlined) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null) {
                         Column(Modifier.fillMaxWidth().padding(24.dp)) {
                             Text("YOUR DAY, IN VIEW", style = MaterialTheme.typography.labelMedium)
                             Spacer(Modifier.height(8.dp))
-                            AnimatedContent(headline to detail, label = "now and next", transitionSpec = {
+                            AnimatedContent(Triple(headline, detail, upcoming), label = "now and next", transitionSpec = {
                                 (fadeIn(tween(180)) + scaleIn(initialScale = .96f)) togetherWith fadeOut(tween(100))
-                            }) { (title, subtitle) -> Column { Text(title, style = MaterialTheme.typography.headlineSmall); Text(subtitle, Modifier.padding(top = 8.dp)) } }
+                            }) { (title, subtitle, following) -> Column {
+                                Text(title, style = MaterialTheme.typography.headlineSmall)
+                                Text(subtitle, Modifier.padding(top = 8.dp))
+                                if (following != null) {
+                                    HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                                    Text(following, style = MaterialTheme.typography.titleSmall)
+                                }
+                            } }
                         }
                     }
                 }
@@ -125,7 +136,7 @@ private fun ScheduleItem(block: ScheduleBlock, appearance: Appearance, current: 
         }
         return
     }
-    val outlined = appearance.blockStyle == BlockStyle.OUTLINED
+    val outlined = (if (block is ScheduleBlock.Break) appearance.effectiveBreakStyle else appearance.blockStyle) == BlockStyle.OUTLINED
     val colour = when (block) {
         is ScheduleBlock.Lesson -> Color(block.subject.colour)
         is ScheduleBlock.Break -> when (block.scheduled.kind) { BreakKind.LUNCH -> Color(0xFFFFD59B); BreakKind.CHANGEOVER -> Color(0xFFACE0D3); BreakKind.BREAK -> Color(0xFFFFB6C6); BreakKind.CUSTOM -> Color(0xFFD3BCFF) }

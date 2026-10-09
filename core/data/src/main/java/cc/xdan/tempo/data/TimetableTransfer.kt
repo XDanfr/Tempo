@@ -38,10 +38,7 @@ object TimetableTransfer {
             root.getValue("timetable").jsonObject
         }
         val result = TimetableCodec.decode(payload.toString())
-        require(result.subjects.size <= 1000 && result.sessions.size <= 10000 && result.breaks.size <= 1000 && result.periods.size <= 1000) { "This timetable has too many entries" }
-        require(result.name.length <= 200 && result.subjects.all { it.name.length <= 200 && it.location.length <= 1000 && it.colour in 0..0xFFFFFFFFL } &&
-            result.sessions.all { it.location.length <= 1000 && it.notes.length <= 10000 } &&
-            result.breaks.all { it.name.length <= 200 } && result.periods.all { it.name.length <= 200 }) { "Timetable names, colours or notes exceed supported limits" }
+        require(result.subjects.all { it.colour in 0..0xFFFFFFFFL }) { "Subject colours must be valid ARGB values" }
         return result
     }
 
