@@ -57,8 +57,11 @@ jobs:
           aab=app/build/outputs/bundle/release/app-release.aab
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk"
           "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 "$apk"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | head -n 1 | grep -F "package: name='cc.xdan.tempo'"
-          jarsigner -verify "$aab"
+          badging=$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk")
+          grep -F "package: name='cc.xdan.tempo'" <<< "$badging"
+          bundle_signature=$(jarsigner -verify "$aab")
+          printf '%s\n' "$bundle_signature"
+          grep -F 'jar verified.' <<< "$bundle_signature"
           test -s app/build/outputs/mapping/release/mapping.txt
       - name: Upload signed APK, bundle and R8 mapping
         uses: actions/upload-artifact@v4
