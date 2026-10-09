@@ -1,14 +1,14 @@
 # Tempo
 
-Your week, in view. A flexible Android timetable maker for college, work and everything around it — part of **Axis**.
+_Your week, in view._
+
+A flexible Android timetable maker for college, work and everything around it.
 
 I’m building Tempo to make recurring schedules easy to create, read and share, with a native Material 3 Expressive interface. **Made by XDan.**
 
 ## Get Tempo
 
-Download the signed APK from [GitHub Releases](https://github.com/XDanfr/Tempo/releases) and install it on Android 8.0 or newer. Tempo is in early development; export a `.tempo.json` backup before trying development builds.
-
-A signed release can update an earlier release in place when both use the same signing key. Development APKs can use a different key, so Android may reject an update over them.
+Download the latest APK from [GitHub Releases](https://github.com/XDanfr/Tempo/releases) and install it on Android 8.0 or newer.
 
 ## Make it yours
 
