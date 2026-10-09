@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.icons)
     implementation(libs.activity.compose)
+    implementation("androidx.work:work-runtime-ktx:2.10.5")
     implementation("androidx.core:core-ktx:1.17.0")
     implementation(libs.lifecycle.compose)
     implementation(libs.lifecycle.viewmodel)
