@@ -23,7 +23,7 @@ jobs:
       - name: Install SDK
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Test, lint and assemble
-        run: ./gradlew :core:schedule:test :core:data:testDebugUnitTest :app:lintDebug :app:assembleDebug --stacktrace
+        run: ./gradlew :core:schedule:test :core:data:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:lintRelease :app:assembleRelease :app:bundleRelease --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: Tempo-debug
@@ -38,3 +38,5 @@ jobs:
             core/schedule/build/test-results/
             core/data/build/test-results/
             app/build/reports/lint-results-debug.*
+            app/build/reports/lint-results-release.*
+            app/build/outputs/mapping/release/
