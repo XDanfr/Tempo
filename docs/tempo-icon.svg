@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" role="img" aria-labelledby="title desc">
+  <title id="title">Tempo app icon</title>
+  <desc id="desc">A dark green rounded square with five mint timetable bars.</desc>
+  <path fill="#142718" d="M24 0h60q24 0 24 24v60q0 24-24 24H24Q0 108 0 84V24Q0 0 24 0Z"/>
+  <path fill="#B7F397" d="M35 30h4q5 0 5 5v38q0 5-5 5h-4q-5 0-5-5V35q0-5 5-5Z"/>
+  <path fill="#B7F397" d="M52 30h4q5 0 5 5v11q0 5-5 5h-4q-5 0-5-5V35q0-5 5-5Z"/>
+  <path fill="#B7F397" d="M69 30h4q5 0 5 5v24q0 5-5 5h-4q-5 0-5-5V35q0-5 5-5Z"/>
+  <path fill="#79B89D" d="M52 55h4q5 0 5 5v13q0 5-5 5h-4q-5 0-5-5V60q0-5 5-5Z"/>
+  <path fill="#79B89D" d="M69 68h4q5 0 5 5v0q0 5-5 5h-4q-5 0-5-5v0q0-5 5-5Z"/>
+</svg>
