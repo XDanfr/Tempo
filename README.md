@@ -6,7 +6,7 @@
 
 <p align="center"><em>Your week, in view.</em></p>
 
-<p align="center">A flexible Android timetable for school, college, work and everyday life.</p>
+<p align="center">A flexible Material 3 Expressive timetable for school, college, work and everyday life.</p>
 
 <p align="center"><strong>Made by XDan</strong></p>
 
