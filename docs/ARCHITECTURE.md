@@ -8,7 +8,7 @@
 
 One coherent change per commit. Add behavioural tests around schedule edge cases and import validation. Do not introduce placeholder controls for unimplemented features. Advanced recurrence, overnight shifts and DST require dated occurrence models before being exposed in the UI.
 
-No accounts, analytics or network permissions. No licence has been assumed; the owner can choose one before public distribution.
+No accounts or analytics. Network permission is used only for opt-in GitHub release updates. Timetables are never uploaded by the updater. No licence has been assumed; the owner can choose one before public distribution.
 
 AI assistance: initial project and implementation authored with OpenAI Codex, reviewed through build checks and domain tests. Device testing remains necessary.
 
@@ -60,3 +60,14 @@ canonically and verify the check before looking up a snapshot. The check detects
 copying errors; it is not an authentication signature. Never encode timetable
 contents or names into the URL. Publishing should be explicit, with an import
 preview on receipt and a way for the publisher to remove a shared snapshot.
+
+
+## Comparison, widgets and updates
+
+Comparison splits all resolved schedules on their combined boundaries and retains every occupied block. An interval is shared free time only when every timetable has a calculated Free block there; outside-day time is not implicitly available.
+
+Home-screen widgets use RemoteViews and the native Chronometer countdown instead of per-second app work. Three providers supply launcher size suggestions. A compact layout serves the pill; larger widgets expose more detail. Per-widget preferences are independent of portable timetable snapshots. Fixed timetable IDs never fall back to another timetable when deleted: the widget asks to be configured again.
+
+A WorkManager refresh reads the same DataStore collection and shared resolver. Edits and active selection changes trigger refreshes while the app is visible. Reboot, clock changes and package replacement restore refresh work; a 15-minute periodic job provides recovery. Inexact boundary alarms change displayed activities without requesting exact-alarm access. Android may delay these updates. Countdown bases use monotonic time; dated starts use the device’s current zone.
+
+The updater uses stable GitHub releases only. Metadata carries a format version, version name/code, APK filename and SHA-256. Downloads are confined to official tagged release assets. Before opening the installer, Tempo checks the checksum, package ID, increasing version code and exact signing-certificate set. It does not silently install, access repository secrets, or send timetable contents. Signing-key rotation would require explicit lineage support in a later version. Automatic work uses an unmetered network; APK downloads use DownloadManager. Installation is through a narrow FileProvider URI and Android’s per-app installation permission.

@@ -1,38 +1,43 @@
 # Tempo roadmap
 
-## Milestone 1: editable weekly timetable
-- [x] Android project and CI
-- [x] Subject, session, day window and usual-period models
-- [x] Shared gap and overlap resolver with tests
-- [x] Versioned atomic local persistence
-- [x] Resumable onboarding with period/break editing; demo shortcut removed
-- [x] Readable day view with proportional sessions and subtle dashed frees
-- [x] Subject editing, optional icons and session editing
-- [x] Independent day hours and usual period templates
-- [x] Forest, Ocean, Amber and Material You themes
+I’m building Tempo as a timetable maker for college, work and personal schedules within the Axis ecosystem. This roadmap describes implemented work and what I intend to add; planned features can change as I test the app and hear from users.
 
-## Following milestones
-- [x] Multiple timetables: switch, create, rename, duplicate and delete
-- [ ] Compare selected timetables in aligned or overlaid views, showing shared free periods alongside lessons and activities
-- [ ] Room for occurrence queries and history
-- [ ] Multiple-week timetables: configurable A/B or longer rotating week cycles, with a start date and week selector
-- [ ] Dated exceptions, holidays, overnight shifts and explicit zones
-- [x] Break/lunch/changeover blocks and conversion of a free slot into a session or break
-- [ ] Free tags, arbitrary splitting, batch edits, duplication, undo/redo
-- [ ] Tablet/foldable week layouts, search, accessibility and reduced motion verification
-- [ ] Glance widgets: show the current lesson/break and time remaining, or the next lesson/activity and countdown until it starts
-- [ ] Widget layouts: fully rounded 2×1 pill, rounded-square 2×2 and rounded-rectangle 4×2; also consider today, fixed-day, week and free-time views
-- [ ] Choose a fixed timetable per widget or follow the currently selected timetable, updating when the selection changes
-- [ ] Give each widget its own theme or follow the selected timetable's appearance; include clear empty states, privacy controls and battery-aware countdown updates
-- [x] Versioned `.tempo.json` files: complete snapshots, validation, import preview and onboarding entry
-- [ ] Selective import, bundled assets and restore points
-- [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
-- [ ] Calendar `.ics` integration: import/export, recurring events, time zones and calendar-app handoff
-- [ ] PNG day/week/day-card renderer with preview and configurable dimensions
-- [ ] Reminders, travel buffers, subject-hours summaries and version history
-- [x] Outfit font bundling with its licence; rounded adaptive and monochrome icon
-- [ ] Launcher icon colours follow the selected app theme, with launcher-supported themed icons for Material You
+## 0.3 — timetables you can share as files
+
+- [x] Multiple timetables: create, switch, rename, duplicate and delete
+- [x] Complete `.tempo.json` import/export with validation and preview
+- [x] Import during onboarding
+- [x] Independent fill/outline styles for subjects and breaks
+- [x] Next-session details during breaks
+- [x] Picker scrolling and complete theme palettes
 - [x] Signed release workflow, R8 and resource shrinking
-- [ ] Device verification of release builds
 
-The demo is fictional; it is not a reconstruction of Dan's timetable. Axis is the ecosystem, Tempo is the app. Schedule items are sessions, never cards.
+## 0.4 — comparison, widgets and release updates
+
+- [x] Compare selected timetables on aligned time intervals, including overlapping activities
+- [x] Shared free-time totals inside everyone’s configured day hours
+- [x] Current/next widgets with native countdowns
+- [x] Fully rounded 2×1, rounded-square 2×2 and rounded-rectangle 4×2 widgets
+- [x] Fixed timetable or follow the currently selected timetable
+- [x] Independent widget theme or follow timetable appearance; location privacy and custom empty message
+- [x] Updates after edits, selection changes, reboot and clock/time-zone changes, with periodic recovery
+- [x] Optional automatic GitHub stable-release checks and downloads; verified APKs and Android installation confirmation
+- [x] Release update metadata generated from the signed APK
+- [x] Sponsor button and “Made by XDan” in Settings
+- [ ] Validate widget sizing/gestures and signed update installation on devices before release
+
+## Later releases
+
+- [ ] Multiple-week timetables: A/B or longer cycles, anchored to a date
+- [ ] Holidays, dated exceptions, overnight shifts and explicit timetable time zones
+- [ ] Calendar `.ics` import/export, recurring events and calendar-app integration
+- [ ] PNG day/week/day-card exports with preview and configurable dimensions
+- [ ] Free tags, splitting, batch editing, duplication and undo/redo
+- [ ] Side-by-side weekly comparison and additional widget views
+- [ ] Tablet/foldable layouts, search and further accessibility improvements
+- [ ] Selective imports, bundled assets and restore points
+- [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
+- [ ] Reminders, travel buffers, subject-hour summaries and history
+- [ ] Launcher icon colours following the app theme, alongside launcher-supported Material You themed icons
+
+Tempo currently uses weekly templates in the device’s local time. Multiple-week cycles and dated exceptions will use a shared dated scheduling model before being exposed across the app, widgets and exports.
