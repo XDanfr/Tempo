@@ -45,7 +45,17 @@ object TempoUpdates {
         connection.setRequestProperty("User-Agent", "Tempo-Android")
         return try {
             require(connection.responseCode == 200) { if (connection.responseCode == 404) "No public stable release is available yet" else "GitHub returned HTTP ${connection.responseCode}" }
-            val bytes = connection.inputStream.use { it.readNBytes(262145) }
+            val bytes = connection.inputStream.use { input ->
+                val output = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    require(output.size() + count <= 262144) { "Update metadata is too large" }
+                    output.write(buffer, 0, count)
+                }
+                output.toByteArray()
+            }
             require(bytes.size <= 262144) { "Update metadata is too large" }
             bytes.toString(Charsets.UTF_8)
         } finally { connection.disconnect() }
@@ -87,6 +97,7 @@ object TempoUpdates {
         val request = DownloadManager.Request(Uri.parse(url)).setTitle("Tempo update").setDescription("Downloading the next Tempo release")
             .setDestinationUri(Uri.fromFile(file)).setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setAllowedOverRoaming(false)
+        if (p.getBoolean("automatic", false)) request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
         val id = context.getSystemService(DownloadManager::class.java).enqueue(request)
         p.edit().putLong("downloadId", id).putBoolean("ready", false).putString("status", "Downloading update…").apply()
     }

@@ -40,7 +40,7 @@ android {
             if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
 }
 kotlin { jvmToolchain(17) }
@@ -58,5 +58,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.17.0")
     implementation(libs.lifecycle.compose)
     implementation(libs.lifecycle.viewmodel)
+    testImplementation(libs.junit)
+    testImplementation("org.json:json:20250517")
     debugImplementation(libs.compose.tooling)
 }

@@ -1,8 +1,13 @@
 name: Signed release
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish the signed APK and update metadata as a stable GitHub release'
+        type: boolean
+        default: false
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: tempo-signed-release
   cancel-in-progress: false
@@ -50,7 +55,7 @@ jobs:
           TEMPO_KEYSTORE_PASSWORD: ${{ secrets.TEMPO_KEYSTORE_PASSWORD }}
           TEMPO_KEY_ALIAS: ${{ secrets.TEMPO_KEY_ALIAS }}
           TEMPO_KEY_PASSWORD: ${{ secrets.TEMPO_KEY_PASSWORD }}
-        run: ./gradlew :core:schedule:test :core:data:testDebugUnitTest :app:lintRelease :app:assembleRelease :app:bundleRelease --no-daemon
+        run: ./gradlew :core:schedule:test :core:data:testDebugUnitTest :app:testDebugUnitTest :app:lintRelease :app:assembleRelease :app:bundleRelease --no-daemon
       - name: Verify release identity and signatures
         run: |
           apk=app/build/outputs/apk/release/app-release.apk
@@ -63,12 +68,39 @@ jobs:
           printf '%s\n' "$bundle_signature"
           grep -F 'jar verified.' <<< "$bundle_signature"
           test -s app/build/outputs/mapping/release/mapping.txt
+      - name: Prepare release metadata
+        shell: python
+        run: |
+          import hashlib, json, pathlib, re, shutil
+          source = pathlib.Path('app/build.gradle.kts').read_text()
+          version = re.search(r'versionName = "([0-9.]+)"', source).group(1)
+          code = int(re.search(r'versionCode = ([0-9]+)', source).group(1))
+          directory = pathlib.Path('release'); directory.mkdir()
+          apk = directory / f'Tempo-{version}.apk'
+          shutil.copy('app/build/outputs/apk/release/app-release.apk', apk)
+          shutil.copy('app/build/outputs/bundle/release/app-release.aab', directory / f'Tempo-{version}.aab')
+          manifest = dict(formatVersion=1, versionCode=code, versionName=version, apk=apk.name, sha256=hashlib.sha256(apk.read_bytes()).hexdigest())
+          (directory / 'tempo-update.json').write_text(json.dumps(manifest, indent=2) + '\n')
+      - name: Publish stable GitHub release
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(python3 -c "import json; print(json.load(open('release/tempo-update.json'))['versionName'])")
+          tag="v$version"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo 'This release already exists. Refusing to replace published update assets.'
+            exit 1
+          fi
+          gh release create "$tag" --target "$GITHUB_SHA" --title "Tempo $version" --generate-notes release/*
       - name: Upload signed APK, bundle and R8 mapping
         uses: actions/upload-artifact@v4
         with:
           name: Tempo-release-${{ github.run_number }}
           if-no-files-found: error
           path: |
+            release/
             app/build/outputs/apk/release/app-release.apk
             app/build/outputs/bundle/release/app-release.aab
             app/build/outputs/mapping/release/

@@ -76,7 +76,8 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
             ids.forEach { id ->
                 val settings = WidgetSettings.read(context, id)
                 val timetable = if (settings.timetableId == null) collection.active else collection.timetables.firstOrNull { it.id == settings.timetableId }?.timetable
-                val views = RemoteViews(context.packageName, R.layout.tempo_widget)
+                val pill = manager.getAppWidgetInfo(id)?.provider?.className == PillWidget::class.java.name
+                val views = RemoteViews(context.packageName, if (pill) R.layout.tempo_widget_pill else R.layout.tempo_widget)
                 val appearance = timetable?.appearance ?: Appearance()
                 val selected = settings.preset ?: appearance.selectedPreset
                 val mode = if (settings.preset == null) appearance.mode else settings.mode
@@ -87,7 +88,6 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 val options = manager.getAppWidgetOptions(id)
                 val width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 150).coerceIn(110, 600)
                 val height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 90).coerceIn(56, 400)
-                val pill = manager.getAppWidgetInfo(id)?.provider?.className == PillWidget::class.java.name
                 val bitmap = Bitmap.createBitmap(width * 2, height * 2, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(bitmap)
                 val radius = if (pill) bitmap.height / 2f else 56f
@@ -110,12 +110,12 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                         is ScheduleBlock.Lesson -> {
                             title = current.subject.name
                             detail = if (settings.showLocation) current.location else ""
-                            target = now.toLocalDate().atStartOfDay(now.zone).plusMinutes(current.time.end.toLong())
+                            target = now.toLocalDate().atStartOfDay().plusMinutes(current.time.end.toLong()).atZone(now.zone)
                             format = "%s left"
                         }
                         is ScheduleBlock.Break -> {
                             title = current.scheduled.name
-                            target = now.toLocalDate().atStartOfDay(now.zone).plusMinutes(current.time.end.toLong())
+                            target = now.toLocalDate().atStartOfDay().plusMinutes(current.time.end.toLong()).atZone(now.zone)
                             format = "%s left"
                             detail = summary.next?.let { "Up next: ${it.lesson.subject.name} · ${it.starts.format(DateTimeFormatter.ofPattern("EEE HH:mm"))}" } ?: "No upcoming sessions"
                         }

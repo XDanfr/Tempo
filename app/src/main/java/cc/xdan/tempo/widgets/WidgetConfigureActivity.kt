@@ -27,7 +27,8 @@ class WidgetConfigureActivity : ComponentActivity() {
         if (id == AppWidgetManager.INVALID_APPWIDGET_ID) { finish(); return }
         enableEdgeToEdge()
         setContent {
-            val collection by TimetableRepository(applicationContext).collection.collectAsState(initial = null)
+            val repository = remember { TimetableRepository(applicationContext) }
+            val collection by repository.collection.collectAsState(initial = null)
             val initial = remember { WidgetSettings.read(applicationContext, id) }
             var table by rememberSaveable { mutableStateOf(initial.timetableId ?: "") }
             var theme by rememberSaveable { mutableStateOf(initial.preset?.name ?: "") }
