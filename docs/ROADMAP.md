@@ -13,7 +13,8 @@
 
 ## Following milestones
 - [x] Multiple timetables: switch, create, rename, duplicate and delete
-- [ ] Room for occurrence queries/history and combined timetable view
+- [ ] Compare selected timetables in aligned or overlaid views, showing shared free periods alongside lessons and activities
+- [ ] Room for occurrence queries and history
 - [ ] Multiple-week timetables: configurable A/B or longer rotating week cycles, with a start date and week selector
 - [ ] Dated exceptions, holidays, overnight shifts and explicit zones
 - [x] Break/lunch/changeover blocks and conversion of a free slot into a session or break
