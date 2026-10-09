@@ -36,7 +36,7 @@ fun presetColorScheme(preset: ThemePreset, dark: Boolean): ColorScheme {
         ThemePreset.OCEAN -> Triple(Color(0xFFA2DFFF), Color(0xFF00658A), Color(0xFF9DE3CF))
         ThemePreset.AMBER -> Triple(Color(0xFFFFD59B), Color(0xFF805600), Color(0xFFFFBEA5))
     }
-    val neutral = lerp(seed, Color(0xFFBFC6BE), .75f)
+    val neutral = lerp(seed, Color(0xFFBFC6BE), .45f)
     val darkText = lerp(Color.Black, seed, .12f)
     val lightText = lerp(Color.White, seed, .10f)
     fun darkTone(fraction: Float) = lerp(Color.Black, neutral, fraction)
@@ -55,9 +55,9 @@ fun presetColorScheme(preset: ThemePreset, dark: Boolean): ColorScheme {
         tertiaryContainer = if (dark) lerp(Color.Black, complement, .27f) else complement,
         onTertiaryContainer = if (dark) complement else darkText,
         inversePrimary = if (dark) ink else seed, surfaceTint = if (dark) seed else ink,
-        background = if (dark) darkTone(.085f) else lightTone(.12f),
+        background = if (dark) darkTone(.16f) else lightTone(.12f),
         onBackground = if (dark) lightText else darkText,
-        surface = if (dark) darkTone(.12f) else lightTone(.12f),
+        surface = if (dark) darkTone(.16f) else lightTone(.12f),
         onSurface = if (dark) lightText else darkText,
         surfaceVariant = if (dark) darkTone(.23f) else lightTone(.55f),
         onSurfaceVariant = if (dark) neutral else darkTone(.36f),
@@ -66,12 +66,12 @@ fun presetColorScheme(preset: ThemePreset, dark: Boolean): ColorScheme {
         inverseSurface = if (dark) lightText else darkText,
         inverseOnSurface = if (dark) darkText else lightText,
         surfaceBright = if (dark) darkTone(.25f) else lightTone(.08f),
-        surfaceDim = if (dark) darkTone(.085f) else lightTone(.70f),
+        surfaceDim = if (dark) darkTone(.12f) else lightTone(.70f),
         surfaceContainerLowest = if (dark) darkTone(.06f) else Color.White,
-        surfaceContainerLow = if (dark) darkTone(.13f) else lightTone(.18f),
-        surfaceContainer = if (dark) darkTone(.16f) else lightTone(.28f),
-        surfaceContainerHigh = if (dark) darkTone(.20f) else lightTone(.38f),
-        surfaceContainerHighest = if (dark) darkTone(.25f) else lightTone(.48f),
+        surfaceContainerLow = if (dark) darkTone(.17f) else lightTone(.18f),
+        surfaceContainer = if (dark) darkTone(.20f) else lightTone(.28f),
+        surfaceContainerHigh = if (dark) darkTone(.24f) else lightTone(.38f),
+        surfaceContainerHighest = if (dark) darkTone(.29f) else lightTone(.48f),
         primaryFixed = seed, primaryFixedDim = lerp(seed, ink, .20f),
         onPrimaryFixed = darkText, onPrimaryFixedVariant = ink,
         secondaryFixed = neutral, secondaryFixedDim = lerp(neutral, Color.Black, .10f),

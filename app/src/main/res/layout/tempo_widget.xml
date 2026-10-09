@@ -1,12 +1,13 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent">
-<ImageView android:id="@+id/widget_background" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:src="@drawable/widget_preview_background" android:contentDescription="@null"/>
-<LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center_vertical" android:padding="12dp">
+  <ImageView android:id="@+id/widget_background" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:src="@drawable/widget_shape_surface" android:contentDescription="@null" />
+  <ImageView android:id="@+id/widget_outline" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:src="@drawable/widget_shape_surface_outline" android:contentDescription="@null" android:visibility="gone" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center_vertical" android:padding="12dp">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
-        <ImageView android:id="@+id/widget_icon" android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="8dp" android:contentDescription="@null"/>
-        <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/outfit_semibold" android:text="Maths" android:textColor="#E2EADF" android:textSize="18sp" android:maxLines="2" android:ellipsize="end"/>
+      <ImageView android:id="@+id/widget_icon" android:layout_width="24dp" android:layout_height="24dp" android:layout_marginEnd="8dp" android:contentDescription="@null" />
+      <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:fontFamily="@font/outfit_semibold" android:text="Maths" android:textColor="#E2EADF" android:textSize="18sp" android:maxLines="2" android:ellipsize="end" />
     </LinearLayout>
-    <TextView android:id="@+id/widget_detail" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:fontFamily="@font/outfit_medium" android:text="10:00–11:00 · B18" android:textColor="#E2EADF" android:textSize="11sp" android:maxLines="2" android:ellipsize="end"/>
-    <Chronometer android:id="@+id/widget_timer" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:fontFamily="@font/outfit_semibold" android:textColor="#B7F397" android:textSize="22sp"/>
-    <TextView android:id="@+id/widget_time" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:fontFamily="@font/outfit_semibold" android:textColor="#B7F397" android:textSize="18sp" android:maxLines="1" android:ellipsize="end"/>
-</LinearLayout>
+    <TextView android:id="@+id/widget_detail" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:fontFamily="@font/outfit_medium" android:text="10:00–11:00 · B18" android:textColor="#E2EADF" android:textSize="11sp" android:maxLines="2" android:ellipsize="end" />
+    <TextView android:id="@+id/widget_day_done" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:fontFamily="@font/outfit_semibold" android:text="Done for today!" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" android:visibility="gone" />
+    <Chronometer android:id="@+id/widget_timer" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:fontFamily="@font/outfit_semibold" android:textColor="#B7F397" android:textSize="22sp" />
+  </LinearLayout>
 </FrameLayout>

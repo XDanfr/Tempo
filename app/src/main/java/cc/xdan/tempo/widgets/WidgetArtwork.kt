@@ -39,14 +39,3 @@ internal fun widgetIcon(vector: ImageVector, colour: Int): Bitmap {
     draw(vector.root)
     return bitmap
 }
-internal fun widgetShape(width: Int, height: Int, colour: Int, radius: Float, border: Int? = null): Bitmap {
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colour }
-    canvas.drawRoundRect(2f, 2f, width - 2f, height - 2f, radius, radius, paint)
-    if (border != null) {
-        paint.color = border; paint.style = Paint.Style.STROKE; paint.strokeWidth = 2f
-        canvas.drawRoundRect(2f, 2f, width - 2f, height - 2f, radius, radius, paint)
-    }
-    return bitmap
-}

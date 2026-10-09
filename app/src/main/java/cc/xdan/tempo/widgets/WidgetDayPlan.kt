@@ -18,3 +18,10 @@ internal fun widgetDayPlan(timetable: Timetable, now: LocalDateTime, summary: We
     val finish = lessons.maxOfOrNull { it.time.end } ?: primary.time.end
     return WidgetDayPlan(date, remaining.filter { it != primary && it.time.start < finish }, lessons.size, finish)
 }
+
+/** End-of-day messaging only applies while another lesson remains in this week. */
+internal fun widgetDayComplete(timetable: Timetable, now: LocalDateTime, summary: WeekOverview): Boolean {
+    if (summary.status != WeekStatus.UPCOMING || summary.next?.starts?.toLocalDate()?.isAfter(now.toLocalDate()) != true) return false
+    val minute = now.hour * 60 + now.minute
+    return ScheduleResolver.resolve(timetable, now.dayOfWeek.value).filterIsInstance<ScheduleBlock.Lesson>().none { it.time.end > minute }
+}

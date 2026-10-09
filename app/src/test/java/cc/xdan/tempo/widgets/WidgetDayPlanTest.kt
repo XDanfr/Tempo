@@ -40,4 +40,18 @@ class WidgetDayPlanTest {
         val t = table(Session("a", "s", 5, TimeSpan(600, 660)))
         assertNull(plan(t, LocalDateTime.of(2026, 10, 9, 11, 0)))
     }
+    @Test fun completionMessageBeginsAfterTodayEndsButNotDuringAGap() {
+        val t = table(Session("a", "s", 1, TimeSpan(600, 660)), Session("b", "s", 1, TimeSpan(720, 780)), Session("c", "s", 2, TimeSpan(600, 660)))
+        fun complete(hour: Int) = LocalDateTime.of(2026, 10, 12, hour, 0).let { widgetDayComplete(t, it, weekOverview(t, it)) }
+        assertFalse(complete(9))
+        assertFalse(complete(11))
+        assertTrue(complete(13))
+    }
+    @Test fun aClearDayCanCompleteButWeeklyDoneOverridesTheDayMessage() {
+        val t = table(Session("a", "s", 5, TimeSpan(600, 660)))
+        val thursday = LocalDateTime.of(2026, 10, 8, 12, 0)
+        assertTrue(widgetDayComplete(t, thursday, weekOverview(t, thursday)))
+        val friday = LocalDateTime.of(2026, 10, 9, 11, 0)
+        assertFalse(widgetDayComplete(t, friday, weekOverview(t, friday)))
+    }
 }
