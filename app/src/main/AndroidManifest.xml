@@ -24,7 +24,7 @@
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_wide"/>
         </receiver>
-        <receiver android:name=".updates.UpdateDownloadReceiver" android:exported="false">
+        <receiver android:name=".updates.UpdateDownloadReceiver" android:exported="true" android:permission="android.permission.SEND_DOWNLOAD_COMPLETED_INTENTS">
             <intent-filter><action android:name="android.intent.action.DOWNLOAD_COMPLETE"/></intent-filter>
         </receiver>
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.updates" android:exported="false" android:grantUriPermissions="true">

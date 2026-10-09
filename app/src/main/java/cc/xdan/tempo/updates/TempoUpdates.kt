@@ -97,7 +97,7 @@ object TempoUpdates {
         val request = DownloadManager.Request(Uri.parse(url)).setTitle("Tempo update").setDescription("Downloading the next Tempo release")
             .setDestinationUri(Uri.fromFile(file)).setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setAllowedOverRoaming(false)
-        if (p.getBoolean("automatic", false)) request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
+        if (p.getBoolean("automatic", false)) request.setAllowedOverMetered(false)
         val id = context.getSystemService(DownloadManager::class.java).enqueue(request)
         p.edit().putLong("downloadId", id).putBoolean("ready", false).putString("status", "Downloading update…").apply()
     }

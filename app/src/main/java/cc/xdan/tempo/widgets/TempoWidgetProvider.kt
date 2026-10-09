@@ -129,6 +129,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 views.setTextViewText(R.id.widget_title, title)
                 views.setTextViewText(R.id.widget_detail, detail)
                 val until = target?.toInstant()?.toEpochMilli()?.minus(now.toInstant().toEpochMilli())
+                if (pill && (until == null || until > 86_400_000) && detail.isNotBlank()) views.setViewVisibility(R.id.widget_detail, View.VISIBLE)
                 views.setViewVisibility(R.id.widget_timer, if (until != null && until in 1..86_400_000) View.VISIBLE else View.GONE)
                 views.setChronometerCountDown(R.id.widget_timer, true)
                 views.setChronometer(R.id.widget_timer, SystemClock.elapsedRealtime() + (until ?: 0), format, until != null && until in 1..86_400_000)
