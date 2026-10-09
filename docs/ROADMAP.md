@@ -20,8 +20,10 @@
 - [x] Break/lunch/changeover blocks and conversion of a free slot into a session or break
 - [ ] Free tags, arbitrary splitting, batch edits, duplication, undo/redo
 - [ ] Tablet/foldable week layouts, search, accessibility and reduced motion verification
-- [ ] Glance: now/next, today, fixed day, week and free-time widgets
-- [ ] Per-widget themes, privacy, empty messages and battery-friendly update policy
+- [ ] Glance widgets: show the current lesson/break and time remaining, or the next lesson/activity and countdown until it starts
+- [ ] Widget layouts: fully rounded 2×1 pill, rounded-square 2×2 and rounded-rectangle 4×2; also consider today, fixed-day, week and free-time views
+- [ ] Choose a fixed timetable per widget or follow the currently selected timetable, updating when the selection changes
+- [ ] Give each widget its own theme or follow the selected timetable's appearance; include clear empty states, privacy controls and battery-aware countdown updates
 - [x] Versioned `.tempo.json` files: complete snapshots, validation, import preview and onboarding entry
 - [ ] Selective import, bundled assets and restore points
 - [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
