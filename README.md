@@ -25,6 +25,30 @@ Once a public stable release is available, you can check for updates in Settings
 - **Keep your schedule close.** Add a 2×1, 2×2 or 4×2 widget for current and upcoming periods, with subject colours and theme options.
 - **Move your timetable when you need to.** Import during setup or export a `.tempo.json` backup with your subjects, times, breaks, notes, icons and appearance.
 
+## See Tempo in action
+
+<p align="center">
+  <img src="docs/screenshots/timetable.jpg" width="250" alt="Tempo’s colourful weekly timetable with subjects, breaks and free periods">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/library.jpg" width="250" alt="Tempo’s subject library with individual colours, icons and locations">
+</p>
+
+<p align="center"><em>Build a week that looks like yours, then keep its subjects and activities organised in the library.</em></p>
+
+<details>
+  <summary>Explore the full settings screen</summary>
+
+  <p align="center"><img src="docs/screenshots/settings-overview.jpg" width="226" alt="Full-height settings screen showing timetable management, themes, day lengths, usual periods, breaks, update controls and sponsorship"></p>
+
+  <p align="center"><em>Theme and block styles, day lengths, usual periods, breaks, update options and support links in one place.</em></p>
+</details>
+
+## Widgets at a glance
+
+<p align="center"><img src="docs/screenshots/widgets-all-done.jpg" width="560" alt="Tempo’s 4×2, 2×2 and 2×1 widgets showing the themed All done state after the final lesson of the week"></p>
+
+<p align="center"><em>Three launcher sizes, with a theme-matched “All done” state when the week’s lessons are finished.</em></p>
+
 ## Updates and privacy
 
 Your timetable stays on your device unless you export it. Tempo has no accounts or analytics. Update checks contact GitHub; they do not send your timetable. Manual import and export use Android’s file picker.
