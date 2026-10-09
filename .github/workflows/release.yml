@@ -6,6 +6,10 @@ on:
         description: 'Publish the signed APK and update metadata as a stable GitHub release'
         type: boolean
         default: false
+      draft:
+        description: 'Create a draft GitHub release with the signed APK and update metadata'
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -20,6 +24,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Validate release mode
+        env:
+          PUBLISH: ${{ inputs.publish }}
+          DRAFT: ${{ inputs.draft }}
+        run: |
+          if [[ "$PUBLISH" == "true" && "$DRAFT" == "true" ]]; then
+            echo "Choose either draft or published release mode."
+            exit 1
+          fi
       - name: Prepare signing key
         env:
           TEMPO_KEYSTORE_BASE64: ${{ secrets.TEMPO_KEYSTORE_BASE64 }}
@@ -65,7 +78,7 @@ jobs:
           badging=$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk")
           grep -F "package: name='cc.xdan.tempo'" <<< "$badging"
           bundle_signature=$(jarsigner -verify "$aab")
-          printf '%s\n' "$bundle_signature"
+          printf '%s\\n' "$bundle_signature"
           grep -F 'jar verified.' <<< "$bundle_signature"
           test -s app/build/outputs/mapping/release/mapping.txt
       - name: Prepare release metadata
@@ -80,7 +93,7 @@ jobs:
           shutil.copy('app/build/outputs/apk/release/app-release.apk', apk)
           shutil.copy('app/build/outputs/bundle/release/app-release.aab', directory / f'Tempo-{version}.aab')
           manifest = dict(formatVersion=1, versionCode=code, versionName=version, apk=apk.name, sha256=hashlib.sha256(apk.read_bytes()).hexdigest())
-          (directory / 'tempo-update.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          (directory / 'tempo-update.json').write_text(json.dumps(manifest, indent=2) + '\\n')
       - name: Publish stable GitHub release
         if: inputs.publish
         env:
@@ -94,6 +107,32 @@ jobs:
             exit 1
           fi
           gh release create "$tag" --target "$GITHUB_SHA" --title "Tempo $version" --generate-notes release/*
+      - name: Create draft GitHub release
+        if: inputs.draft && !inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(python3 -c "import json; print(json.load(open('release/tempo-update.json'))['versionName'])")
+          tag="v$version"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "A release already exists for $tag. Refusing to replace it."
+            exit 1
+          fi
+          cat > "$RUNNER_TEMP/tempo-release-notes.md" <<EOF
+          ## What's new in Tempo $version
+
+          - Compare timetables side by side or combine schedules into one agenda to find shared free time.
+          - Add a 2×1, 2×2 or 4×2 home-screen widget with current and upcoming periods, countdowns and completion messages.
+          - Match widgets to the app with brighter themes, subject colours, icons, optional outlines and more readable lesson cards.
+          - Check for stable updates in Settings or enable automatic daily checks on unmetered connections. Update metadata and the installed signing certificate are verified, and Android asks before installation.
+          - Updated the public-facing documentation and added sponsor support in Settings.
+
+          ## Compatibility
+
+          Tempo requires Android 8.0 or newer. Homework and assignment tracking with widget due dates is planned for a future release.
+          EOF
+          gh release create "$tag" --target "$GITHUB_SHA" --title "Tempo $version" --notes-file "$RUNNER_TEMP/tempo-release-notes.md" --draft release/*
       - name: Upload signed APK, bundle and R8 mapping
         uses: actions/upload-artifact@v4
         with:
