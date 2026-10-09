@@ -7,7 +7,7 @@ import org.junit.Test
 class TimetableTransferTest {
     @Test fun portableFilePreservesEntireSnapshot() {
         val value = demoTimetable().copy(breaks = listOf(ScheduledBreak("b", "Lunch", listOf(1, 3), TimeSpan(720, 760), BreakKind.LUNCH)),
-            appearance = Appearance(preset = ThemePreset.AMBER, blockStyle = BlockStyle.OUTLINED))
+            appearance = Appearance(preset = ThemePreset.AMBER, blockStyle = BlockStyle.OUTLINED, breakStyle = BlockStyle.FILLED))
         assertEquals(value, TimetableTransfer.read(TimetableTransfer.encode(value).byteInputStream()))
     }
     @Test fun acceptsLegacySnapshotAndMigratesIt() {
@@ -33,6 +33,14 @@ class TimetableTransferTest {
     @Test fun bracesInsideNotesDoNotCountAsNesting() {
         val value = demoTimetable().let { t -> t.copy(sessions = t.sessions.map { it.copy(notes = "[".repeat(100) + "\\\"") }) }
         assertEquals(value, TimetableTransfer.decode(TimetableTransfer.encode(value)))
+    }
+    @Test fun oldOutlineSettingStillAppliesToBothBlockTypes() {
+        val original = Timetable(appearance = Appearance(blockStyle = BlockStyle.OUTLINED))
+        val legacy = TimetableCodec.encode(original).replace(",\"breakStyle\":null", "")
+        assertEquals(BlockStyle.OUTLINED, TimetableCodec.decode(legacy).appearance.effectiveBreakStyle)
+    }
+    @Test(expected = IllegalArgumentException::class) fun rejectsInvalidArgbColours() {
+        TimetableTransfer.decode(TimetableTransfer.encode(Timetable(subjects = listOf(Subject("s", "Maths", -1)))))
     }
     @Test fun existingSingleTimetableMigratesToActiveCollection() {
         val timetable = demoTimetable()
