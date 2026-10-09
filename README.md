@@ -27,6 +27,6 @@ CI installs the pinned Gradle version and publishes a debug APK for each success
 
 Widgets, recurrence, free tags, portable presets, calendar/PNG exports are tracked next. Outfit is bundled under the SIL Open Font Licence. The rounded timetable icon includes adaptive and monochrome variants.
 
-CI APKs are development builds using the runner's debug signing key. Until a persistent signing key is configured, a new build may require uninstalling the previous build; uninstalling deletes local timetable data. This is not a release/update distribution channel yet.
+Normal CI publishes development APKs using the runner's debug signing key and also validates the minified release variant. The manual **Signed release** workflow builds a signed APK and app bundle using a persistent key from repository secrets. See [release setup](docs/RELEASES.md) for the four required secrets and download instructions.
 
 See [device testing](docs/DEVICE_TESTING.md), [roadmap](docs/ROADMAP.md) and [architecture](docs/ARCHITECTURE.md). Early development; not a release.
