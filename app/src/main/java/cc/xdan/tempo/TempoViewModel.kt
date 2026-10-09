@@ -19,7 +19,7 @@ import java.util.UUID
 data class ImportPreview(val timetable: Timetable, val targetId: String)
 
 data class TempoState(val collection: TimetableCollection? = null, val error: String? = null,
-    val importPreview: ImportPreview? = null, val fileBusy: Boolean = false, val message: String? = null) {
+    val importPreview: ImportPreview? = null, val contentEpoch: Int = 0, val fileBusy: Boolean = false, val message: String? = null) {
     val timetable: Timetable? get() = collection?.active
 }
 
@@ -55,6 +55,7 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
             if (replaceId != null) collection.update(replaceId) { ready }.select(replaceId)
             else collection.add(UUID.randomUUID().toString(), ready.copy(name = uniqueName(ready.name, collection)))
         }
+        mutable.value = mutable.value.copy(contentEpoch = mutable.value.contentEpoch + 1)
     }
     private fun uniqueName(name: String, collection: TimetableCollection): String {
         val names = collection.timetables.map { it.timetable.name }.toSet()

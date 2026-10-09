@@ -47,7 +47,7 @@ fun TempoApp(model: TempoViewModel) {
         }
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxSize()) {
-            key(state.collection?.activeId) {
+            key(state.collection?.activeId, state.contentEpoch) {
             if (timetable == null) {
                 Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
                     if (state.error != null) Text(state.error!!, Modifier.padding(24.dp))
@@ -93,7 +93,7 @@ fun TempoApp(model: TempoViewModel) {
                     },
                 ) { padding ->
                     Box(Modifier.padding(padding).fillMaxSize()) {
-                        PredictiveRouteHost(destination, enabled = !showEditor && !showFree && !showBreak, navigate = { destination = it }) { shown ->
+                        PredictiveRouteHost(destination, enabled = !showEditor && !showFree && !showBreak && !showTimetables && state.importPreview == null, navigate = { destination = it }) { shown ->
                         when (shown) {
                             Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
