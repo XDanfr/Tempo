@@ -149,6 +149,10 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 views.setTextColor(R.id.widget_settings, scheme.onSurface.toArgb())
                 listOf(R.id.widget_title, R.id.widget_detail, R.id.widget_timer, R.id.widget_time).forEach { views.setTextColor(it, foreground.toArgb()) }
                 views.setTextViewText(R.id.widget_title, title)
+                if (!pill && !ticking && target != null && height >= 145) {
+                    detail = listOfNotNull(target.format(DateTimeFormatter.ofPattern("EEEE")), location).joinToString(" · ")
+                }
+                views.setInt(R.id.widget_detail, "setMaxLines", if (height < 180) 1 else 2)
                 views.setTextViewText(R.id.widget_detail, detail)
                 views.setInt(R.id.widget_title, "setMaxLines", if (pill || height < 145) 1 else 2)
                 views.setTextViewTextSize(R.id.widget_title, android.util.TypedValue.COMPLEX_UNIT_SP, if (pill) 14f else if (height < 180) 16f else 20f)
@@ -158,7 +162,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 views.setChronometer(R.id.widget_timer, SystemClock.elapsedRealtime() + (until ?: 0), if (current) "%s left" else "In %s", ticking)
                 views.setViewVisibility(R.id.widget_detail, if (pill && ticking || !pill && (height < 130 || ticking && height < 180)) View.GONE else View.VISIBLE)
                 views.setViewVisibility(R.id.widget_time, if (!pill && !ticking && target != null && height >= 145) View.VISIBLE else View.GONE)
-                views.setTextViewText(R.id.widget_time, whenText)
+                views.setTextViewText(R.id.widget_time, target?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "")
                 if (!pill) {
                     val endOfWeek = now.toLocalDate().plusDays((7 - now.dayOfWeek.value).toLong())
                     val after = summary?.next?.starts ?: now.toLocalDateTime()
