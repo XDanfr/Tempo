@@ -1,35 +1,53 @@
 # Tempo
 
-A native Android timetable maker, part of **Axis**. Kotlin, Jetpack Compose and Material 3, with a forest-green identity.
+Your week, in view. A flexible Android timetable maker for college, work and everything around it — part of **Axis**.
 
-## Build
+I’m building Tempo to make recurring schedules easy to create, read and share, with a native Material 3 Expressive interface. **Made by XDan.**
 
-Open this directory in Android Studio with JDK 17, Android SDK 36 and the included **Gradle 8.13 wrapper**, then run:
+## Get Tempo
+
+Download the signed APK from [GitHub Releases](https://github.com/XDanfr/Tempo/releases) and install it on Android 8.0 or newer. Tempo is in early development; export a `.tempo.json` backup before trying development builds.
+
+A signed release can update an earlier release in place when both use the same signing key. Development APKs can use a different key, so Android may reject an update over them.
+
+## Make it yours
+
+- Create separate timetables for college, work or personal activities, then switch between them.
+- Set day hours, usual periods and custom session times. Add breaks, lunch and changeover time.
+- Give subjects names, colours, locations and optional icons from a searchable picker.
+- See Today and proportional day timelines, with dashed frees you can tap to fill.
+- Open comparison from Your timetables: view coloured schedules side by side, or combine people’s lessons into one agenda and find shared frees.
+- Choose Forest, Ocean, Amber or wallpaper-based Material You, with light, dark and system modes. Style subjects and breaks independently as filled blocks or outlines.
+- Import a timetable during setup, or export a complete `.tempo.json` file including subjects, times, breaks, notes, icons and appearance.
+
+## On your home screen
+
+Add Tempo from your launcher’s widget picker. Choose the **2×1 pill**, **2×2 rounded square** or **4×2 rounded rectangle**. Each has a fixed footprint to keep its proportions; launcher grid sizes can vary.
+
+Each widget can follow your current timetable or stay on a fixed one. It shows the current session or break and time left, or the next activity and time until it starts. Countdowns also cover later days within this week. After the final lesson of the week, it shows All done until the new week begins. The 4×2 pairs a centred current/next period with up to two large, readable upcoming-period cards, times, rooms and your finish time. Lesson panels use the same subject colours as the app. If more periods remain than fit, it shows how many more there are.
+
+Touch and hold a widget and open your launcher’s widget settings to choose its own theme or follow the timetable, choose icon visibility, hide locations and customise its empty message. Subject colours and icons carry through to the widget. The pill and square use a vibrant theme background by default, with a lesson-colour option. All sizes can switch crisp 2dp outlines on or off using visual options. Dark-mode borders use the bright theme colour shown in the preview. The wide widget outlines its frame and lesson panels, while completion content stays unoutlined; its next-lesson panel can retain a border. The wide widget can also use darker theme shades instead of subject colours for its lesson panels. All three sizes share the same bright theme palette in light and dark mode. After today’s last lesson, the square centres Done for today above a subject-coloured next-lesson card with its icon and countdown. The wide widget places completion on the left and the next lesson on the right; the square can instead show just the completion message. The pill can optionally replace the next lesson with Done for today after today’s lessons. All done for the week always takes priority, with a large centred title and a completion badge coloured from the widget theme, including on the pill. Android’s battery-saving modes may delay activity changes; the countdown runs through the launcher without Tempo waking every second.
+
+## Updates and privacy
+
+In Settings, check for stable GitHub releases or enable automatic updates. Automatic updates check daily and download on an unmetered connection; Android asks before installation. Update files are checked against release metadata and the installed app’s signing certificate.
+
+Timetables stay on your device unless you export them. Tempo has no accounts or analytics. Update checks contact GitHub; timetable contents are not sent. Manual import/export uses Android’s file picker. Automatic updates need a public stable release with the supplied update metadata.
+
+## What’s next
+
+Multiple-week cycles, calendar `.ics` integration, PNG exports, free tags, share links and optional homework/assignment tracking with widget due dates are planned. See the [roadmap](docs/ROADMAP.md). They are not available yet.
+
+## Support and feedback
+
+[Report a bug or suggest a feature](https://github.com/XDanfr/Tempo/issues) · [Sponsor XDan](https://github.com/sponsors/XDanfr) · [xdan.cc](https://xdan.cc)
+
+## For contributors
+
+Open the project in Android Studio with JDK 17 and Android SDK 36. The Gradle wrapper is included:
 
 ```sh
-./gradlew :core:schedule:test :core:data:testDebugUnitTest :app:lintDebug :app:assembleDebug
+./gradlew :core:schedule:test :core:data:testDebugUnitTest :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
-CI installs the pinned Gradle version and publishes a debug APK for each successful build. Android 8.0 (API 26) or newer is required. Package: `cc.xdan.tempo`.
-
-## Current features
-
-- Resumable four-step onboarding: day hours, usual periods/breaks, subjects and appearance.
-- Today summary, weekday timeline, editable sessions and overlap warnings.
-- Subjects/activities with a searchable 63-option icon picker, six colours and default locations.
-- Independent day hours, editable usual-period shortcuts, and repeating Break/Lunch/Changeover/custom breaks.
-- Real-duration timelines, filled or outlined blocks, and tappable dashed frees that prefill the exact time range.
-- Forest, Ocean, Amber and Material You theme options, plus light/dark/system modes.
-- Separate Filled/Outlines choices for subjects and breaks, and next-lesson details during breaks.
-- Multiple device-local timetables: switch, create, rename, duplicate and delete.
-- Complete `.tempo.json` import/export via the system picker, with validation, preview and onboarding import.
-- Atomic versioned saving with migration from existing single timetables.
-- Stronger Outfit typography using genuine Medium/Semibold/Bold font files.
-- Spring day/tab transitions, animated timeline changes and predictive back progress/cancellation.
-- Predictive modal editor sheets; Back from a top-level tab returns to Today, then system Back exits the app.
-
-Widgets, recurrence, free tags, share links and calendar/PNG exports are tracked next. Outfit is bundled under the SIL Open Font Licence. The rounded timetable icon includes adaptive and monochrome variants.
-
-Normal CI publishes development APKs using the runner's debug signing key and also validates the minified release variant. The manual **Signed release** workflow builds a signed APK and app bundle using a persistent key from repository secrets. See [release setup](docs/RELEASES.md) for the four required secrets and download instructions.
-
-See [device testing](docs/DEVICE_TESTING.md), [roadmap](docs/ROADMAP.md) and [architecture](docs/ARCHITECTURE.md). Early development; not a release.
+Release builds use R8 minification and resource shrinking. See [architecture](docs/ARCHITECTURE.md) for the module boundaries. Outfit is bundled under the SIL Open Font Licence; its licence is included with the font assets.

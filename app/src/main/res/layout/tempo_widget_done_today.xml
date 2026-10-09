@@ -1,0 +1,23 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent">
+  <ImageView android:id="@+id/widget_background" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_shape_surface" android:scaleType="fitXY" android:contentDescription="@null" />
+  <ImageView android:id="@+id/widget_outline" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_shape_surface_outline" android:scaleType="fitXY" android:contentDescription="@null" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:padding="12dp">
+    <FrameLayout android:id="@+id/widget_badge" android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="center_horizontal">
+      <ImageView android:id="@+id/widget_badge_background" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_badge_flower" android:scaleType="fitXY" android:contentDescription="@null" />
+      <ImageView android:id="@+id/widget_icon" android:layout_width="30dp" android:layout_height="30dp" android:layout_gravity="center" android:contentDescription="@null" />
+    </FrameLayout>
+    <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/outfit_semibold" android:text="Done for today!" android:textSize="24sp" android:gravity="center" android:maxLines="2" android:ellipsize="end" android:layout_marginTop="8dp" />
+    <FrameLayout android:id="@+id/widget_next_pill" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp">
+      <ImageView android:id="@+id/widget_next_pill_background" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_shape_block" android:scaleType="fitXY" android:contentDescription="@null" />
+      <ImageView android:id="@+id/widget_next_pill_outline" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_shape_block_outline" android:scaleType="fitXY" android:contentDescription="@null" android:visibility="gone" />
+      <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:padding="10dp">
+        <FrameLayout android:id="@+id/widget_next_badge" android:layout_width="36dp" android:layout_height="36dp" android:layout_gravity="center_horizontal">
+          <ImageView android:id="@+id/widget_next_badge_background" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_badge_flower" android:scaleType="fitXY" android:contentDescription="@null" />
+          <ImageView android:id="@+id/widget_next_icon" android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:contentDescription="@null" />
+        </FrameLayout>
+        <TextView android:id="@+id/widget_next_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/outfit_semibold" android:text="Computer Science" android:textSize="20sp" android:gravity="center" android:maxLines="2" android:ellipsize="end" android:layout_marginTop="6dp" />
+        <Chronometer android:id="@+id/widget_next_timer" android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/outfit_medium" android:textSize="16sp" android:gravity="center" android:layout_marginTop="4dp" />
+      </LinearLayout>
+    </FrameLayout>
+  </LinearLayout>
+</FrameLayout>

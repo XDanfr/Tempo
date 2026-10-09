@@ -9,6 +9,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.xdan.tempo.data.TimetableRepository
 import cc.xdan.tempo.ui.TempoApp
+import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,6 +23,14 @@ class MainActivity : ComponentActivity() {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T = TempoViewModel(repository) as T
             })
             TempoApp(model)
+            val current by model.state.collectAsStateWithLifecycle()
+            LaunchedEffect(current.collection) { cc.xdan.tempo.widgets.WidgetRefresh.start(applicationContext) }
+            LaunchedEffect(current.collection != null) {
+                val id = intent.getStringExtra("widgetTimetableId")
+                current.collection?.let { collection ->
+                    if (id != null && collection.activeId != id && collection.timetables.any { it.id == id }) model.select(id)
+                }
+            }
         }
     }
 }

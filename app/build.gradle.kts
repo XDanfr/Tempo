@@ -19,8 +19,8 @@ android {
         applicationId = "cc.xdan.tempo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
     }
     signingConfigs {
         if (hasReleaseSigning) {
@@ -40,7 +40,7 @@ android {
             if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
 }
 kotlin { jvmToolchain(17) }
@@ -54,8 +54,11 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.icons)
     implementation(libs.activity.compose)
+    implementation("androidx.work:work-runtime-ktx:2.10.5")
     implementation("androidx.core:core-ktx:1.17.0")
     implementation(libs.lifecycle.compose)
     implementation(libs.lifecycle.viewmodel)
+    testImplementation(libs.junit)
+    testImplementation("org.json:json:20250517")
     debugImplementation(libs.compose.tooling)
 }

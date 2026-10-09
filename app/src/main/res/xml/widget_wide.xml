@@ -1,0 +1,6 @@
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+ android:minWidth="250dp" android:minHeight="110dp" android:targetCellWidth="4" android:targetCellHeight="2"
+ android:resizeMode="none"
+ android:updatePeriodMillis="1800000" android:initialLayout="@layout/tempo_widget_wide" android:previewLayout="@layout/tempo_widget_wide"
+ android:configure="cc.xdan.tempo.widgets.WidgetConfigureActivity" android:widgetFeatures="reconfigurable"
+ android:widgetCategory="home_screen" />

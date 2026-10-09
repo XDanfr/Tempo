@@ -6,3 +6,7 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+
+# Maintainer-only notes are kept outside the repository.
+docs/DEVICE_TESTING.md
+docs/RELEASES.md
