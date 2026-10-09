@@ -112,16 +112,16 @@ private fun AlignedTimelines(tables: List<SavedTimetable>, day: Int, modifier: M
                         Spacer(Modifier.height(8.dp))
                         Box(Modifier.height(totalHeight).fillMaxWidth()) {
                             (start until end step 30).forEach { minute -> HorizontalDivider(Modifier.offset(y = ((minute - start) * scale).dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f)) }
-                            val occupied = schedules[index].filterNot { it is ScheduleBlock.Free }
+                            val lanes = scheduleLanes(schedules[index])
                             // Separate overlap lanes while retaining each activity's real duration.
                             schedules[index].forEach { block ->
-                                val collisions = occupied.filter { it.time.start < block.time.end && it.time.end > block.time.start }
-                                val lanes = if (block is ScheduleBlock.Free) 1 else maxOf(1, collisions.size)
-                                val lane = if (lanes == 1) 0 else collisions.indexOf(block).coerceAtLeast(0)
-                                val laneWidth = columnWidth / lanes
+                                val placement = lanes.firstOrNull { it.block == block }
+                                val count = placement?.laneCount ?: 1
+                                val lane = placement?.lane ?: 0
+                                val laneWidth = columnWidth / count
                                 ComparisonBlock(block, table.timetable.appearance,
                                     Modifier.offset(x = laneWidth * lane, y = ((block.time.start - start) * scale).dp).width(laneWidth - 3.dp).height((block.time.minutes * scale - 3).coerceAtLeast(8f).dp),
-                                    compact = block.time.minutes < 45 || lanes > 1)
+                                    compact = block.time.minutes < 45 || count > 1)
                             }
                         }
                     }

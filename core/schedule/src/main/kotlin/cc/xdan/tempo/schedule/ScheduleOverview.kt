@@ -36,3 +36,34 @@ fun compareTimetables(timetables: List<Timetable>, day: Int): List<ComparisonSli
         ComparisonSlice(TimeSpan(a, b), schedules.map { blocks -> blocks.filter { it.time.start < b && it.time.end > a } })
     }.filter { it.blocks.any { row -> row.isNotEmpty() } }
 }
+
+enum class WeekStatus { CURRENT, UPCOMING, DONE, EMPTY }
+data class WeekOverview(val status: WeekStatus, val block: ScheduleBlock?, val next: UpcomingLesson?, val boundary: LocalDateTime?)
+
+/** Widgets stop at Sunday; next week's lessons reappear when Monday begins. */
+fun weekOverview(timetable: Timetable, now: LocalDateTime): WeekOverview {
+    val result = overview(timetable, now)
+    val end = now.toLocalDate().plusDays((7 - now.dayOfWeek.value).toLong())
+    val next = result.next?.takeIf { !it.starts.toLocalDate().isAfter(end) }
+    val current = result.current
+    val status = when {
+        current is ScheduleBlock.Lesson -> WeekStatus.CURRENT
+        next != null && current is ScheduleBlock.Break -> WeekStatus.CURRENT
+        next != null -> WeekStatus.UPCOMING
+        timetable.sessions.isNotEmpty() -> WeekStatus.DONE
+        else -> WeekStatus.EMPTY
+    }
+    return WeekOverview(status, if (status == WeekStatus.CURRENT) current else next?.lesson, next, result.boundary)
+}
+
+data class LaneBlock(val block: ScheduleBlock, val lane: Int, val laneCount: Int)
+fun scheduleLanes(blocks: List<ScheduleBlock>): List<LaneBlock> {
+    val ends = mutableListOf<Int>()
+    val assigned = blocks.filterNot { it is ScheduleBlock.Free }.sortedBy { it.time.start }.map { block ->
+        val available = ends.indexOfFirst { it <= block.time.start }
+        val lane = if (available >= 0) available else ends.size.also { ends.add(0) }
+        ends[lane] = block.time.end
+        block to lane
+    }
+    return assigned.map { LaneBlock(it.first, it.second, ends.size.coerceAtLeast(1)) }
+}
