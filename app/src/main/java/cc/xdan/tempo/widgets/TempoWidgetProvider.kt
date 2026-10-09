@@ -210,7 +210,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 }
                 if (agendaLayout && plan != null) {
                     views.removeAllViews(R.id.widget_agenda)
-                    val later = plan.later.take(if (height >= 150) 2 else 1)
+                    val later = plan.later.take(if (height >= 190) 2 else 1)
                     val hidden = plan.later.size - later.size
                     views.setTextViewText(R.id.widget_day_summary, "Finish ${minuteLabel(plan.finish)} · ${plan.lessonsLeft} left")
                     views.setTextColor(R.id.widget_day_summary, widgetForeground(themeBackground).toArgb())
