@@ -22,13 +22,15 @@ fun IconPicker(selected: SubjectIcon, dismiss: () -> Unit, choose: (SubjectIcon)
         (category == "All" || option.category == category) &&
             (option.title + " " + option.keywords).contains(query.trim(), ignoreCase = true)
     }
-    EditorSheet("Choose an icon", dismiss, confirm = { choose(pending) }, confirmLabel = "Use icon") {
+    val gridState = rememberLazyGridState()
+    LaunchedEffect(query, category) { gridState.scrollToItem(0) }
+    EditorSheet("Choose an icon", dismiss, confirm = { choose(pending) }, confirmLabel = "Use icon", scrollContent = false) {
         OutlinedTextField(query, { query = it }, label = { Text("Search ${iconOptions.size} icons") },
             leadingIcon = { Icon(Icons.Outlined.Search, null) }, modifier = Modifier.fillMaxWidth(), singleLine = true,
             trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Close, "Clear search") } })
         ChoiceField("Category", category, listOf("All", "Study", "Creative", "Work", "Everyday"), { it }, { category = it })
         if (matches.isEmpty()) Text("No matching icons. Try another word or category.")
-        LazyVerticalGrid(columns = GridCells.Adaptive(88.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 112.dp, max = 360.dp),
+        LazyVerticalGrid(state = gridState, columns = GridCells.Adaptive(88.dp), modifier = Modifier.fillMaxWidth().weight(1f),
             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(matches, key = { it.icon.name }) { option ->
                 val active = pending == option.icon
