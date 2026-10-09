@@ -16,12 +16,23 @@ import cc.xdan.tempo.model.*
 import java.util.UUID
 
 @Composable
-fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit) {
+fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, files: TimetableFileActions, manageTimetables: () -> Unit, fileBusy: Boolean) {
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             Text("Your Tempo", style = MaterialTheme.typography.headlineMedium)
             Text("Part of Axis", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Timetables", style = MaterialTheme.typography.titleLarge)
+                OutlinedButton(onClick = manageTimetables, modifier = Modifier.fillMaxWidth()) { Text("Manage timetables") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = files.import, enabled = !fileBusy, modifier = Modifier.weight(1f)) { Text("Import file") }
+                    OutlinedButton(onClick = files.export, enabled = !fileBusy, modifier = Modifier.weight(1f)) { Text("Export file") }
+                }
+                Text("Tempo files include subjects, colours, times, breaks and settings.", style = MaterialTheme.typography.bodySmall)
+            }
         }
         item { AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } } }
         item { Text("Day lengths", style = MaterialTheme.typography.titleLarge) }
@@ -41,7 +52,7 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
             }
         }
         item { PeriodSetup(timetable, update) }
-        item { Text("Tempo 0.2 · Early development", style = MaterialTheme.typography.labelMedium) }
+        item { Text("Tempo 0.3 · Early development", style = MaterialTheme.typography.labelMedium) }
     }
     editingDay?.let { hours ->
         HoursEditor(hours, { editingDay = null }) { new -> update { t -> t.copy(days = t.days.filterNot { it.day == new.day } + new) }; editingDay = null }
