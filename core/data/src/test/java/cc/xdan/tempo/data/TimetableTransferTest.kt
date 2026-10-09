@@ -24,6 +24,11 @@ class TimetableTransferTest {
     @Test(expected = IllegalArgumentException::class) fun rejectsDanglingSubjectWithoutSaving() {
         TimetableTransfer.decode(TimetableTransfer.encode(demoTimetable()).replace("\"subjectId\": \"cs\"", "\"subjectId\": \"missing\""))
     }
+    @Test(expected = java.nio.charset.CharacterCodingException::class) fun rejectsDamagedUtf8() {
+        val bytes = TimetableTransfer.encode(Timetable()).toByteArray(Charsets.UTF_8)
+        bytes[bytes.indexOf('M'.code.toByte())] = 0xC0.toByte()
+        TimetableTransfer.read(bytes.inputStream())
+    }
     @Test(expected = IllegalArgumentException::class) fun rejectsOversizedStreams() {
         TimetableTransfer.read(ByteArray(TimetableTransfer.MAX_BYTES + 1).inputStream())
     }

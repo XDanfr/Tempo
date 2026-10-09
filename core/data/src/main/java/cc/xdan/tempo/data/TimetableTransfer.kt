@@ -4,6 +4,8 @@ import cc.xdan.tempo.model.Timetable
 import kotlinx.serialization.json.*
 import java.io.InputStream
 import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.charset.CodingErrorAction
 
 /** Portable snapshots include all subjects, sessions, breaks, hours, periods and appearance. */
 object TimetableTransfer {
@@ -24,7 +26,8 @@ object TimetableTransfer {
             require(output.size() + count <= MAX_BYTES) { "Timetable files must be smaller than 2 MB" }
             output.write(buffer, 0, count)
         }
-        return decode(output.toString(Charsets.UTF_8.name()))
+        val decoder = Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)
+        return decode(decoder.decode(ByteBuffer.wrap(output.toByteArray())).toString())
     }
 
     fun decode(text: String): Timetable {
