@@ -115,3 +115,37 @@ fun parseMinute(text: String): Int? {
     return if (parts[0] in 0..23 && parts[1] in 0..59) parts[0] * 60 + parts[1]
     else if (parts[0] == 24 && parts[1] == 0) 1440 else null
 }
+
+@Serializable
+data class SavedTimetable(val id: String, val timetable: Timetable) {
+    init { require(id.isNotBlank()) }
+}
+
+@Serializable
+data class TimetableCollection(
+    val format: String = "cc.xdan.tempo.library",
+    val formatVersion: Int = 1,
+    val activeId: String = "local",
+    val timetables: List<SavedTimetable> = listOf(SavedTimetable("local", Timetable())),
+) {
+    init {
+        require(format == "cc.xdan.tempo.library" && formatVersion == 1) { "Unsupported timetable collection" }
+        require(timetables.isNotEmpty()) { "Keep at least one timetable" }
+        require(timetables.map { it.id }.distinct().size == timetables.size) { "Duplicate timetable IDs" }
+        require(timetables.any { it.id == activeId }) { "Active timetable not found" }
+    }
+    val active: Timetable get() = timetables.first { it.id == activeId }.timetable
+    fun update(id: String, transform: (Timetable) -> Timetable): TimetableCollection {
+        require(timetables.any { it.id == id }) { "Timetable no longer exists" }
+        return copy(timetables = timetables.map { if (it.id == id) it.copy(timetable = transform(it.timetable)) else it })
+    }
+    fun add(id: String, timetable: Timetable): TimetableCollection =
+        copy(activeId = id, timetables = timetables + SavedTimetable(id, timetable))
+    fun select(id: String): TimetableCollection = copy(activeId = id)
+    fun remove(id: String): TimetableCollection {
+        require(timetables.any { it.id == id }) { "Timetable no longer exists" }
+        require(timetables.size > 1) { "Keep at least one timetable" }
+        val remaining = timetables.filterNot { it.id == id }
+        return copy(activeId = if (activeId == id) remaining.first().id else activeId, timetables = remaining)
+    }
+}
