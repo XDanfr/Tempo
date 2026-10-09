@@ -97,135 +97,153 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 val summary = timetable?.takeIf { it.onboarded }?.let { weekOverview(it, now.toLocalDateTime()) }
                 summary?.boundary?.atZone(now.zone)?.let { nextRefresh = minOf(nextRefresh, it.toInstant().toEpochMilli()) }
                 val dayComplete = timetable != null && summary != null && widgetDayComplete(timetable, now.toLocalDateTime(), summary)
-                val messageOnly = !pill && !wide && dayComplete && settings.doneForDayMessage
                 val completion = !pill && dayComplete
+                val weekDone = summary?.status == WeekStatus.DONE
+                val pillDone = pill && weekDone
+                val messageOnly = completion && !wide && settings.doneForDayMessage
                 val plan = if (wide && !completion && timetable != null && summary != null) widgetDayPlan(timetable, now.toLocalDateTime(), summary) else null
                 val agendaLayout = plan?.later?.isNotEmpty() == true
                 val views = RemoteViews(context.packageName, when {
+                    pillDone -> R.layout.tempo_widget_pill_done
                     pill -> R.layout.tempo_widget_pill
+                    completion && wide -> R.layout.tempo_widget_done_today_wide
                     completion -> R.layout.tempo_widget_done_today
                     agendaLayout -> R.layout.tempo_widget_wide
                     else -> R.layout.tempo_widget
                 })
                 val block = summary?.block
                 val accent = block?.accent(scheme.primaryFixed) ?: scheme.primaryFixed
-                val themeBackground = widgetThemeBackground(scheme, dark, pill)
-                val blockColour = if (pill) accent else widgetPeriodBackground(scheme, accent, dark, prominent = true)
-                val background = when {
-                    completion || block == null -> themeBackground
-                    wide || settings.lessonBackground -> blockColour
-                    else -> themeBackground
-                }
-                val foreground = widgetForeground(if (agendaLayout) blockColour else background)
+                val themeBackground = widgetThemeBackground(scheme, dark)
+                val background = if (!wide && !completion && block != null && settings.lessonBackground) accent else themeBackground
+                val foreground = widgetForeground(if (agendaLayout) accent else background)
                 val current = summary?.status == WeekStatus.CURRENT
                 val lesson = block as? ScheduleBlock.Lesson
-                val title = when {
-                    timetable == null -> "Choose a timetable"
-                    !timetable.onboarded -> "Finish setup"
-                    completion -> "Done for today!"
-                    summary?.status == WeekStatus.DONE -> "All done"
-                    summary?.status == WeekStatus.EMPTY -> settings.emptyText
-                    else -> block?.title() ?: settings.emptyText
-                }
                 val target = if (current && block != null) now.toLocalDate().atStartOfDay().plusMinutes(block.time.end.toLong()).atZone(now.zone)
                     else summary?.next?.starts?.atZone(now.zone)
                 val until = target?.toInstant()?.toEpochMilli()?.minus(now.toInstant().toEpochMilli())
                 val ticking = !messageOnly && until != null && until in 1..604_800_000
-                val primaryDate = if (current) now.toLocalDate() else summary?.next?.starts?.toLocalDate()
-                val whenText = block?.let {
-                    val day = if (primaryDate != now.toLocalDate()) primaryDate?.format(DateTimeFormatter.ofPattern("EEE"))?.plus(" · ") ?: "" else ""
-                    "$day${minuteLabel(it.time.start)}–${minuteLabel(it.time.end)}"
-                } ?: ""
-                val location = if (settings.showLocation) lesson?.location?.takeIf { it.isNotBlank() } else null
-                val detail = when {
-                    timetable == null -> "Choose another timetable in widget settings"
-                    !timetable.onboarded -> "Open Tempo to finish setup"
-                    completion -> "Next: ${summary?.next?.lesson?.subject?.name.orEmpty()}"
-                    summary?.status == WeekStatus.DONE -> "Nothing else scheduled this week"
-                    summary?.status == WeekStatus.EMPTY -> "Your week is clear"
-                    else -> whenText
-                }
                 val showIcon = settings.showIcons ?: appearance.showIcons
-                val icon = when {
-                    completion || summary?.status == WeekStatus.DONE -> Icons.Outlined.CheckCircle
-                    summary?.status == WeekStatus.EMPTY -> Icons.Outlined.EventAvailable
-                    else -> block?.symbol() ?: Icons.Outlined.CalendarMonth
+                val completionBadge = widgetCompletionBadge(scheme, dark)
+                fun text(id: Int, value: String, colour: Color, size: Float, lines: Int = 2) {
+                    views.setTextViewText(id, value)
+                    views.setTextColor(id, colour.toArgb())
+                    views.setTextViewTextSize(id, android.util.TypedValue.COMPLEX_UNIT_SP, size)
+                    views.setInt(id, "setMaxLines", lines)
+                }
+                fun badge(frame: Int, fill: Int, icon: Int, symbol: androidx.compose.ui.graphics.vector.ImageVector, colour: Color, visible: Boolean) {
+                    views.setInt(fill, "setColorFilter", colour.toArgb())
+                    views.setImageViewBitmap(icon, widgetIcon(symbol, widgetForeground(colour).toArgb()))
+                    views.setViewVisibility(frame, if (visible) View.VISIBLE else View.GONE)
+                }
+                fun timer(id: Int, colour: Color, size: Float) {
+                    views.setTextColor(id, colour.toArgb())
+                    views.setTextViewTextSize(id, android.util.TypedValue.COMPLEX_UNIT_SP, size)
+                    views.setViewVisibility(id, if (ticking) View.VISIBLE else View.GONE)
+                    views.setChronometerCountDown(id, true)
+                    views.setChronometer(id, SystemClock.elapsedRealtime() + (until ?: 0), if (current) "%s left" else "In %s", ticking)
                 }
                 fun surface(target: RemoteViews, fillId: Int, outlineId: Int, fill: Color, colour: Color, border: Boolean) {
-                    val shape = when (fillId) {
-                        R.id.widget_background -> if (pill) R.drawable.widget_shape_pill else R.drawable.widget_shape_surface
-                        R.id.widget_block_background -> R.drawable.widget_shape_block
-                        else -> R.drawable.widget_shape_block
-                    }
-                    val edge = when (outlineId) {
-                        R.id.widget_outline -> if (pill) R.drawable.widget_shape_pill_outline else R.drawable.widget_shape_surface_outline
-                        R.id.widget_block_outline -> R.drawable.widget_shape_block_outline
-                        else -> R.drawable.widget_shape_block_outline
-                    }
+                    val root = fillId == R.id.widget_background
+                    val shape = if (root) { if (pill) R.drawable.widget_shape_pill else R.drawable.widget_shape_surface } else R.drawable.widget_shape_block
+                    val edge = if (root) { if (pill) R.drawable.widget_shape_pill_outline else R.drawable.widget_shape_surface_outline } else R.drawable.widget_shape_block_outline
                     target.setImageViewResource(fillId, shape)
                     target.setImageViewResource(outlineId, edge)
                     target.setInt(fillId, "setColorFilter", fill.toArgb())
                     target.setInt(outlineId, "setColorFilter", widgetOutline(colour, fill).toArgb())
                     target.setViewVisibility(outlineId, if (border) View.VISIBLE else View.GONE)
                 }
-                surface(views, R.id.widget_background, R.id.widget_outline, if (agendaLayout) themeBackground else background, scheme.primaryFixed, !wide && settings.showOutline)
-                if (agendaLayout) surface(views, R.id.widget_block_background, R.id.widget_block_outline, blockColour, accent, false)
-                val showBadge = showIcon && (height >= (if (completion) 200 else 170) || pill)
-                if (!pill) {
-                    val badgeColour = if (dark) lerp(scheme.surfaceContainerHigh, accent, .60f) else lerp(accent, Color.White, .32f)
-                    views.setInt(R.id.widget_badge_background, "setColorFilter", badgeColour.toArgb())
-                    views.setViewVisibility(R.id.widget_badge, if (showBadge) View.VISIBLE else View.GONE)
-                    views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, widgetForeground(badgeColour).toArgb()))
-                } else {
-                    views.setViewVisibility(R.id.widget_icon, if (showIcon) View.VISIBLE else View.GONE)
-                    views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, foreground.toArgb()))
-                }
-                views.setTextColor(R.id.widget_title, foreground.toArgb())
-                views.setTextViewText(R.id.widget_title, title)
-                views.setInt(R.id.widget_title, "setMaxLines", if (pill || !completion && height < 150) 1 else 2)
-                views.setTextViewTextSize(R.id.widget_title, android.util.TypedValue.COMPLEX_UNIT_SP, when { pill -> 14f; completion -> if (height < 140) 18f else 24f; height < 150 -> 18f; height < 200 -> 20f; else -> 22f })
-                val chip = widgetPeriodBackground(scheme, accent, dark, prominent = false)
-                val infoForeground = if (completion) widgetForeground(chip) else foreground
-                val roomPill = !completion && !pill && location != null && (height >= 200 || !wide && !showBadge && height >= 150)
-                views.setTextViewText(R.id.widget_detail, if (pill || !completion && !roomPill && location != null) listOfNotNull(whenText.takeIf { it.isNotBlank() }, location).joinToString(" · ") else detail)
-                views.setInt(R.id.widget_detail, "setMaxLines", if (height < 200 || completion) 1 else 2)
-                views.setTextColor(R.id.widget_detail, infoForeground.toArgb())
-                views.setTextColor(R.id.widget_timer, infoForeground.toArgb())
-                views.setTextViewTextSize(R.id.widget_detail, android.util.TypedValue.COMPLEX_UNIT_SP, if (pill) 11f else if (height < 140) 12f else 14f)
-                views.setTextViewTextSize(R.id.widget_timer, android.util.TypedValue.COMPLEX_UNIT_SP, when { pill -> 12f; completion -> if (height < 140) 14f else 16f; height < 150 -> 20f; else -> 24f })
-                views.setViewVisibility(R.id.widget_timer, if (ticking) View.VISIBLE else View.GONE)
-                views.setChronometerCountDown(R.id.widget_timer, true)
-                views.setChronometer(R.id.widget_timer, SystemClock.elapsedRealtime() + (until ?: 0), if (current) "%s left" else "In %s", ticking)
-                views.setViewVisibility(R.id.widget_detail, if (pill && ticking) View.GONE else View.VISIBLE)
-                if (completion) {
-                    views.setInt(R.id.widget_next_pill_background, "setColorFilter", chip.toArgb())
-                    views.setViewVisibility(R.id.widget_next_pill, if (messageOnly) View.GONE else View.VISIBLE)
-                    views.setInt(R.id.widget_detail, "setMaxLines", 1)
-                } else if (!pill) {
-                    val roomColour = widgetPeriodBackground(scheme, accent, dark, prominent = false)
-                    views.setInt(R.id.widget_location_background, "setColorFilter", roomColour.toArgb())
-                    views.setTextColor(R.id.widget_location_text, widgetForeground(roomColour).toArgb())
-                    views.setTextViewText(R.id.widget_location_text, location ?: "")
-                    views.setViewVisibility(R.id.widget_location, if (roomPill) View.VISIBLE else View.GONE)
-                }
-                if (agendaLayout && plan != null) {
-                    views.removeAllViews(R.id.widget_agenda)
-                    val later = plan.later.take(if (height >= 190) 2 else 1)
-                    val hidden = plan.later.size - later.size
-                    views.setTextViewText(R.id.widget_day_summary, "Finish ${minuteLabel(plan.finish)} · ${plan.lessonsLeft} left")
-                    views.setTextColor(R.id.widget_day_summary, widgetForeground(themeBackground).toArgb())
-                    later.forEachIndexed { index, activity ->
-                        val row = RemoteViews(context.packageName, R.layout.tempo_widget_agenda_row)
-                        val colour = activity.accent(scheme.primaryFixed)
-                        val fill = widgetPeriodBackground(scheme, colour, dark, prominent = false)
-                        val rowForeground = widgetForeground(fill)
-                        surface(row, R.id.widget_row_background, R.id.widget_row_outline, fill, colour, false)
-                        row.setTextViewText(R.id.widget_row_title, activity.title())
-                        val room = if (settings.showLocation) (activity as? ScheduleBlock.Lesson)?.location?.takeIf { it.isNotBlank() } else null
-                        val overflow = if (index == later.lastIndex && hidden > 0) "+$hidden more" else room
-                        row.setTextViewText(R.id.widget_row_detail, listOfNotNull("${minuteLabel(activity.time.start)}–${minuteLabel(activity.time.end)}", overflow).joinToString(" · "))
-                        listOf(R.id.widget_row_title, R.id.widget_row_detail).forEach { row.setTextColor(it, rowForeground.toArgb()) }
-                        views.addView(R.id.widget_agenda, row)
+                surface(views, R.id.widget_background, R.id.widget_outline, background, scheme.primaryFixed, !wide && settings.showOutline)
+                when {
+                    pillDone -> {
+                        badge(R.id.widget_badge, R.id.widget_badge_background, R.id.widget_icon, Icons.Outlined.CheckCircle, completionBadge, showIcon)
+                        text(R.id.widget_title, "All done", foreground, 22f, 1)
+                    }
+                    completion -> {
+                        val ink = widgetForeground(themeBackground)
+                        badge(R.id.widget_badge, R.id.widget_badge_background, R.id.widget_icon, Icons.Outlined.CheckCircle, completionBadge,
+                            showIcon && (messageOnly || height >= if (wide) 190 else 245))
+                        text(R.id.widget_title, "Done for today!", ink, if (wide) { if (height < 190) 26f else 30f } else if (height < 200) 22f else 24f)
+                        views.setViewVisibility(R.id.widget_next_pill, if (messageOnly) View.GONE else View.VISIBLE)
+                        val next = summary?.next?.lesson
+                        val nextColour = next?.accent(scheme.primaryFixed) ?: scheme.primaryFixed
+                        val nextInk = widgetForeground(nextColour)
+                        views.setInt(R.id.widget_next_pill_background, "setColorFilter", nextColour.toArgb())
+                        val nextBadge = lerp(nextColour, Color.White, .30f)
+                        badge(R.id.widget_next_badge, R.id.widget_next_badge_background, R.id.widget_next_icon,
+                            next?.symbol() ?: Icons.Outlined.CalendarMonth, nextBadge, showIcon && height >= if (wide) 190 else 220)
+                        text(R.id.widget_next_title, next?.title().orEmpty(), nextInk, if (wide) 24f else if (height < 200) 18f else 20f, if (!wide && height < 200) 1 else 2)
+                        timer(R.id.widget_next_timer, nextInk, if (wide) 20f else 16f)
+                    }
+                    else -> {
+                        if (agendaLayout) surface(views, R.id.widget_block_background, R.id.widget_block_outline, accent, accent, false)
+                        val title = when {
+                            timetable == null -> "Choose a timetable"
+                            !timetable.onboarded -> "Finish setup"
+                            weekDone -> "All done"
+                            summary?.status == WeekStatus.EMPTY -> settings.emptyText
+                            else -> block?.title() ?: settings.emptyText
+                        }
+                        val primaryDate = if (current) now.toLocalDate() else summary?.next?.starts?.toLocalDate()
+                        val whenText = block?.let {
+                            val day = if (primaryDate != now.toLocalDate()) primaryDate?.format(DateTimeFormatter.ofPattern("EEE"))?.plus(" · ") ?: "" else ""
+                            "$day${minuteLabel(it.time.start)}–${minuteLabel(it.time.end)}"
+                        }.orEmpty()
+                        val location = if (settings.showLocation) lesson?.location?.takeIf { it.isNotBlank() } else null
+                        val detail = when {
+                            timetable == null -> "Choose another timetable in widget settings"
+                            !timetable.onboarded -> "Open Tempo to finish setup"
+                            weekDone -> "Nothing else scheduled this week"
+                            summary?.status == WeekStatus.EMPTY -> "Your week is clear"
+                            else -> whenText
+                        }
+                        val icon = when {
+                            weekDone -> Icons.Outlined.CheckCircle
+                            summary?.status == WeekStatus.EMPTY -> Icons.Outlined.EventAvailable
+                            else -> block?.symbol() ?: Icons.Outlined.CalendarMonth
+                        }
+                        val showBadge = showIcon && (if (weekDone) height >= 150 else height >= 210)
+                        if (!pill) badge(R.id.widget_badge, R.id.widget_badge_background, R.id.widget_icon, icon,
+                            if (weekDone || block == null) completionBadge else lerp(accent, Color.White, .30f), showBadge)
+                        else {
+                            views.setViewVisibility(R.id.widget_icon, if (showIcon) View.VISIBLE else View.GONE)
+                            views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, foreground.toArgb()))
+                        }
+                        val roomPill = !pill && location != null && (height >= 240 || !wide && !showBadge && height >= 150)
+                        text(R.id.widget_title, title, foreground, when {
+                            pill -> 14f
+                            weekDone -> if (height < 180) 28f else if (wide) 36f else 32f
+                            wide && !agendaLayout -> 28f
+                            height < 150 -> 18f
+                            height < 200 -> 20f
+                            else -> 24f
+                        }, if (pill || !weekDone && height < 150) 1 else 2)
+                        text(R.id.widget_detail, if (location != null && !roomPill) listOf(whenText, location).joinToString(" · ") else detail,
+                            foreground, if (pill) 11f else if (height < 180) 13f else 16f, if (pill || height < 200 && !weekDone) 1 else 2)
+                        timer(R.id.widget_timer, foreground, if (pill) 12f else if (height < 150) 20f else 26f)
+                        views.setViewVisibility(R.id.widget_detail, if (pill && ticking) View.GONE else View.VISIBLE)
+                        if (!pill) {
+                            val roomColour = lerp(accent, Color.White, .30f)
+                            views.setInt(R.id.widget_location_background, "setColorFilter", roomColour.toArgb())
+                            text(R.id.widget_location_text, location.orEmpty(), widgetForeground(roomColour), 13f, 1)
+                            views.setViewVisibility(R.id.widget_location, if (roomPill) View.VISIBLE else View.GONE)
+                        }
+                        if (agendaLayout && plan != null) {
+                            views.removeAllViews(R.id.widget_agenda)
+                            val later = plan.later.take(if (height >= 190) 2 else 1)
+                            val hidden = plan.later.size - later.size
+                            text(R.id.widget_day_summary, "Finish ${minuteLabel(plan.finish)} · ${plan.lessonsLeft} left", widgetForeground(themeBackground), 12f, 1)
+                            later.forEachIndexed { index, activity ->
+                                val row = RemoteViews(context.packageName, R.layout.tempo_widget_agenda_row)
+                                val colour = activity.accent(scheme.primaryFixed)
+                                surface(row, R.id.widget_row_background, R.id.widget_row_outline, colour, colour, false)
+                                row.setTextViewText(R.id.widget_row_title, activity.title())
+                                val room = if (settings.showLocation) (activity as? ScheduleBlock.Lesson)?.location?.takeIf { it.isNotBlank() } else null
+                                val overflow = if (index == later.lastIndex && hidden > 0) "+$hidden more" else room
+                                row.setTextViewText(R.id.widget_row_detail, listOfNotNull("${minuteLabel(activity.time.start)}–${minuteLabel(activity.time.end)}", overflow).joinToString(" · "))
+                                listOf(R.id.widget_row_title, R.id.widget_row_detail).forEach { row.setTextColor(it, widgetForeground(colour).toArgb()) }
+                                views.addView(R.id.widget_agenda, row)
+                            }
+                        }
                     }
                 }
                 val open = Intent(context, MainActivity::class.java).putExtra("widgetTimetableId", settings.timetableId)

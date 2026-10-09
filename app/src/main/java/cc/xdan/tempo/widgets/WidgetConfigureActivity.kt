@@ -57,7 +57,7 @@ class WidgetConfigureActivity : ComponentActivity() {
                         if (pill || square) WidgetOptionCards("Background", lessonBackground, "Theme colour", "Lesson colour", WidgetPreview.THEME, WidgetPreview.LESSON, pill) { lessonBackground = it }
                         ChoiceField("Icons", icons, listOf("Follow timetable", "Show icons", "Hide icons"), { it }, { icons = it })
                         if (pill || square) WidgetOptionCards("Crisp outlines", showOutline, "Filled", "Outlined", WidgetPreview.NO_OUTLINE, WidgetPreview.OUTLINE, pill) { showOutline = it }
-                        else Text("The current period and upcoming periods use different tones, with larger text for a quick glance.", style = MaterialTheme.typography.bodyMedium)
+                        else Text("Lesson panels use your subject colours, with larger text for a quick glance.", style = MaterialTheme.typography.bodyMedium)
                         if (square) WidgetOptionCards("After today’s lessons", doneForDay, "Done + next lesson", "Done message only", WidgetPreview.NEXT, WidgetPreview.DONE, false) { doneForDay = it }
                         Row { Text("Show locations", Modifier.weight(1f)); Switch(location, { location = it }) }
                         OutlinedTextField(empty, { empty = it.take(120) }, label = { Text("When nothing is scheduled") }, modifier = Modifier.fillMaxWidth())

@@ -1,0 +1,11 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent">
+  <ImageView android:id="@+id/widget_background" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_shape_pill" android:scaleType="fitXY" android:contentDescription="@null" />
+  <ImageView android:id="@+id/widget_outline" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_shape_pill_outline" android:scaleType="fitXY" android:contentDescription="@null" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal" android:gravity="center" android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="6dp" android:paddingBottom="6dp">
+    <FrameLayout android:id="@+id/widget_badge" android:layout_width="36dp" android:layout_height="36dp" android:layout_gravity="center_horizontal" android:layout_marginEnd="10dp">
+      <ImageView android:id="@+id/widget_badge_background" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_badge_flower" android:scaleType="fitXY" android:contentDescription="@null" />
+      <ImageView android:id="@+id/widget_icon" android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:contentDescription="@null" />
+    </FrameLayout>
+    <TextView android:id="@+id/widget_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/outfit_semibold" android:text="All done" android:textSize="22sp" android:gravity="center" android:maxLines="1" android:ellipsize="end" />
+  </LinearLayout>
+</FrameLayout>
