@@ -40,6 +40,7 @@ fun TempoApp(model: TempoViewModel) {
             }
         }
         val files = timetableFileActions(model, state)
+        var showComparison by rememberSaveable { mutableStateOf(false) }
         var showTimetables by rememberSaveable { mutableStateOf(false) }
         val snackbar = remember { SnackbarHostState() }
         LaunchedEffect(state.message) {
@@ -93,12 +94,12 @@ fun TempoApp(model: TempoViewModel) {
                     },
                 ) { padding ->
                     Box(Modifier.padding(padding).fillMaxSize()) {
-                        PredictiveRouteHost(destination, enabled = !showEditor && !showFree && !showBreak && !showTimetables && state.importPreview == null, navigate = { destination = it }) { shown ->
+                        PredictiveRouteHost(destination, enabled = !showEditor && !showFree && !showBreak && !showTimetables && !showComparison && state.importPreview == null, navigate = { destination = it }) { shown ->
                         when (shown) {
                             Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.LIBRARY -> LibraryScreen(timetable, model::update)
-                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, files, { showTimetables = true }, state.fileBusy)
+                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, files, { showTimetables = true }, state.fileBusy, { showComparison = true })
                         }
                         }
                     }
@@ -118,6 +119,7 @@ fun TempoApp(model: TempoViewModel) {
                     delete = { id -> model.update { it.copy(breaks = it.breaks.filterNot { b -> b.id == id }) }; showBreak = false })
             }
             }
+            if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
             if (showTimetables) state.collection?.let { TimetableManager(it, model, files) { showTimetables = false } }
             if (state.fileBusy) Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp), shape = MaterialTheme.shapes.medium) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

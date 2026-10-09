@@ -16,7 +16,7 @@ import cc.xdan.tempo.model.*
 import java.util.UUID
 
 @Composable
-fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, files: TimetableFileActions, manageTimetables: () -> Unit, fileBusy: Boolean) {
+fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, files: TimetableFileActions, manageTimetables: () -> Unit, fileBusy: Boolean, compare: () -> Unit) {
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
@@ -31,6 +31,7 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
                     OutlinedButton(onClick = files.import, enabled = !fileBusy, modifier = Modifier.weight(1f)) { Text("Import file") }
                     OutlinedButton(onClick = files.export, enabled = !fileBusy, modifier = Modifier.weight(1f)) { Text("Export file") }
                 }
+                OutlinedButton(onClick = compare, modifier = Modifier.fillMaxWidth()) { Text("Compare timetables") }
                 Text("Tempo files include subjects, colours, times, breaks and settings.", style = MaterialTheme.typography.bodySmall)
             }
         }
