@@ -36,7 +36,7 @@ Timetables stay on your device unless you export them. Tempo has no accounts or 
 
 ## What’s next
 
-Multiple-week cycles, calendar `.ics` integration, PNG exports, free tags and share links are planned. See the [roadmap](docs/ROADMAP.md). They are not available yet.
+Multiple-week cycles, calendar `.ics` integration, PNG exports, free tags, share links and optional homework/assignment tracking with widget due dates are planned. See the [roadmap](docs/ROADMAP.md). They are not available yet.
 
 ## Support and feedback
 

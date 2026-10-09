@@ -40,4 +40,13 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [ ] Reminders, travel buffers, subject-hour summaries and history
 - [ ] Launcher icon colours following the app theme, alongside launcher-supported Material You themed icons
 
+### Homework and assignments
+
+I plan to make homework and assignments an optional part of Tempo, so school timetables can track work to hand in without adding it to every work or personal schedule.
+
+- [ ] Add assignments linked to a timetable and optionally a subject, with a title, notes, due date and optional due time
+- [ ] Show upcoming and overdue assignments using subject colours, with completion tracking and filters
+- [ ] Offer optional due-date reminders
+- [ ] Show approaching deadlines in an optional widget section or dedicated assignment view, including future dates after the week’s lessons are all done
+
 Tempo currently uses weekly templates in the device’s local time. Multiple-week cycles and dated exceptions will use a shared dated scheduling model before being exposed across the app, widgets and exports.
