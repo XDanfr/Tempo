@@ -5,8 +5,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 
-internal fun widgetThemeBackground(scheme: ColorScheme, dark: Boolean): Color =
-    lerp(scheme.surfaceContainerHigh, scheme.primaryFixed, if (dark) .70f else .82f)
+internal fun widgetThemeBackground(scheme: ColorScheme, dark: Boolean, pill: Boolean = false): Color =
+    lerp(scheme.surfaceContainerHigh, scheme.primaryFixed, if (!dark) .82f else if (pill) .70f else .24f)
+
+internal fun widgetPeriodBackground(scheme: ColorScheme, accent: Color, dark: Boolean, prominent: Boolean): Color =
+    if (dark) lerp(scheme.surfaceContainerHigh, accent, if (prominent) .32f else .20f)
+    else if (prominent) accent else lerp(scheme.surfaceContainerHigh, accent, .50f)
 
 internal fun widgetForeground(background: Color): Color {
     val ink = Color(0xFF172116)

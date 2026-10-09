@@ -11,10 +11,11 @@ class WidgetColoursTest {
     private fun contrast(a: Color, b: Color): Float =
         (maxOf(a.luminance(), b.luminance()) + .05f) / (minOf(a.luminance(), b.luminance()) + .05f)
 
-    @Test fun themeFillsStayBrightAndReadableInBothModes() {
+    @Test fun themeFillsRespectModeAndKeepReadableText() {
         for (preset in ThemePreset.entries) for (dark in listOf(false, true)) {
             val background = widgetThemeBackground(presetColorScheme(preset, dark), dark)
-            assertTrue("$preset/$dark remains vibrant", background.luminance() > .30f)
+            assertTrue("$preset/$dark keeps a theme tint", background.luminance() > if (dark) .04f else .30f)
+            if (dark) assertTrue("Dark widgets remain tonal", background.luminance() < .25f)
             assertTrue(contrast(background, widgetForeground(background)) >= 4.5f)
         }
     }
@@ -25,6 +26,18 @@ class WidgetColoursTest {
         }
         for (colour in listOf(Color(0xFFB7F397), Color(0xFFA2DFFF), Color(0xFFFFD59B), Color(0xFFD3BCFF), Color(0xFFFFB6C6))) {
             assertTrue(contrast(colour, widgetForeground(colour)) >= 4.5f)
+        }
+    }
+    @Test fun compactPillRetainsItsExistingPaletteAndWideCardsUseDistinctTones() {
+        for (preset in ThemePreset.entries) for (dark in listOf(false, true)) {
+            val scheme = presetColorScheme(preset, dark)
+            val pill = widgetThemeBackground(scheme, dark, pill = true)
+            assertEquals(androidx.compose.ui.graphics.lerp(scheme.surfaceContainerHigh, scheme.primaryFixed, if (dark) .70f else .82f), pill)
+            val primary = widgetPeriodBackground(scheme, scheme.primaryFixed, dark, true)
+            val secondary = widgetPeriodBackground(scheme, scheme.primaryFixed, dark, false)
+            assertNotEquals(primary, secondary)
+            assertTrue(contrast(primary, widgetForeground(primary)) >= 4.5f)
+            assertTrue(contrast(secondary, widgetForeground(secondary)) >= 4.5f)
         }
     }
 }
