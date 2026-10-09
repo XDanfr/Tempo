@@ -151,12 +151,12 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 views.setTextViewText(R.id.widget_title, title)
                 views.setTextViewText(R.id.widget_detail, detail)
                 views.setInt(R.id.widget_title, "setMaxLines", if (pill || height < 145) 1 else 2)
-                views.setTextViewTextSize(R.id.widget_title, android.util.TypedValue.COMPLEX_UNIT_SP, if (pill) 14f else if (height < 145) 16f else 20f)
-                views.setTextViewTextSize(R.id.widget_timer, android.util.TypedValue.COMPLEX_UNIT_SP, if (pill) 12f else if (height < 145) 16f else 24f)
+                views.setTextViewTextSize(R.id.widget_title, android.util.TypedValue.COMPLEX_UNIT_SP, if (pill) 14f else if (height < 180) 16f else 20f)
+                views.setTextViewTextSize(R.id.widget_timer, android.util.TypedValue.COMPLEX_UNIT_SP, if (pill) 12f else if (height < 180) 18f else 24f)
                 views.setViewVisibility(R.id.widget_timer, if (ticking) View.VISIBLE else View.GONE)
                 views.setChronometerCountDown(R.id.widget_timer, true)
                 views.setChronometer(R.id.widget_timer, SystemClock.elapsedRealtime() + (until ?: 0), if (current) "%s left" else "In %s", ticking)
-                views.setViewVisibility(R.id.widget_detail, if (pill && ticking || !pill && height < 130) View.GONE else View.VISIBLE)
+                views.setViewVisibility(R.id.widget_detail, if (pill && ticking || !pill && (height < 130 || ticking && height < 180)) View.GONE else View.VISIBLE)
                 views.setViewVisibility(R.id.widget_time, if (!pill && !ticking && target != null && height >= 145) View.VISIBLE else View.GONE)
                 views.setTextViewText(R.id.widget_time, whenText)
                 if (!pill) {
@@ -169,7 +169,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                             ?.let { UpcomingLesson(it, date.atStartOfDay().plusMinutes(it.time.start.toLong())) }
                     } }?.takeIf { !it.starts.toLocalDate().isAfter(endOfWeek) }
                     val secondary = if (current) summary?.next else upcoming
-                    val showNext = width >= 280 && height >= 145 && secondary != null && summary?.status != WeekStatus.DONE
+                    val showNext = width >= 280 && height >= 170 && secondary != null && summary?.status != WeekStatus.DONE
                     views.setViewVisibility(R.id.widget_next, if (showNext) View.VISIBLE else View.GONE)
                     if (showNext && secondary != null) {
                         val nextAccent = secondary.lesson.accent(scheme.primary)
