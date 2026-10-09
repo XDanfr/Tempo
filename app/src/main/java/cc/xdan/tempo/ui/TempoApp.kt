@@ -99,7 +99,7 @@ fun TempoApp(model: TempoViewModel) {
                             Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
                             Destination.LIBRARY -> LibraryScreen(timetable, model::update)
-                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, files, { showTimetables = true }, state.fileBusy, { showComparison = true })
+                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, files, { showTimetables = true }, state.fileBusy)
                         }
                         }
                     }
@@ -120,7 +120,7 @@ fun TempoApp(model: TempoViewModel) {
             }
             }
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
-            if (showTimetables) state.collection?.let { TimetableManager(it, model, files) { showTimetables = false } }
+            if (showTimetables) state.collection?.let { TimetableManager(it, model, files, { showComparison = true }) { showTimetables = false } }
             if (state.fileBusy) Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp), shape = MaterialTheme.shapes.medium) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     CircularProgressIndicator(Modifier.size(24.dp)); Text("Working with your timetable file…")

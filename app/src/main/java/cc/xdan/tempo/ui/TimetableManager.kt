@@ -13,12 +13,15 @@ import cc.xdan.tempo.TempoViewModel
 import cc.xdan.tempo.model.*
 
 @Composable
-fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, files: TimetableFileActions, dismiss: () -> Unit) {
+fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, files: TimetableFileActions, compare: () -> Unit, dismiss: () -> Unit) {
     var naming by rememberSaveable { mutableStateOf(false) }
     var renameId by rememberSaveable { mutableStateOf<String?>(null) }
     var name by rememberSaveable { mutableStateOf("") }
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
     EditorSheet("Your timetables", dismiss) {
+        OutlinedButton(onClick = { dismiss(); compare() }, enabled = collection.timetables.size >= 2, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Outlined.ViewColumn, null); Text("Compare timetables", Modifier.padding(start = 8.dp))
+        }
         Text("Choose the timetable shown in Tempo. Each has its own subjects, times and appearance.")
         collection.timetables.forEach { saved ->
             val active = saved.id == collection.activeId
