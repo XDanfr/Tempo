@@ -25,6 +25,7 @@ class WidgetConfigureActivity : ComponentActivity() {
         setResult(RESULT_CANCELED)
         val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
         if (id == AppWidgetManager.INVALID_APPWIDGET_ID) { finish(); return }
+        val pill = AppWidgetManager.getInstance(this).getAppWidgetInfo(id)?.provider?.className == PillWidget::class.java.name
         enableEdgeToEdge()
         setContent {
             val repository = remember { TimetableRepository(applicationContext) }
@@ -36,6 +37,7 @@ class WidgetConfigureActivity : ComponentActivity() {
             var location by rememberSaveable { mutableStateOf(initial.showLocation) }
             var icons by rememberSaveable { mutableStateOf(if (initial.showIcons == null) "Follow timetable" else if (initial.showIcons == true) "Show icons" else "Hide icons") }
             var blocks by rememberSaveable { mutableStateOf(if (initial.outlined == null) "Follow timetable" else if (initial.outlined == true) "Outlines" else "Filled") }
+            var lessonBackground by rememberSaveable { mutableStateOf(initial.lessonBackground) }
             var empty by rememberSaveable { mutableStateOf(initial.emptyText) }
             val previewAppearance = collection?.let { c -> c.timetables.firstOrNull { it.id == table }?.timetable?.appearance ?: c.active.appearance } ?: Appearance()
             TempoTheme(if (theme.isBlank()) previewAppearance else Appearance(preset = ThemePreset.valueOf(theme), mode = mode)) {
@@ -49,15 +51,17 @@ class WidgetConfigureActivity : ComponentActivity() {
                         }
                         ChoiceField("Theme", theme, listOf("") + ThemePreset.entries.map { it.name }, { if (it.isBlank()) "Follow timetable theme" else it.lowercase().replace('_', ' ').replaceFirstChar { c -> c.titlecase() } }, { theme = it })
                         if (theme.isNotBlank()) ChoiceField("Appearance", mode, ThemeMode.entries, { it.name.lowercase().replaceFirstChar { c -> c.titlecase() } }, { mode = it })
+                        if (pill) ChoiceField("Background", lessonBackground, listOf(false, true), { if (it) "Lesson colour" else "Theme background" }, { lessonBackground = it })
                         ChoiceField("Icons", icons, listOf("Follow timetable", "Show icons", "Hide icons"), { it }, { icons = it })
                         ChoiceField("Activity blocks", blocks, listOf("Follow timetable", "Filled", "Outlines"), { it }, { blocks = it })
                         Row { Text("Show locations", Modifier.weight(1f)); Switch(location, { location = it }) }
                         OutlinedTextField(empty, { empty = it.take(120) }, label = { Text("When nothing is scheduled") }, modifier = Modifier.fillMaxWidth())
+                        Text("Touch and hold the widget on your home screen to change these settings. The 4×2 also shows later periods and your day’s finish time.", style = MaterialTheme.typography.bodySmall)
                         Text("Countdowns tick on your home screen. Android may delay changing activities in battery-saving modes.", style = MaterialTheme.typography.bodySmall)
                         Button(onClick = {
                             WidgetSettings(table.ifBlank { null }, theme.takeIf { it.isNotBlank() }?.let(ThemePreset::valueOf), mode, location, empty.ifBlank { "Nothing scheduled this week" },
                                 when (icons) { "Show icons" -> true; "Hide icons" -> false; else -> null },
-                                when (blocks) { "Outlines" -> true; "Filled" -> false; else -> null }).save(applicationContext, id)
+                                when (blocks) { "Outlines" -> true; "Filled" -> false; else -> null }, lessonBackground).save(applicationContext, id)
                             WidgetRefresh.start(applicationContext)
                             setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)); finish()
                         }, enabled = collection != null && (table.isBlank() || collection!!.timetables.any { it.id == table }), modifier = Modifier.fillMaxWidth()) { Text("Save widget") }

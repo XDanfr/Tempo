@@ -22,11 +22,11 @@ A signed release can update an earlier release in place when both use the same s
 
 ## On your home screen
 
-Add Tempo from your launcher’s widget picker. Choose the **2×1 pill**, **2×2 rounded square** or **4×2 rounded rectangle**. Launcher grid sizes can vary.
+Add Tempo from your launcher’s widget picker. Choose the **2×1 pill**, **2×2 rounded square** or **4×2 rounded rectangle**. Each has a fixed footprint to keep its proportions; launcher grid sizes can vary.
 
-Each widget can follow your current timetable or stay on a fixed one. It shows the current session or break and time left, or the next activity and time until it starts. For activities more than a day away within this week, it shows the weekday and start time. After the final lesson of the week, it shows All done until the new week begins. During a break, larger widgets also show what’s next.
+Each widget can follow your current timetable or stay on a fixed one. It shows the current session or break and time left, or the next activity and time until it starts. For activities more than a day away within this week, it shows the weekday and start time. After the final lesson of the week, it shows All done until the new week begins. The 4×2 pairs the current/next period with a coloured agenda of later periods on the same day, including times, rooms, the number of lessons left and your finish time. If more periods remain than fit, it shows how many more there are.
 
-Use the widget’s menu to choose its own theme or follow the timetable, choose filled/outlined blocks and icon visibility, hide locations and customise its empty message. Subject colours and icons carry through to the widget. Android’s battery-saving modes may delay activity changes; the countdown runs through the launcher without Tempo waking every second.
+Touch and hold a widget and open your launcher’s widget settings to choose its own theme or follow the timetable, choose filled/outlined blocks and icon visibility, hide locations and customise its empty message. Subject colours and icons carry through to the widget. The pill uses the theme background by default, with a lesson-colour option in its settings. Android’s battery-saving modes may delay activity changes; the countdown runs through the launcher without Tempo waking every second.
 
 ## Updates and privacy
 
