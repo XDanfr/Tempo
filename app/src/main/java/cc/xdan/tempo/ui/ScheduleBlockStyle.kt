@@ -28,7 +28,7 @@ fun ScheduleBlock.symbol(): ImageVector? = when (this) {
         BreakKind.LUNCH -> Icons.Outlined.Restaurant
         BreakKind.CHANGEOVER -> Icons.Outlined.SwapHoriz
         BreakKind.BREAK -> Icons.Outlined.PauseCircleOutline
-        BreakKind.CUSTOM -> Icons.Outlined.Coffee
+        BreakKind.CUSTOM -> Icons.Outlined.LocalCafe
     }
     is ScheduleBlock.Free -> Icons.Outlined.EventAvailable
 }

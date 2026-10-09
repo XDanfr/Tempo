@@ -123,8 +123,9 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                     else -> listOfNotNull(whenText.takeIf { it.isNotBlank() }, location).joinToString(" · ")
                 }
                 if (timetable == null) detail = "Timetable removed · choose another"
-                if (current && block is ScheduleBlock.Break && summary?.next != null) {
-                    detail += "\nNext: ${summary.next.lesson.subject.name} · ${summary.next.starts.format(DateTimeFormatter.ofPattern("EEE HH:mm"))}"
+                val following = summary?.next
+                if (current && block is ScheduleBlock.Break && following != null) {
+                    detail += "\nNext: ${following.lesson.subject.name} · ${following.starts.format(DateTimeFormatter.ofPattern("EEE HH:mm"))}"
                 }
                 val showIcon = settings.showIcons ?: appearance.showIcons
                 val iconColour = if (dark) accent else lerp(Color.Black, accent, .45f)

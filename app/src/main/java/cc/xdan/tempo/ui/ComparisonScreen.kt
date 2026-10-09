@@ -165,8 +165,8 @@ private fun CombinedAgenda(tables: List<SavedTimetable>, day: Int, slices: List<
         items(events) { event ->
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(if (event.owner == "Everyone") Icons.Outlined.Groups else Icons.Outlined.PersonOutline, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                    Text(if (event.owner == "Everyone") "Free together" else event.owner, style = MaterialTheme.typography.labelLarge)
+                    Icon(if (event.block is ScheduleBlock.Free) Icons.Outlined.Groups else Icons.Outlined.PersonOutline, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                    Text(if (event.block is ScheduleBlock.Free) "Free together" else event.owner, style = MaterialTheme.typography.labelLarge)
                 }
                 ComparisonBlock(event.block, event.appearance, Modifier.fillMaxWidth().heightIn(min = 84.dp))
             }
