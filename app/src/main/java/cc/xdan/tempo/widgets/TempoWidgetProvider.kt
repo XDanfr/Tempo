@@ -105,7 +105,12 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 val outlined = settings.outlined ?: (block != null && (if (block is ScheduleBlock.Break) appearance.effectiveBreakStyle else appearance.blockStyle) == BlockStyle.OUTLINED)
                 val themeBackground = widgetThemeBackground(scheme, dark)
                 val blockColour = if (outlined || block == null) themeBackground else accent
-                val background = if ((!wide && !settings.lessonBackground) || block == null) themeBackground else blockColour
+                val background = when {
+                    block == null -> themeBackground
+                    wide -> blockColour
+                    settings.lessonBackground -> accent
+                    else -> themeBackground
+                }
                 val foreground = widgetForeground(if (agendaLayout) blockColour else background)
                 val title = when {
                     timetable == null -> "Choose a timetable"

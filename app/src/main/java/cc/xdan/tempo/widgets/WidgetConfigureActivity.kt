@@ -57,7 +57,7 @@ class WidgetConfigureActivity : ComponentActivity() {
                         if (theme.isNotBlank()) ChoiceField("Appearance", mode, ThemeMode.entries, { it.name.lowercase().replaceFirstChar { c -> c.titlecase() } }, { mode = it })
                         if (pill || square) ChoiceField("Background", lessonBackground, listOf(false, true), { if (it) "Lesson colour" else "Theme background" }, { lessonBackground = it })
                         ChoiceField("Icons", icons, listOf("Follow timetable", "Show icons", "Hide icons"), { it }, { icons = it })
-                        ChoiceField("Activity blocks", blocks, listOf("Follow timetable", "Filled", "Outlines"), { it }, { blocks = it })
+                        if (!pill && !square) ChoiceField("Activity blocks", blocks, listOf("Follow timetable", "Filled", "Outlines"), { it }, { blocks = it })
                         Row { Text("Crisp outlines", Modifier.weight(1f)); Switch(showOutline, { showOutline = it }) }
                         if (square) ChoiceField("After today’s lessons", doneForDay, listOf(false, true), { if (it) "Done for today message" else "Next lesson & countdown" }, { doneForDay = it })
                         Row { Text("Show locations", Modifier.weight(1f)); Switch(location, { location = it }) }

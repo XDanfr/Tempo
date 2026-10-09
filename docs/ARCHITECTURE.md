@@ -80,3 +80,5 @@ Widgets use a week-bounded overview: Sunday is the last day of the current weekl
 The pill and square default to a brighter tint of the selected theme’s primary fixed colour; its independent lesson-background preference is persisted alongside the existing theme, icon and block-style overrides. No timetable-name banner consumes widget space.
 
 `widgetDayComplete` is distinct from weekly completion: it requires a next lesson on a later date within this week and no unfinished lessons today. Square widgets can choose a message-only end-of-day state, while countdown mode shows Done for today above the timer in square/wide layouts. Weekly All done overrides both. Widget outline visibility is independent of filled/outlined block style. Text/icon foregrounds are selected for contrast against the actual fill.
+
+Pill/square background selection is independent of timetable block style: selecting Lesson colour always uses the subject fill. Their outline switch controls the border; fill/outline block-style inheritance applies to the wide agenda.
