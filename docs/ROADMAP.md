@@ -24,7 +24,7 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Optional automatic GitHub stable-release checks and downloads; verified APKs and Android installation confirmation
 - [x] Release update metadata generated from the signed APK
 - [x] Sponsor button and “Made by XDan” in Settings
-- [ ] Validate widget sizing/gestures and signed update installation on devices before release
+- [X] Validate widget sizing/gestures and signed update installation on devices before release
 
 ## Later releases
 
