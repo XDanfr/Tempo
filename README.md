@@ -12,7 +12,7 @@ Open this directory in Android Studio with JDK 17, Android SDK 36 and the includ
 
 CI installs the pinned Gradle version and publishes a debug APK for each successful build. Android 8.0 (API 26) or newer is required. Package: `cc.xdan.tempo`.
 
-## First milestone
+## Current features
 
 - Resumable four-step onboarding: day hours, usual periods/breaks, subjects and appearance.
 - Today summary, weekday timeline, editable sessions and overlap warnings.
@@ -20,12 +20,15 @@ CI installs the pinned Gradle version and publishes a debug APK for each success
 - Independent day hours, editable usual-period shortcuts, and repeating Break/Lunch/Changeover/custom breaks.
 - Real-duration timelines, filled or outlined blocks, and tappable dashed frees that prefill the exact time range.
 - Forest, Ocean, Amber and Material You theme options, plus light/dark/system modes.
-- Atomic device-local saving and validated versioned snapshots, including v1 → v2 migration.
+- Separate Filled/Outlines choices for subjects and breaks, and next-lesson details during breaks.
+- Multiple device-local timetables: switch, create, rename, duplicate and delete.
+- Complete `.tempo.json` import/export via the system picker, with validation, preview and onboarding import.
+- Atomic versioned saving with migration from existing single timetables.
 - Stronger Outfit typography using genuine Medium/Semibold/Bold font files.
 - Spring day/tab transitions, animated timeline changes and predictive back progress/cancellation.
 - Predictive modal editor sheets; Back from a top-level tab returns to Today, then system Back exits the app.
 
-Widgets, recurrence, free tags, portable presets, calendar/PNG exports are tracked next. Outfit is bundled under the SIL Open Font Licence. The rounded timetable icon includes adaptive and monochrome variants.
+Widgets, recurrence, free tags, share links and calendar/PNG exports are tracked next. Outfit is bundled under the SIL Open Font Licence. The rounded timetable icon includes adaptive and monochrome variants.
 
 Normal CI publishes development APKs using the runner's debug signing key and also validates the minified release variant. The manual **Signed release** workflow builds a signed APK and app bundle using a persistent key from repository secrets. See [release setup](docs/RELEASES.md) for the four required secrets and download instructions.
 
