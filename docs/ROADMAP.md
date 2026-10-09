@@ -14,7 +14,8 @@
 ## Following milestones
 - [x] Multiple timetables: switch, create, rename, duplicate and delete
 - [ ] Room for occurrence queries/history and combined timetable view
-- [ ] Rotating cycles, dated exceptions, holidays, overnight shifts and explicit zones
+- [ ] Multiple-week timetables: configurable A/B or longer rotating week cycles, with a start date and week selector
+- [ ] Dated exceptions, holidays, overnight shifts and explicit zones
 - [x] Break/lunch/changeover blocks and conversion of a free slot into a session or break
 - [ ] Free tags, arbitrary splitting, batch edits, duplication, undo/redo
 - [ ] Tablet/foldable week layouts, search, accessibility and reduced motion verification
@@ -23,10 +24,11 @@
 - [x] Versioned `.tempo.json` files: complete snapshots, validation, import preview and onboarding entry
 - [ ] Selective import, bundled assets and restore points
 - [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
-- [ ] Calendar `.ics`, calendar handoff and managed bulk export
+- [ ] Calendar `.ics` integration: import/export, recurring events, time zones and calendar-app handoff
 - [ ] PNG day/week/day-card renderer with preview and configurable dimensions
 - [ ] Reminders, travel buffers, subject-hours summaries and version history
 - [x] Outfit font bundling with its licence; rounded adaptive and monochrome icon
+- [ ] Launcher icon colours follow the selected app theme, with launcher-supported themed icons for Material You
 - [x] Signed release workflow, R8 and resource shrinking
 - [ ] Device verification of release builds
 
