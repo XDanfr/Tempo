@@ -12,18 +12,27 @@
 - [x] Forest, Ocean, Amber and Material You themes
 
 ## Following milestones
-- [ ] Room, multiple timetables and combined view
-- [ ] Rotating cycles, dated exceptions, holidays, overnight shifts and explicit zones
+- [x] Multiple timetables: switch, create, rename, duplicate and delete
+- [ ] Compare selected timetables in aligned or overlaid views, showing shared free periods alongside lessons and activities
+- [ ] Room for occurrence queries and history
+- [ ] Multiple-week timetables: configurable A/B or longer rotating week cycles, with a start date and week selector
+- [ ] Dated exceptions, holidays, overnight shifts and explicit zones
 - [x] Break/lunch/changeover blocks and conversion of a free slot into a session or break
 - [ ] Free tags, arbitrary splitting, batch edits, duplication, undo/redo
 - [ ] Tablet/foldable week layouts, search, accessibility and reduced motion verification
-- [ ] Glance: now/next, today, fixed day, week and free-time widgets
-- [ ] Per-widget themes, privacy, empty messages and battery-friendly update policy
-- [ ] Versioned `.tempo` preset package: selective import (including onboarding entry), assets, preview and restore points
-- [ ] Calendar `.ics`, calendar handoff and managed bulk export
+- [ ] Glance widgets: show the current lesson/break and time remaining, or the next lesson/activity and countdown until it starts
+- [ ] Widget layouts: fully rounded 2×1 pill, rounded-square 2×2 and rounded-rectangle 4×2; also consider today, fixed-day, week and free-time views
+- [ ] Choose a fixed timetable per widget or follow the currently selected timetable, updating when the selection changes
+- [ ] Give each widget its own theme or follow the selected timetable's appearance; include clear empty states, privacy controls and battery-aware countdown updates
+- [x] Versioned `.tempo.json` files: complete snapshots, validation, import preview and onboarding entry
+- [ ] Selective import, bundled assets and restore points
+- [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
+- [ ] Calendar `.ics` integration: import/export, recurring events, time zones and calendar-app handoff
 - [ ] PNG day/week/day-card renderer with preview and configurable dimensions
 - [ ] Reminders, travel buffers, subject-hours summaries and version history
 - [x] Outfit font bundling with its licence; rounded adaptive and monochrome icon
-- [ ] Release packaging and device tests
+- [ ] Launcher icon colours follow the selected app theme, with launcher-supported themed icons for Material You
+- [x] Signed release workflow, R8 and resource shrinking
+- [ ] Device verification of release builds
 
 The demo is fictional; it is not a reconstruction of Dan's timetable. Axis is the ecosystem, Tempo is the app. Schedule items are sessions, never cards.

@@ -50,12 +50,12 @@ fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ThemeMode.entries.forEach { mode -> FilterChip(appearance.mode == mode, { change(appearance.copy(mode = mode)) }, label = { Text(mode.name.lowercase().replaceFirstChar { it.titlecase() }) }) }
         }
-        Text("Timetable blocks", style = MaterialTheme.typography.labelLarge)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BlockStyle.entries.forEach { style -> FilterChip(appearance.blockStyle == style, { change(appearance.copy(blockStyle = style)) },
-                label = { Text(if (style == BlockStyle.FILLED) "Filled" else "Outlines") },
-                leadingIcon = { Icon(if (style == BlockStyle.FILLED) Icons.Outlined.Rectangle else Icons.Outlined.CheckBoxOutlineBlank, null, Modifier.size(18.dp)) }) }
-        }
+        ChoiceField("Subject blocks", appearance.blockStyle, BlockStyle.entries,
+            { if (it == BlockStyle.FILLED) "Filled" else "Outlines" },
+            { change(appearance.copy(blockStyle = it, breakStyle = appearance.effectiveBreakStyle)) })
+        ChoiceField("Break blocks", appearance.effectiveBreakStyle, BlockStyle.entries,
+            { if (it == BlockStyle.FILLED) "Filled" else "Outlines" },
+            { change(appearance.copy(breakStyle = it)) })
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Show icons", Modifier.weight(1f)); Switch(appearance.showIcons, { change(appearance.copy(showIcons = it)) }) }
     }
 }
