@@ -15,6 +15,7 @@ import androidx.core.app.ActivityOptionsCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import cc.xdan.tempo.design.TempoTheme
+import cc.xdan.tempo.design.presetColorScheme
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.*
 import cc.xdan.tempo.ui.*
@@ -43,7 +44,10 @@ class PngSaveTest {
         compose.setContent { TempoTheme(table.appearance) {
             CompositionLocalProvider(LocalActivityResultRegistryOwner provides owner) { PngExportSheet(table, {}, { message = it }) }
         } }
-        compose.onNodeWithText("Date").performScrollTo().performTextReplacement(date.toString())
+        compose.chooseDate("Date", LocalDate.now(), date)
+        compose.onNodeWithText("Image theme").performScrollTo()
+        compose.onNodeWithText("Ocean").performClick()
+        compose.onNodeWithText("Dark").performScrollTo().performClick()
         compose.onNodeWithText("Timetable name").performScrollTo().performClick()
         compose.onNodeWithText("Subject and break names").performScrollTo().performClick()
         compose.onNodeWithText("Locations").performScrollTo().assertIsOff()
@@ -52,7 +56,7 @@ class PngSaveTest {
         compose.onNodeWithText("Save PNG").performScrollTo().performClick()
         compose.waitUntil(10_000) { message?.startsWith("Saved PNG") == true }
         val actual = BitmapFactory.decodeFile(file.path)
-        val expected = renderSchedulePng(context, scheduleImagePlan(table, date, false, 1080, ImagePrivacy(false, false)))
+        val expected = renderSchedulePng(context, scheduleImagePlan(table, date, false, 1080, ImagePrivacy(false, false)), imagePalette(presetColorScheme(ThemePreset.OCEAN, true)))
         assertTrue("Saved pixels must equal the privacy-filtered preview", expected.sameAs(actual))
     }
 }

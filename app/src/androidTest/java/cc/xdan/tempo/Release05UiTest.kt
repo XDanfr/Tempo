@@ -37,19 +37,20 @@ class Release05UiTest {
             Column(Modifier.verticalScroll(rememberScrollState())) { DatedScheduleSettings(table, { table = it(table) }) }
         } }
         compose.onNodeWithText("Edit week cycle").performScrollTo().performClick()
-        compose.onNodeWithText("Number of weeks (1–52)").performTextReplacement("2")
-        compose.onNodeWithText("Date in week 1").performTextReplacement(date.toString())
+        compose.onNodeWithText("2 weeks").performClick()
+        compose.onNodeWithText("Number of weeks").assertTextContains("2")
+        compose.chooseDate("Date in week 1", LocalDate.parse(fixture.cycle.anchorDate), date)
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000) { table.cycle.weeks == 2 }
         compose.onNodeWithText("Add holiday").performScrollTo().performClick()
         compose.onNodeWithText("Holiday name").performTextReplacement("Autumn break")
-        compose.onNodeWithText("First day (included)").performTextReplacement(date.toString())
-        compose.onNodeWithText("Last day (included)").performTextReplacement(date.plusDays(4).toString())
+        compose.chooseDate("First day (included)", LocalDate.now(), date)
+        compose.chooseDate("Last day (included)", LocalDate.now(), date.plusDays(4))
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000) { table.holidays.size == 1 }
         assertTrue(ScheduleResolver.resolve(table, date).isEmpty())
         compose.onNodeWithText("Add dated exception").performScrollTo().performClick()
-        compose.onNodeWithText("Date").performTextReplacement(date.toString())
+        compose.chooseDate("Date", LocalDate.now(), date)
         compose.onNodeWithText("Day off").performClick()
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000) { table.exceptions.size == 1 }
@@ -68,7 +69,8 @@ class Release05UiTest {
         compose.waitUntil(10_000) { table.sessions.size == 2 }
         assertEquals(lesson, table.sessions.first())
         compose.runOnIdle { open = true }
-        compose.onNodeWithText("Split at HH:MM").performScrollTo().performTextReplacement("10:00")
+        compose.onNodeWithText("Split at").performScrollTo().performClick()
+        compose.onNodeWithText("Choose time").performClick()
         compose.onNodeWithText("Split session").performScrollTo().performClick()
         compose.waitUntil(10_000) { table.sessions.size == 3 }
         assertEquals(listOf(60, 60), table.sessions.filter { it.id == "a" || it.time.start == 600 }.map { it.time.minutes })
@@ -77,23 +79,22 @@ class Release05UiTest {
 
     @Test fun dayNavigationUsesDatesAndScopeControl() {
         var selected by mutableStateOf(date)
-        var dated by mutableStateOf(false)
         val table = fixture.copy(cycle = WeekCycle(2, date.toString()), sessions = listOf(lesson.copy(cycleWeek = 1)))
         compose.setContent { TempoTheme(table.appearance) {
             Surface {
             DayScreen(table, selected.dayOfWeek.value, LocalDateTime.of(2026, 10, 12, 10, 0), false,
                 { selected = selected.plusDays((it - selected.dayOfWeek.value).toLong()) }, {}, { _, _ -> }, {},
-                date = selected, selectDate = { selected = it }, dateEditing = dated, setDateEditing = { dated = it })
+                date = selected, selectDate = { selected = it })
             }
         } }
         compose.onNodeWithContentDescription("Next week").performClick()
         compose.waitUntil(10_000) { selected == date.plusWeeks(1) }
         compose.onNodeWithText("2026-10-19 · Week 2 of 2").assertExists()
-        compose.onNodeWithContentDescription("Edit only this date").performClick()
-        compose.runOnIdle { assertTrue(dated) }
+        compose.onNodeWithContentDescription("Edit only this date").assertDoesNotExist()
         compose.onNodeWithContentDescription("Previous week").performClick()
         compose.waitUntil(10_000) { selected == date }
         compose.onNodeWithText("Maths").assertExists()
+        compose.onNodeWithText("1 session · 2h 0m scheduled").assertExists()
         saveScreen("qa-timetable.png", "Monday")
     }
 
