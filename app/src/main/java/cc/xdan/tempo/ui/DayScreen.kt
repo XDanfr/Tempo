@@ -33,17 +33,11 @@ import java.time.LocalDate
 @Composable
 fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean, selectDay: (Int) -> Unit,
     edit: (Session) -> Unit, editFree: (Int, TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit,
-    date: LocalDate = now.toLocalDate(), selectDate: (LocalDate) -> Unit = {},
-    dateEditing: Boolean = false, setDateEditing: (Boolean) -> Unit = {}) {
+    date: LocalDate = now.toLocalDate(), selectDate: (LocalDate) -> Unit = {}) {
     Column(Modifier.fillMaxSize()) {
         if (!today) DateNavigation(date, selectDate)
         if (!today) ScrollableTabRow(selectedTabIndex = day - 1, edgePadding = 12.dp) {
             weekdayNames.forEachIndexed { i, label -> Tab(selected = day == i + 1, onClick = { selectDay(i + 1) }, text = { Text(label.take(3)) }) }
-        }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(if (dateEditing) "Edits apply only to $date" else "Edit recurring schedule", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
-            Switch(dateEditing, setDateEditing, enabled = timetable.exceptions.none { it.date == date.toString() },
-                modifier = Modifier.semantics { contentDescription = "Edit only this date" })
         }
         AnimatedContent(targetState = date, label = "selected day", transitionSpec = {
             val direction = if (targetState > initialState) 1 else -1

@@ -13,7 +13,7 @@ import java.util.UUID
 @Composable
 fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, initialTime: TimeSpan? = null,
     onDismiss: () -> Unit, onSave: (Session) -> Unit, onDelete: (String) -> Unit, onAddSubject: (Subject) -> Unit,
-    initialCycleWeek: Int = 1, dated: Boolean = false, onSplit: (List<Session>) -> Unit = {}) {
+    initialCycleWeek: Int = 1, dated: Boolean = false, onSplit: (List<Session>) -> Unit = {}, scopeControls: (@Composable () -> Unit)? = null) {
     var addingSubject by remember { mutableStateOf(false) }
     if (timetable.subjects.isEmpty()) {
         EditorSheet("Your first session", onDismiss) {
@@ -40,8 +40,9 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
     val overlapsBreak = time != null && timetable.breaks.any { day in it.days && (week == 0 || it.cycleWeek == null || week == it.cycleWeek) && time.start < it.time.end && it.time.start < time.end }
     EditorSheet(if (existing == null) "Add session" else "Edit session", onDismiss,
         confirm = { candidate?.let(onSave) }, enabled = candidate != null) {
+        scopeControls?.invoke()
         ChoiceField("Subject / activity", subject, timetable.subjects.map { it.id }, { key -> timetable.subjects.first { it.id == key }.name }, { subject = it })
-        if (dated) Text("Only this date. Recurring weeks stay unchanged.")
+        if (dated && scopeControls == null) Text("Only this date. Recurring weeks stay unchanged.")
         else {
             ChoiceField("Day", day, (1..7).toList(), { weekdayNames[it - 1] }, { day = it })
             if (timetable.cycle.weeks > 1) ChoiceField("Cycle week", week, (0..timetable.cycle.weeks).toList(), { if (it == 0) "Every week" else "Week $it" }, { week = it })

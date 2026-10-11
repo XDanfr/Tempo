@@ -17,7 +17,7 @@ fun BreakKind.icon(): SubjectIcon = when (this) { BreakKind.BREAK -> SubjectIcon
 @Composable
 fun BreakEditor(timetable: Timetable, existing: ScheduledBreak? = null, initialDay: Int? = null, initialTime: TimeSpan? = null,
     dismiss: () -> Unit, save: (ScheduledBreak) -> Unit, delete: (String) -> Unit,
-    initialCycleWeek: Int = 1, dated: Boolean = false) {
+    initialCycleWeek: Int = 1, dated: Boolean = false, scopeControls: (@Composable () -> Unit)? = null) {
     val id = rememberSaveable { existing?.id ?: UUID.randomUUID().toString() }
     var kind by rememberSaveable { mutableStateOf(existing?.kind ?: BreakKind.BREAK) }
     var name by rememberSaveable { mutableStateOf(existing?.name ?: "Break") }
@@ -33,6 +33,7 @@ fun BreakEditor(timetable: Timetable, existing: ScheduledBreak? = null, initialD
         timetable.breaks.any { (week == 0 || it.cycleWeek == null || week == it.cycleWeek) && it.id != id && it.days.any { d -> d in selectedDays } && it.time.start < span.end && span.start < it.time.end })
     EditorSheet(if (existing == null) "Add break time" else "Edit break time", dismiss,
         confirm = { span?.let { save(ScheduledBreak(id, name.trim(), if (dated) listOf(initialDay!!) else selectedDays, it, kind, if (dated || week == 0) null else week)) } }, enabled = span != null && name.isNotBlank() && selectedDays.isNotEmpty()) {
+        scopeControls?.invoke()
         ChoiceField("Type", kind, BreakKind.entries, { it.label() }, { chosen -> if (name == kind.label()) name = chosen.label(); kind = chosen })
         OutlinedTextField(name, { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         TimeFields(start, end, { start = it }, { end = it })
