@@ -51,3 +51,7 @@ advanced details, holiday-range selection, bulk-change impact previews, and
 privacy-aware export preferences. Test these with first setup, a one-off date
 change and an export task before adding further navigation or hidden controls.
 Include TalkBack, keyboard and narrow/foldable layouts in those checks.
+# Settings gesture refinement
+
+Completing predictive Back keeps the outgoing settings page visible while it slides off the gesture edge, then returns to the settings home. Cancelling the gesture restores the same page. Subject and break fill/outline choices use pills so both options remain visible without opening a menu.
+

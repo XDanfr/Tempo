@@ -24,6 +24,28 @@ import org.junit.runner.RunWith
 class SetupRefinementTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
+    @Test fun predictiveSettingsReleaseKeepsPageUntilExitFinishes() {
+        var route by mutableStateOf<String?>("appearance")
+        compose.setContent { TempoTheme(Appearance()) {
+            PredictiveSettingsHost(route, { route = null }) { page ->
+                androidx.compose.material3.Text(page ?: "home")
+            }
+        } }
+        compose.runOnIdle {
+            compose.activity.onBackPressedDispatcher.dispatchOnBackStarted(BackEventCompat(0f, 100f, 0f, BackEventCompat.EDGE_RIGHT))
+            compose.activity.onBackPressedDispatcher.dispatchOnBackProgressed(BackEventCompat(200f, 100f, .6f, BackEventCompat.EDGE_RIGHT))
+        }
+        compose.mainClock.autoAdvance = false
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.mainClock.advanceTimeBy(80)
+        compose.runOnIdle { assertEquals("appearance", route) }
+        compose.mainClock.advanceTimeBy(300)
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        compose.runOnIdle { assertNull(route) }
+        compose.onNodeWithText("home").assertIsDisplayed()
+    }
+
     @Test fun predictiveSettingsBackCanCancelOrCommit() {
         val table = Timetable(onboarded = true)
         compose.setContent { TempoTheme(table.appearance) { SettingsScreen(table, {}, TimetableFileActions({}, {}), {}, false) } }
