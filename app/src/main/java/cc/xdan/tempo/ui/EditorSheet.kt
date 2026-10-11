@@ -34,7 +34,7 @@ fun EditorSheet(title: String, dismiss: () -> Unit, confirm: (() -> Unit)? = nul
                     }
                     Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState(), overscrollEffect = null).testTag("editor-content"), verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
                     if (confirm != null) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedButton(onClick = dismiss, Modifier.weight(1f)) { Text("Cancel") }
+                        TextButton(onClick = dismiss, Modifier.weight(1f)) { Text("Cancel") }
                         Button(enabled = enabled, onClick = { focus.clearFocus(); keyboard?.hide(); confirm() }, modifier = Modifier.weight(1f)) { Text(confirmLabel) }
                     }
                 }

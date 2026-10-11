@@ -62,7 +62,7 @@ fun ThemeSelector(appearance: Appearance, change: (Appearance) -> Unit) {
                 }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ThemeMode.entries.forEach { mode -> FilterChip(appearance.mode == mode, { change(appearance.copy(mode = mode)) }, label = { Text(mode.name.lowercase().replaceFirstChar { it.titlecase() }) }) }
         }
     }

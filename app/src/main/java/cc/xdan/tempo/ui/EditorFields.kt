@@ -15,9 +15,14 @@ fun validSpan(start: String, end: String): TimeSpan? {
 
 @Composable
 fun TimeFields(start: String, end: String, changeStart: (String) -> Unit, changeEnd: (String) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        TimeField("Start time", start, changeStart, Modifier.weight(1f))
-        TimeField("End time", end, changeEnd, Modifier.weight(1f), allowEndOfDay = true)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        if (maxWidth < 300.dp) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            TimeField("Start time", start, changeStart, Modifier.fillMaxWidth())
+            TimeField("End time", end, changeEnd, Modifier.fillMaxWidth(), allowEndOfDay = true)
+        } else Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TimeField("Start time", start, changeStart, Modifier.weight(1f))
+            TimeField("End time", end, changeEnd, Modifier.weight(1f), allowEndOfDay = true)
+        }
     }
     if (validSpan(start, end) == null) Text("Choose an end time after the start time.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
 }

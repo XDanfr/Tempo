@@ -63,6 +63,10 @@ class SetupRefinementTest {
         compose.setContent { TempoTheme(Appearance()) {
             EditorSheet("Monday hours", {}, confirm = { saved = true }, compact = true) { TimeFields("09:00", "16:30", {}, {}) }
         } }
+        compose.onNodeWithText("09:00").assertIsDisplayed()
+        val clockText = compose.onNodeWithText("09:00").fetchSemanticsNode().boundsInRoot
+        val endText = compose.onNodeWithText("16:30").fetchSemanticsNode().boundsInRoot
+        assertTrue("Each narrow clock value needs a single readable line", clockText.width > clockText.height && endText.width > endText.height)
         val panel = compose.onNodeWithTag("editor-panel").fetchSemanticsNode().boundsInRoot
         val screenHeight = InstrumentationRegistry.getInstrumentation().targetContext.resources.displayMetrics.heightPixels
         assertTrue("Short editor should wrap its content", panel.height < screenHeight * .75f)
