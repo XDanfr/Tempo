@@ -28,4 +28,10 @@ class ScheduleImagePlanTest {
     @Test(expected = IllegalArgumentException::class) fun rejectsUnboundedImageWidth() {
         scheduleImagePlan(table, date, true, 100000, ImagePrivacy())
     }
+    @Test fun adjacentAutomaticFreePeriodsBecomeOneReadableExportRow() {
+        val plan = scheduleImagePlan(table, date, false, 720, ImagePrivacy())
+        val frees = plan.days.single().rows.filter { it.title == "Free" }
+        assertEquals(listOf(TimeSpan(600, 990)), frees.map { it.time })
+        assertEquals(2, plan.days.single().rows.size)
+    }
 }

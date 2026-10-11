@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.graphics.Typeface
+import android.os.Build
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -20,10 +22,13 @@ fun renderSchedulePng(context: Context, plan: ScheduleImagePlan): Bitmap {
     val scale = plan.width / 1080f
     val margin = (40 * scale).toInt()
     val contentWidth = plan.width - margin * 2
-    val font = ResourcesCompat.getFont(context, R.font.outfit)
+    val font = ResourcesCompat.getFont(context, R.font.outfit_medium)
+    val heading = ResourcesCompat.getFont(context, R.font.outfit_semibold)
     val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { typeface = font; color = Color.rgb(23, 33, 22) }
     fun layout(text: String, size: Float, width: Int = contentWidth): StaticLayout {
         textPaint.textSize = size * scale
+        textPaint.typeface = if (Build.VERSION.SDK_INT >= 28) Typeface.create(font, if (size >= 36f) 600 else 500, false)
+            else if (size >= 36f) heading else font
         return StaticLayout.Builder.obtain(text, 0, text.length, TextPaint(textPaint), width)
             .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false).build()
     }

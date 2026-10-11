@@ -15,7 +15,14 @@ fun scheduleImagePlan(table: Timetable, date: LocalDate, week: Boolean, width: I
     val first = if (week) date.minusDays((date.dayOfWeek.value - 1).toLong()) else date
     val days = (0 until if (week) 7 else 1).map { offset ->
         val day = first.plusDays(offset.toLong())
-        ImageDay(day, ScheduleResolver.resolve(table, day).map { block ->
+        val blocks = mutableListOf<ScheduleBlock>()
+        for (block in ScheduleResolver.resolve(table, day)) {
+            val previous = blocks.lastOrNull()
+            if (block is ScheduleBlock.Free && previous is ScheduleBlock.Free && previous.time.end == block.time.start) {
+                blocks[blocks.lastIndex] = ScheduleBlock.Free(TimeSpan(previous.time.start, block.time.end))
+            } else blocks += block
+        }
+        ImageDay(day, blocks.map { block ->
             when (block) {
                 is ScheduleBlock.Lesson -> ImageRow(block.time, if (privacy.subjectNames) block.subject.name else "Session",
                     if (privacy.locations) block.location else "", if (privacy.notes) block.session.notes else "",
