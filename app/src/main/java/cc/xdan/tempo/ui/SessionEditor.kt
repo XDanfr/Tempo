@@ -42,8 +42,9 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
         confirm = { candidate?.let(onSave) }, enabled = candidate != null) {
         scopeControls?.invoke()
         ChoiceField("Subject / activity", subject, timetable.subjects.map { it.id }, { key -> timetable.subjects.first { it.id == key }.name }, { subject = it })
-        if (dated && scopeControls == null) Text("Only this date. Recurring weeks stay unchanged.")
-        else {
+        if (dated) {
+            if (scopeControls == null) Text("Only this date. Recurring weeks stay unchanged.")
+        } else {
             ChoiceField("Day", day, (1..7).toList(), { weekdayNames[it - 1] }, { day = it })
             if (timetable.cycle.weeks > 1) ChoiceField("Cycle week", week, (0..timetable.cycle.weeks).toList(), { if (it == 0) "Every week" else "Week $it" }, { week = it })
         }
