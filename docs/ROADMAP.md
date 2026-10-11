@@ -35,6 +35,9 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Session-local undo/redo for saved timetable and library changes
 - [x] PNG day/week agenda exports with an exact preview, configurable width and privacy controls
 - [x] Schema-1/2 migration and complete schema-3 portable snapshots
+- [x] Calendar/clock pickers, common cycle suggestions and singular session labels
+- [x] Stable scrolling editor panels with scope choices inside editing flows
+- [x] Settings pages and independent PNG theme/light/dark options
 
 See [the 0.5 guide](RELEASE-0.5.md) for scope, compatibility and validation.
 
@@ -46,6 +49,11 @@ See [the 0.5 guide](RELEASE-0.5.md) for scope, compatibility and validation.
 - [ ] Free tags and selective break / dated-exception batch editing
 - [ ] Side-by-side weekly comparison and additional widget views
 - [ ] Tablet/foldable layouts, search and further accessibility improvements
+- [ ] Search/filter sessions and subjects, including cycle-week filters
+- [ ] Contextual session actions and optional advanced editor details, with clear labels
+- [ ] Holiday range calendar and concise previews of affected dates before bulk changes
+- [ ] Remember per-timetable export preferences with an explicit privacy reset
+- [ ] Task-based usability checks for first setup, one-off changes and exports; TalkBack and hardware-keyboard walkthroughs
 - [ ] Selective imports, bundled assets and restore points
 - [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
 - [ ] Reminders, travel buffers, subject-hour summaries and history
