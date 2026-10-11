@@ -24,11 +24,13 @@ Outfit type, Material components, theme cards and subject colours.
   remain available; Save stays outside the scrolling body.
 - Short day-hours and usual-period editors wrap their content in centered dialogs;
   long editors keep the fixed panel that passed the boundary-fling regression.
+  Time fields stack at narrow widths so clock values remain on one line.
 - Widget timetable choices and icon/location options use scrollable pills. Custom
   themes reuse the app theme cards. Location following tracks the real timetable
   display preference, while old widget overrides remain readable.
 - Setup asks for an anchored cycle without adding a saved onboarding step. Subject
   cards expose colour, icon and default location; tapping edits the same subject.
+  Continue stays above the keyboard, and proceeding clears field focus.
 - PNG appearance uses the same recognisable theme cards and mode chips as app
   appearance. It is independent of app appearance, starts in System mode and
   includes the selected theme in the exact preview/save snapshot.
