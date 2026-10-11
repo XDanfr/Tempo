@@ -41,6 +41,7 @@ class WidgetConfigureActivity : ComponentActivity() {
             var lessonBackground by rememberSaveable { mutableStateOf(initial.lessonBackground) }
             var themedLessons by rememberSaveable { mutableStateOf(initial.themedLessons) }
             var showOutline by rememberSaveable { mutableStateOf(initial.showOutline) }
+            var outerOutline by rememberSaveable { mutableStateOf(initial.outerOutline) }
             var doneForDay by rememberSaveable { mutableStateOf(initial.doneForDayMessage) }
             var empty by rememberSaveable { mutableStateOf(initial.emptyText) }
             val previewAppearance = collection?.let { c -> c.timetables.firstOrNull { it.id == table }?.timetable?.appearance ?: c.active.appearance } ?: Appearance()
@@ -57,18 +58,19 @@ class WidgetConfigureActivity : ComponentActivity() {
                         if (theme.isNotBlank()) ChoiceField("Appearance", mode, ThemeMode.entries, { it.name.lowercase().replaceFirstChar { c -> c.titlecase() } }, { mode = it })
                         if (pill || square) WidgetOptionCards("Background", lessonBackground, "Theme colour", "Lesson colour", WidgetPreview.THEME, WidgetPreview.LESSON, pill) { lessonBackground = it }
                         ChoiceField("Icons", icons, listOf("Follow timetable", "Show icons", "Hide icons"), { it }, { icons = it })
-                        WidgetOptionCards("Crisp outlines", showOutline, "Filled", "Outlined", WidgetPreview.NO_OUTLINE, WidgetPreview.OUTLINE, pill, wide = !pill && !square, themedLessons = themedLessons) { showOutline = it }
+                        WidgetOptionCards(if (!pill && !square) "Subject outlines" else "Crisp outlines", showOutline, "Filled", "Outlined", WidgetPreview.NO_OUTLINE, WidgetPreview.OUTLINE, pill, wide = !pill && !square, themedLessons = themedLessons) { showOutline = it }
+                        if (!pill && !square) Row { Text("Outer outline", Modifier.weight(1f)); Switch(outerOutline, { outerOutline = it }) }
                         if (!pill && !square) WidgetOptionCards("Lesson colours", themedLessons, "Subject colours", "Theme shades", WidgetPreview.LESSON, WidgetPreview.THEME_LESSONS, false, wide = true) { themedLessons = it }
                         if (pill) WidgetOptionCards("After today’s lessons", doneForDay, "Next lesson", "Done for today", WidgetPreview.NEXT, WidgetPreview.DONE, true) { doneForDay = it }
                         if (square) WidgetOptionCards("After today’s lessons", doneForDay, "Done + next lesson", "Done message only", WidgetPreview.NEXT, WidgetPreview.DONE, false) { doneForDay = it }
                         Row { Text("Show locations", Modifier.weight(1f)); Switch(location, { location = it }) }
                         OutlinedTextField(empty, { empty = it.take(120) }, label = { Text("When nothing is scheduled") }, modifier = Modifier.fillMaxWidth())
-                        Text("Touch and hold the widget on your home screen to change these settings. The 4×2 also shows later periods and your day’s finish time.", style = MaterialTheme.typography.bodySmall)
+                        Text("Touch and hold the widget on your home screen to change these settings. Drag its edges to resize. The 4×2 shows later periods and your day’s finish time when there is room.", style = MaterialTheme.typography.bodySmall)
                         Text("Countdowns tick on your home screen. Android may delay changing activities in battery-saving modes.", style = MaterialTheme.typography.bodySmall)
                         Button(onClick = {
                             WidgetSettings(table.ifBlank { null }, theme.takeIf { it.isNotBlank() }?.let(ThemePreset::valueOf), mode, location, empty.ifBlank { "Nothing scheduled this week" },
                                 when (icons) { "Show icons" -> true; "Hide icons" -> false; else -> null },
-                                null, lessonBackground, showOutline, doneForDay, themedLessons).save(applicationContext, id)
+                                initial.outlined, lessonBackground, showOutline, doneForDay, themedLessons, outerOutline).save(applicationContext, id)
                             WidgetRefresh.start(applicationContext)
                             setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)); finish()
                         }, enabled = collection != null && (table.isBlank() || collection!!.timetables.any { it.id == table }), modifier = Modifier.fillMaxWidth()) { Text("Save widget") }
