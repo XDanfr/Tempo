@@ -66,6 +66,7 @@ fun PredictiveRouteHost(route: Destination, enabled: Boolean, navigate: (Destina
 @Composable
 fun PredictiveSettingsHost(route: String?, navigateBack: () -> Unit, screen: @Composable (String?) -> Unit) {
     val progress = remember { Animatable(0f) }
+    val completion = remember { Animatable(0f) }
     var edge by remember { mutableIntStateOf(BackEventCompat.EDGE_LEFT) }
     var committed by remember { mutableStateOf(false) }
     val holder = rememberSaveableStateHolder()
@@ -74,22 +75,27 @@ fun PredictiveSettingsHost(route: String?, navigateBack: () -> Unit, screen: @Co
     PredictiveBackHandler(enabled = route != null) { events ->
         try {
             events.collect { event -> edge = event.swipeEdge; progress.snapTo(event.progress) }
+            // Keep the outgoing page mounted until the release motion has finished.
+            completion.animateTo(1f, tween(220, easing = FastOutSlowInEasing))
             committed = true
             latestNavigate()
+            withFrameNanos { }
             progress.snapTo(0f)
+            completion.snapTo(0f)
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) { progress.animateTo(0f, spring(dampingRatio = .85f, stiffness = 550f)) }
         }
     }
     LaunchedEffect(route) { withFrameNanos { }; committed = false }
     Box(Modifier.fillMaxSize()) {
-        if (progress.value > 0f && route != null) {
+        if ((progress.value > 0f || completion.value > 0f) && route != null) {
             Box(Modifier.fillMaxSize().clearAndSetSemantics { }) { screen(null) }
         }
         Surface(Modifier.fillMaxSize().graphicsLayer {
             scaleX = 1f - .07f * progress.value
             scaleY = 1f - .07f * progress.value
-            translationX = (if (edge == BackEventCompat.EDGE_LEFT) 1 else -1) * shift * progress.value
+            translationX = (if (edge == BackEventCompat.EDGE_LEFT) 1 else -1) *
+                (shift * progress.value + (size.width - shift * progress.value) * completion.value)
             shape = RoundedCornerShape(28.dp)
             clip = progress.value > 0f
             shadowElevation = progress.value * 12f
