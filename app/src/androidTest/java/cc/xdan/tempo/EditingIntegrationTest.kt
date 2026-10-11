@@ -65,7 +65,7 @@ class EditingIntegrationTest {
             compose.waitUntil(10_000) { model.state.value.error != null }
             model.dismissError()
             compose.onNodeWithContentDescription("Redo edit").performClick()
-            compose.waitUntil(10_000) { model.state.value.timetable?.name == "Changed" }
+            compose.waitUntil(10_000) { model.state.value.timetable?.name == "Changed" && !model.state.value.canRedo }
             assertFalse(model.state.value.canRedo)
             runBlocking { repository.updateCollection { current -> assertEquals("Changed", current.active.name); current } }
         } finally { compose.runOnIdle { store.clear() } }

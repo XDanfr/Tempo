@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import android.graphics.Bitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.core.graphics.ColorUtils
@@ -95,15 +97,18 @@ class UxRefinementTest {
         var end by mutableStateOf("10:00")
         compose.setContent { TempoTheme(table.appearance) { TimeField("End time", end, { end = it }, allowEndOfDay = true) } }
         compose.onNodeWithText("End time").performClick()
+        val clock = compose.onNode(isRoot() and hasAnyDescendant(hasText("Choose time"))).captureToImage().asAndroidBitmap()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        java.io.File(context.filesDir, "qa-clock-picker.png").outputStream().use { clock.compress(Bitmap.CompressFormat.PNG, 100, it) }
         compose.onNodeWithText("End of day (24:00)").performScrollTo().performClick()
         compose.waitUntil(10_000) { end == "24:00" }
         assertEquals(TimeSpan(540, 1440), validSpan("09:00", end))
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
         val plan = scheduleImagePlan(table, date, false, 720, ImagePrivacy())
         for (preset in listOf(ThemePreset.FOREST, ThemePreset.OCEAN, ThemePreset.AMBER)) for (dark in listOf(false, true)) {
             val palette = imagePalette(presetColorScheme(preset, dark))
             val bitmap = renderSchedulePng(context, plan, palette)
             assertEquals(palette.background, bitmap.getPixel(0, 0))
+            java.io.File(context.filesDir, "qa-${preset.name.lowercase()}-${if (dark) "dark" else "light"}.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
             for (subject in listOf(0xFF000000.toInt(), 0xFFFFFFFF.toInt(), table.subjects.single().colour.toInt())) {
                 val fill = ColorUtils.blendARGB(palette.background, subject, .24f)
                 assertTrue("$preset dark=$dark subject=$subject", ColorUtils.calculateContrast(palette.ink, fill) >= 4.5)

@@ -46,7 +46,7 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
         EditorSheet("Repeating weeks", { cycleEditor = false }, confirm = {
             update { it.copy(schemaVersion = 3, cycle = WeekCycle(count!!, anchor)) }; cycleEditor = false
         }, enabled = valid) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 listOf(1, 2, 4).forEach { suggestion ->
                     FilterChip(weeks == suggestion.toString(), { weeks = suggestion.toString() }, label = { Text(if (suggestion == 1) "1 week" else "$suggestion weeks") })
                 }
