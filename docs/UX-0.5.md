@@ -51,7 +51,9 @@ advanced details, holiday-range selection, bulk-change impact previews, and
 privacy-aware export preferences. Test these with first setup, a one-off date
 change and an export task before adding further navigation or hidden controls.
 Include TalkBack, keyboard and narrow/foldable layouts in those checks.
-# Settings gesture refinement
+## Settings gesture refinement
 
 Completing predictive Back keeps the outgoing settings page visible while it slides off the gesture edge, then returns to the settings home. Cancelling the gesture restores the same page. Subject and break fill/outline choices use pills so both options remain visible without opening a menu.
+
+Validated with the debug build, app unit tests and debug lint, plus six setup refinement tests on the Android 16 phone emulator. The release regression checks that navigation has not occurred 80 ms after release, then completes after the exit animation. Gesture cancellation is covered separately. This checks dispatched predictive-back events; a physical edge gesture was not rechecked in this pass.
 
