@@ -13,6 +13,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.luminance
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.data.TimetableRepository
 import cc.xdan.tempo.design.TempoTheme
@@ -47,6 +50,14 @@ class WidgetConfigureActivity : ComponentActivity() {
             var empty by rememberSaveable { mutableStateOf(initial.emptyText) }
             val previewAppearance = collection?.let { c -> c.timetables.firstOrNull { it.id == table }?.timetable?.appearance ?: c.active.appearance } ?: Appearance()
             TempoTheme(if (theme.isBlank()) previewAppearance else Appearance(preset = ThemePreset.valueOf(theme), mode = mode)) {
+                val view = LocalView.current
+                val lightBars = MaterialTheme.colorScheme.background.luminance() > .5f
+                SideEffect {
+                    WindowCompat.getInsetsController(window, view).apply {
+                        isAppearanceLightStatusBars = lightBars
+                        isAppearanceLightNavigationBars = lightBars
+                    }
+                }
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Text("Your Tempo widget", style = MaterialTheme.typography.headlineMedium)

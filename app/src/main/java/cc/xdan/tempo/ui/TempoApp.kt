@@ -108,7 +108,7 @@ fun TempoApp(model: TempoViewModel) {
                         val icons = listOf(Icons.Outlined.Today, Icons.Outlined.CalendarViewWeek, Icons.Outlined.CollectionsBookmark, Icons.Outlined.Settings)
                         Destination.entries.forEachIndexed { index, item ->
                             NavigationBarItem(selected = destination == item, onClick = { destination = item },
-                                icon = { Icon(icons[index], null) }, label = { Text(item.name.lowercase().replaceFirstChar { it.titlecase() }) })
+                                icon = { Icon(icons[index], null) }, label = { Text(item.name.lowercase().replaceFirstChar { it.titlecase() }, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) })
                         }
                     } },
                     floatingActionButton = {

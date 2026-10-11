@@ -24,12 +24,16 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
 
 @Composable
 fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, importTimetable: () -> Unit, manageTimetables: (() -> Unit)? = null) {
     val step = timetable.onboardingStep
+    val focus = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
     var name by rememberSaveable { mutableStateOf(timetable.name) }
     var days by rememberSaveable { mutableStateOf(timetable.days.map { it.day }.joinToString(",")) }
     var start by rememberSaveable { mutableStateOf(minuteLabel(timetable.days.firstOrNull()?.time?.start ?: 540)) }
@@ -52,7 +56,7 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
         }
     }
     val selectedDays = days.split(",").mapNotNull { it.toIntOrNull() }
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp)) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(Icons.Outlined.CalendarViewWeek, null, Modifier.size(36.dp))
             Column { Text("Tempo", style = MaterialTheme.typography.headlineLarge); Text("Part of Axis", color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -122,6 +126,7 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
         Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             if (step > 0) TextButton(onClick = { update { it.copy(onboardingStep = step - 1) } }) { Text("Back") } else Text("1 / 4")
             Button(enabled = step != 0 || (name.isNotBlank() && validSpan(start, end) != null && selectedDays.isNotEmpty() && cycleValid), onClick = {
+                focus.clearFocus(); keyboard?.hide()
                 if (step == 0) update { it.copy(name = name.trim(), days = selectedDays.map { d -> DayHours(d, validSpan(start, end)!!) }, cycle = WeekCycle(weeks.toInt(), anchor), onboardingStep = 1) }
                 else if (step < 3) update { it.copy(onboardingStep = step + 1) }
                 else update { it.copy(onboarded = true) }
