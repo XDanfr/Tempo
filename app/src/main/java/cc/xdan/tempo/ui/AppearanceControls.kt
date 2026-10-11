@@ -24,10 +24,10 @@ fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Appearance", style = MaterialTheme.typography.titleLarge)
         ThemeSelector(appearance, change)
-        ChoiceField("Subject blocks", appearance.blockStyle, BlockStyle.entries,
+        PillChoiceField("Subject blocks", appearance.blockStyle, BlockStyle.entries,
             { if (it == BlockStyle.FILLED) "Filled" else "Outlines" },
             { change(appearance.copy(blockStyle = it, breakStyle = appearance.effectiveBreakStyle)) })
-        ChoiceField("Break blocks", appearance.effectiveBreakStyle, BlockStyle.entries,
+        PillChoiceField("Break blocks", appearance.effectiveBreakStyle, BlockStyle.entries,
             { if (it == BlockStyle.FILLED) "Filled" else "Outlines" },
             { change(appearance.copy(breakStyle = it)) })
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Show icons", Modifier.weight(1f)); Switch(appearance.showIcons, { change(appearance.copy(showIcons = it)) }) }
