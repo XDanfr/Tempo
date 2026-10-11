@@ -11,7 +11,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.ColorUtils
-import cc.xdan.tempo.R
+import cc.xdan.tempo.core.designsystem.R
 import cc.xdan.tempo.model.minuteLabel
 import cc.xdan.tempo.schedule.ScheduleImagePlan
 
