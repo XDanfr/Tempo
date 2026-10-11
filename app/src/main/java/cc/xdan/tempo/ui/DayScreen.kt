@@ -55,7 +55,7 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                     Text(weekdayNames[animatedDay - 1], style = MaterialTheme.typography.headlineLarge)
                     Text("$animatedDate · Week ${ScheduleResolver.cycleWeek(timetable, animatedDate)} of ${timetable.cycle.weeks}", style = MaterialTheme.typography.labelLarge)
                     timetable.exceptions.firstOrNull { it.date == animatedDate.toString() }?.let {
-                        Text(if (it.closed) "${it.name.ifBlank { "Day off" }} · closed" else "${it.name.ifBlank { "Dated replacement" }} · edits apply only to this date", color = MaterialTheme.colorScheme.primary)
+                        Text(if (it.closed) "${it.name.ifBlank { "Day off" }} · closed" else it.name.ifBlank { "Schedule for this date" }, color = MaterialTheme.colorScheme.primary)
                     } ?: timetable.holidays.firstOrNull { !animatedDate.isBefore(LocalDate.parse(it.startDate)) && !animatedDate.isAfter(LocalDate.parse(it.endDate)) }?.let {
                         Text("${it.name} · holiday", color = MaterialTheme.colorScheme.primary)
                     }
