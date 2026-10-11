@@ -55,8 +55,9 @@ class WidgetDayPlanTest {
         assertFalse(widgetDayComplete(t, friday, weekOverview(t, friday)))
     }
     @Test fun datedCycleAndHolidayResolveHeroAndAgendaOnTheSameDate() {
-        val t = table(Session("a", "s", 1, TimeSpan(600, 660), cycleWeek = 2),
-            Session("b", "s", 1, TimeSpan(720, 780), cycleWeek = 2)).copy(cycle = WeekCycle(2, "2026-10-05"))
+        val t = Timetable(subjects = listOf(subject), cycle = WeekCycle(2, "2026-10-05"),
+            sessions = listOf(Session("a", "s", 1, TimeSpan(600, 660), cycleWeek = 2),
+                Session("b", "s", 1, TimeSpan(720, 780), cycleWeek = 2)))
         val now = LocalDateTime.of(2026, 10, 12, 10, 15)
         val result = plan(t, now)!!
         assertEquals(2, result.lessonsLeft)

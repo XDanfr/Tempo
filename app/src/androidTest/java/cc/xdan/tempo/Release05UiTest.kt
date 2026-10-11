@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -90,6 +91,7 @@ class Release05UiTest {
         compose.onNodeWithContentDescription("Previous week").performClick()
         compose.waitUntil { selected == date }
         compose.onNodeWithText("Maths").assertExists()
+        saveScreen("qa-timetable.png")
     }
 
     @Test fun pngPrivacyPreviewRendersAndValidatesDimensions() {
@@ -111,9 +113,15 @@ class Release05UiTest {
         compose.onNodeWithText("Notes").performScrollTo().assertIsOff()
         compose.waitUntil(20_000) { compose.onAllNodesWithContentDescription("Exact PNG export preview").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Save PNG").performScrollTo().assertIsEnabled()
+        saveScreen("qa-preview.png")
         compose.onNodeWithText("Locations").performScrollTo().performClick().assertIsOn()
         compose.onNodeWithText("Locations").performClick().assertIsOff()
         compose.onNodeWithText("Width in pixels (480–2048)").performScrollTo().performTextReplacement("9999")
         compose.onNodeWithText("Save PNG").performScrollTo().assertIsNotEnabled()
+    }
+    private fun saveScreen(name: String) {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val screenshot = compose.onRoot().captureToImage().asAndroidBitmap()
+        java.io.File(context.filesDir, name).outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 }

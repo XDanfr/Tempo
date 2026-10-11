@@ -1,6 +1,7 @@
 package cc.xdan.tempo.ui
 
 import android.graphics.Bitmap
+import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -95,7 +96,8 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
         rendering?.exceptionOrNull()?.let { Text(it.message ?: "Could not render this image", color = MaterialTheme.colorScheme.error) }
         Button(onClick = {
             pending = bitmap
-            launcher.launch("Tempo-${if (week) "week" else "day"}-$dateText.png")
+            try { launcher.launch("Tempo-${if (week) "week" else "day"}-$dateText.png") }
+            catch (e: ActivityNotFoundException) { pending = null; report("No file picker is available on this device. Install or enable a document provider to save PNGs.") }
         }, enabled = bitmap != null && !busy && pending == null, modifier = Modifier.fillMaxWidth()) { Text(if (busy) "Saving PNG…" else "Save PNG") }
     }
 }
