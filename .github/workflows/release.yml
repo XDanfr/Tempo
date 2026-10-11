@@ -68,7 +68,7 @@ jobs:
           TEMPO_KEYSTORE_PASSWORD: ${{ secrets.TEMPO_KEYSTORE_PASSWORD }}
           TEMPO_KEY_ALIAS: ${{ secrets.TEMPO_KEY_ALIAS }}
           TEMPO_KEY_PASSWORD: ${{ secrets.TEMPO_KEY_PASSWORD }}
-        run: ./gradlew :core:schedule:test :core:data:testDebugUnitTest :app:testDebugUnitTest :app:lintRelease :app:assembleRelease :app:bundleRelease --no-daemon
+        run: ./gradlew :core:model:test :core:schedule:test :core:data:testDebugUnitTest :app:testDebugUnitTest :app:lintRelease :app:assembleRelease :app:bundleRelease --no-daemon
       - name: Verify release identity and signatures
         run: |
           apk=app/build/outputs/apk/release/app-release.apk
@@ -122,11 +122,11 @@ jobs:
           cat > "$RUNNER_TEMP/tempo-release-notes.md" <<EOF
           ## What's new in Tempo $version
 
-          - Compare timetables side by side or combine schedules into one agenda to find shared free time.
-          - Add a 2×1, 2×2 or 4×2 home-screen widget with current and upcoming periods, countdowns and completion messages.
-          - Match widgets to the app with brighter themes, subject colours, icons, optional outlines and more readable lesson cards.
-          - Check for stable updates in Settings or enable automatic daily checks on unmetered connections. Update metadata and the installed signing certificate are verified, and Android asks before installation.
-          - Updated the public-facing documentation and added sponsor support in Settings.
+          - Plan A/B or longer cycles anchored to a date, with holidays and dated replacement schedules.
+          - Resolve dated schedules consistently in the app, comparison and existing home-screen widgets.
+          - Duplicate or split sessions, batch-edit selected recurring sessions, and undo or redo saved changes.
+          - Preview and save configurable day/week PNGs with controls for names, locations and notes.
+          - Import existing timetable files and export complete dated backups using schema 3. Older Tempo versions cannot read the new snapshots.
 
           ## Compatibility
 

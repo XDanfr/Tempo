@@ -1,6 +1,6 @@
 # Architecture
 
-- `core:model`: serialisable, platform-independent values. Minutes since local midnight are used only for weekly templates; resolved dates will carry explicit zones.
+- `core:model`: serialisable, platform-independent values. Day intervals use minutes since local midnight; cycle anchors, holiday ranges and exceptions use ISO local dates. Explicit zones remain future work.
 - `core:schedule`: pure Kotlin resolution, gaps and conflicts. UI, widgets and exports must consume this engine.
 - `core:data`: repository and atomic local storage. A versioned DataStore collection stores multiple complete snapshots atomically; Room can replace this when occurrence queries and history require it. No synchronous disk writes on the UI thread.
 - `core:designsystem`: shared palettes and reusable Compose styling.

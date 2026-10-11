@@ -26,13 +26,24 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Sponsor button and “Made by XDan” in Settings
 - [X] Validate widget sizing/gestures and signed update installation on devices before release
 
+## 0.5 — dated schedules and image exports
+
+- [x] Shared date resolver for the app, comparison, widgets and image exports
+- [x] A/B and longer cycles (1–52 weeks), anchored to a date in week 1
+- [x] Inclusive holiday ranges and dated replacement schedules / days off
+- [x] Session duplication and splitting, selective recurring-session batch editing
+- [x] Session-local undo/redo for saved timetable and library changes
+- [x] PNG day/week agenda exports with an exact preview, configurable width and privacy controls
+- [x] Schema-1/2 migration and complete schema-3 portable snapshots
+
+See [the 0.5 guide](RELEASE-0.5.md) for scope, compatibility and validation.
+
 ## Later releases
 
-- [ ] Multiple-week timetables: A/B or longer cycles, anchored to a date
-- [ ] Holidays, dated exceptions, overnight shifts and explicit timetable time zones
+- [ ] Overnight shifts and explicit timetable time zones
 - [ ] Calendar `.ics` import/export, recurring events and calendar-app integration
-- [ ] PNG day/week/day-card exports with preview and configurable dimensions
-- [ ] Free tags, splitting, batch editing, duplication and undo/redo
+- [ ] Additional PNG day-card styles and fixed-height exports
+- [ ] Free tags and selective break / dated-exception batch editing
 - [ ] Side-by-side weekly comparison and additional widget views
 - [ ] Tablet/foldable layouts, search and further accessibility improvements
 - [ ] Selective imports, bundled assets and restore points
@@ -49,4 +60,4 @@ I plan to make homework and assignments an optional part of Tempo, so school tim
 - [ ] Offer optional due-date reminders
 - [ ] Show approaching deadlines in an optional widget section or dedicated assignment view, including future dates after the week’s lessons are all done
 
-Tempo currently uses weekly templates in the device’s local time. Multiple-week cycles and dated exceptions will use a shared dated scheduling model before being exposed across the app, widgets and exports.
+Tempo resolves dated local-day schedules in the device's local time. Explicit zones, overnight shifts and calendar recurrence will build on this foundation.

@@ -19,11 +19,14 @@ Once a public stable release is available, you can check for updates in Settings
 ## Plan your week
 
 - **Make schedules that fit your life.** Keep separate timetables for school, college, work or personal activities. Set your own days, periods, session times, breaks and lunch.
+- **Plan alternating weeks and days off.** Anchor a cycle of up to 52 weeks to a date, add holidays, and replace a single date without changing your recurring schedule.
+- **Edit with less repetition.** Duplicate or split sessions, change selected recurring sessions together, and undo or redo saved edits while Tempo remains open.
 - **See the day at a glance.** Check what’s happening now, follow a proportional timeline and fill an open period when plans change.
 - **Compare timetables.** Put schedules side by side or combine several people’s lessons into one agenda to find shared free time.
 - **Make it yours.** Give subjects their own colours, locations and optional icons. Choose Forest, Ocean, Amber or a wallpaper-based Material You theme, in light, dark or system mode.
 - **Keep your schedule close.** Add a 2×1, 2×2 or 4×2 widget for current and upcoming periods, with subject colours and theme options.
 - **Move your timetable when you need to.** Import during setup or export a `.tempo.json` backup with your subjects, times, breaks, notes, icons and appearance.
+- **Save an image of your plans.** Preview a day or week PNG, choose its width, and decide whether to include names, locations and notes.
 
 ## See Tempo in action
 
@@ -55,7 +58,7 @@ Your timetable stays on your device unless you export it. Tempo has no accounts 
 
 ## What’s next
 
-Multiple-week cycles, calendar `.ics` integration, PNG exports, free tags, share links and optional homework or assignment tracking with widget due dates are planned. See the [roadmap](docs/ROADMAP.md) for details.
+Calendar `.ics` integration, overnight shifts, explicit time zones, free tags, share links and optional homework or assignment tracking with widget due dates are planned. See the [roadmap](docs/ROADMAP.md) and [0.5 guide](docs/RELEASE-0.5.md) for details.
 
 ## Support Tempo
 
@@ -67,7 +70,9 @@ Multiple-week cycles, calendar `.ics` integration, PNG exports, free tags, share
 Open the project in Android Studio with JDK 17 and Android SDK 36. The Gradle wrapper is included:
 
 ```sh
-./gradlew :core:schedule:test :core:data:testDebugUnitTest :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+./gradlew :core:model:test :core:schedule:test :core:data:testDebugUnitTest :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+# With an Android emulator or test device connected:
+./gradlew :app:connectedDebugAndroidTest
 ```
 
 Release builds use R8 minification and resource shrinking. See [architecture](docs/ARCHITECTURE.md) for module boundaries. Outfit is bundled under the SIL Open Font Licence; its licence is included with the font assets.
