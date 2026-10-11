@@ -55,6 +55,7 @@ data class Appearance(
     val showIcons: Boolean = true,
     val blockStyle: BlockStyle = BlockStyle.FILLED,
     val breakStyle: BlockStyle? = null,
+    val showLocations: Boolean = true,
 ) {
     // Keep the first milestone's wallpaper switch readable when migrating saved state.
     val effectiveBreakStyle: BlockStyle get() = breakStyle ?: blockStyle

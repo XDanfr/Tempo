@@ -31,6 +31,7 @@ fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
             { if (it == BlockStyle.FILLED) "Filled" else "Outlines" },
             { change(appearance.copy(breakStyle = it)) })
         Row(verticalAlignment = Alignment.CenterVertically) { Text("Show icons", Modifier.weight(1f)); Switch(appearance.showIcons, { change(appearance.copy(showIcons = it)) }) }
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Show locations", Modifier.weight(1f)); Switch(appearance.showLocations, { change(appearance.copy(showLocations = it)) }) }
     }
 }
 

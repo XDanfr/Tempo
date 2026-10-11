@@ -199,7 +199,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                                 val day = if (primaryDate != now.toLocalDate()) primaryDate?.format(DateTimeFormatter.ofPattern("EEE"))?.plus(" · ") ?: "" else ""
                                 "$day${minuteLabel(it.time.start)}–${minuteLabel(it.time.end)}"
                             }.orEmpty()
-                            val location = if (settings.showLocation) lesson?.location?.takeIf { it.isNotBlank() } else null
+                            val location = if (settings.showsLocations(appearance)) lesson?.location?.takeIf { it.isNotBlank() } else null
                             val detail = when {
                                 timetable == null -> "Choose another timetable in widget settings"
                                 !timetable.onboarded -> "Open Tempo to finish setup"
@@ -251,7 +251,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                                     row.setTextViewTextSize(R.id.widget_row_title, android.util.TypedValue.COMPLEX_UNIT_SP, sizing.textSize(18f, false, !stacked))
                                     row.setTextViewTextSize(R.id.widget_row_detail, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
                                     row.setInt(R.id.widget_row_detail, "setMaxLines", 1)
-                                    val room = if (settings.showLocation) (activity as? ScheduleBlock.Lesson)?.location?.takeIf { it.isNotBlank() } else null
+                                    val room = if (settings.showsLocations(appearance)) (activity as? ScheduleBlock.Lesson)?.location?.takeIf { it.isNotBlank() } else null
                                     val overflow = if (index == later.lastIndex && hidden > 0) "+$hidden more" else room
                                     row.setTextViewText(R.id.widget_row_detail, listOfNotNull("${minuteLabel(activity.time.start)}–${minuteLabel(activity.time.end)}", overflow).joinToString(" · "))
                                     listOf(R.id.widget_row_title, R.id.widget_row_detail).forEach { row.setTextColor(it, widgetForeground(colour).toArgb()) }

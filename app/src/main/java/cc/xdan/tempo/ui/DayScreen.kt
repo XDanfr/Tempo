@@ -71,14 +71,14 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                         else -> "You're finished for today"
                     }
                     val detail = when {
-                        current is ScheduleBlock.Lesson -> "${current.location.ifBlank { "No location set" }} · ends ${minuteLabel(current.time.end)}"
+                        current is ScheduleBlock.Lesson -> (if (timetable.appearance.showLocations) "${current.location.ifBlank { "No location set" }} · " else "") + "ends ${minuteLabel(current.time.end)}"
                         current is ScheduleBlock.Break -> "Until ${minuteLabel(current.time.end)}"
                         current is ScheduleBlock.Free -> "Free until ${minuteLabel(current.time.end)}"
                         next != null -> "Starts at ${minuteLabel(next.time.start)}"
                         else -> "Make room for what matters."
                     }
                     val upcoming = if (current is ScheduleBlock.Break || current is ScheduleBlock.Free) {
-                        next?.let { "Up next: ${it.subject.name} · ${minuteLabel(it.time.start)}" + if (it.location.isNotBlank()) " · ${it.location}" else "" }
+                        next?.let { "Up next: ${it.subject.name} · ${minuteLabel(it.time.start)}" + if (timetable.appearance.showLocations && it.location.isNotBlank()) " · ${it.location}" else "" }
                             ?: "No more sessions today"
                     } else null
                     val outlined = (if (current is ScheduleBlock.Break) timetable.appearance.effectiveBreakStyle else timetable.appearance.blockStyle) == BlockStyle.OUTLINED
@@ -171,7 +171,7 @@ private fun ScheduleItem(block: ScheduleBlock, appearance: Appearance, current: 
                 Text(name, style = if (compact) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleMedium,
                     maxLines = if (block.time.minutes < 75) 1 else 2, overflow = TextOverflow.Ellipsis)
                 Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelLarge)
-                if (block is ScheduleBlock.Lesson && block.location.isNotBlank() && block.time.minutes >= 75) Text(block.location, style = MaterialTheme.typography.bodySmall)
+                if (appearance.showLocations && block is ScheduleBlock.Lesson && block.location.isNotBlank() && block.time.minutes >= 75) Text(block.location, style = MaterialTheme.typography.bodySmall)
                 if (current && block.time.minutes >= 60) Text("NOW", style = MaterialTheme.typography.labelSmall)
             }
             Icon(Icons.Outlined.ChevronRight, "Edit block", Modifier.size(20.dp))
