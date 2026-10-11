@@ -9,6 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -20,10 +22,12 @@ fun EditorSheet(title: String, dismiss: () -> Unit, confirm: (() -> Unit)? = nul
     confirmLabel: String = "Save", scrollContent: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-    val close = { scope.launch { state.hide(); dismiss() }; Unit }
     // Keep content flings out of the sheet's draggable anchors, including at scroll boundaries.
     ModalBottomSheet(onDismissRequest = dismiss, sheetState = state, sheetGesturesEnabled = false,
         dragHandle = null) {
+        val focus = LocalFocusManager.current
+        val keyboard = LocalSoftwareKeyboardController.current
+        val close = { focus.clearFocus(); keyboard?.hide(); scope.launch { state.hide(); dismiss() }; Unit }
         val maxHeight = (LocalConfiguration.current.screenHeightDp * .88f).dp
         Column(Modifier.fillMaxWidth().height(maxHeight).imePadding().testTag("editor-panel")) {
             Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -34,7 +38,7 @@ fun EditorSheet(title: String, dismiss: () -> Unit, confirm: (() -> Unit)? = nul
                 verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
             if (confirm != null) Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = close, Modifier.weight(1f)) { Text("Cancel") }
-                Button(enabled = enabled, onClick = { scope.launch { state.hide(); confirm() } }, modifier = Modifier.weight(1f)) { Text(confirmLabel) }
+                Button(enabled = enabled, onClick = { focus.clearFocus(); keyboard?.hide(); scope.launch { state.hide(); confirm() } }, modifier = Modifier.weight(1f)) { Text(confirmLabel) }
             }
             Spacer(Modifier.navigationBarsPadding())
         }

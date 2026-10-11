@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import android.graphics.Bitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -87,7 +88,8 @@ class UxRefinementTest {
             compose.onNodeWithText("Save").performClick()
             compose.waitUntil(10_000) { model.state.value.timetable?.exceptions?.singleOrNull()?.sessions?.singleOrNull()?.location == "Dated room" }
             assertEquals("", model.state.value.timetable!!.sessions.single().location)
-            compose.onNodeWithContentDescription("Edit block").performClick()
+            compose.waitUntil(10_000) { compose.onAllNodesWithText("Dated room").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithContentDescription("Edit block").performSemanticsAction(SemanticsActions.OnClick) { it() }
             compose.waitUntil(10_000) { compose.onAllNodesWithText("Applies only to $date. This date has its own schedule.").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("Day").assertDoesNotExist()
         } finally { compose.runOnIdle { store.clear() } }
