@@ -64,7 +64,7 @@ fun TempoApp(model: TempoViewModel) {
                 var selectedDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
                 var editingBaseDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
                 var editorDate by rememberSaveable { mutableStateOf<String?>(null) }
-                val datedTarget = editorDate?.let(LocalDate::parse)
+                val datedTarget = (editorDate ?: editingBaseDate.takeIf { date -> timetable.exceptions.any { it.date == date } })?.let(LocalDate::parse)
                 val editorTable = datedTarget?.let { date ->
                     timetable.replacementDay(date).let { replacement -> timetable.copy(sessions = replacement.sessions, breaks = replacement.breaks) }
                 } ?: timetable
