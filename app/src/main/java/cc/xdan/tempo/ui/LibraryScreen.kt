@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
+import cc.xdan.tempo.schedule.removeSubject
 import java.util.UUID
 
 @Composable
@@ -47,9 +48,9 @@ fun LibraryScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Un
             }
         }
     }
-    if (editor) SubjectEditor(selected, timetable.sessions.count { it.subjectId == selected?.id }, { editor = false },
+    if (editor) SubjectEditor(selected, (timetable.sessions + timetable.exceptions.flatMap { it.sessions }).count { it.subjectId == selected?.id }, { editor = false },
         { subject -> update { it.copy(subjects = it.subjects.filterNot { s -> s.id == subject.id } + subject) }; editor = false },
-        { id -> update { it.copy(subjects = it.subjects.filterNot { s -> s.id == id }, sessions = it.sessions.filterNot { s -> s.subjectId == id }) }; editor = false })
+        { id -> update { it.removeSubject(id) }; editor = false })
 }
 
 @Composable
