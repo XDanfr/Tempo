@@ -19,8 +19,8 @@ android {
         applicationId = "cc.xdan.tempo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 6
+        versionName = "0.4.1"
     }
     signingConfigs {
         if (hasReleaseSigning) {
