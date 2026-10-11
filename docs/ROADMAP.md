@@ -37,12 +37,21 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Schema-1/2 migration and complete schema-3 portable snapshots
 - [x] Calendar/clock pickers, common cycle suggestions and singular session labels
 - [x] Stable scrolling editor panels with scope choices inside editing flows
-- [x] Settings pages and independent PNG theme/light/dark options
+- [x] Settings pages with transitions, predictive back, navigation icons and inline About content
+- [x] Compact day-hours and period dialogs; independent PNG themes with System selected by default
+- [x] Scrollable widget timetable/icon/location pills and shared theme cards, with location following
+- [x] Editable onboarding subject cards and initial anchored cycle length
 
 See [the 0.5 guide](RELEASE-0.5.md) for scope, compatibility and validation.
 
 ## Later releases
 
+- [ ] Restore bottom-sheet drag handles and swipe-down dismissal without coupling content flings to changing sheet anchors; include boundary-fling and keyboard regression checks
+- [ ] Friendly display dates such as “11th October 2026”, including ordinal edge cases and locale choices; preserve ISO dates in storage and portable files
+- [ ] Landscape timetable image exports with a time-grid/map layout and dotted hour or period guides, matching preview and privacy controls
+- [ ] Suggest icons for recognised subject names, while preserving a user-selected icon and offering manual changes
+- [ ] Tap a Library subject to quickly schedule it; retain an explicit pencil action for full subject editing
+- [ ] Ask when subjects occur during onboarding, with day/time and cycle-week choices, editable summaries and an option to finish later
 - [ ] Overnight shifts and explicit timetable time zones
 - [ ] Calendar `.ics` import/export, recurring events and calendar-app integration
 - [ ] Additional PNG day-card styles and fixed-height exports

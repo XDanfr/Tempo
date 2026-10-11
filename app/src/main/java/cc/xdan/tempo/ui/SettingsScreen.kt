@@ -1,6 +1,7 @@
 package cc.xdan.tempo.ui
 
 import android.os.Build
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.foundation.shape.CircleShape
@@ -54,7 +55,7 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
         item { HorizontalDivider(Modifier.padding(top = 12.dp)); AboutTempo() }
         } else item {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalIconButton(onClick = { page = null }, shape = CircleShape) { Icon(Icons.Outlined.ArrowBack, "Back to settings") }
+                FilledTonalIconButton(onClick = { page = null }, shape = CircleShape) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to settings") }
                 Text(currentPage.label, style = MaterialTheme.typography.headlineMedium)
             }
         }

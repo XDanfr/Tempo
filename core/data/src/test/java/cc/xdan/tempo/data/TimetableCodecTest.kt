@@ -5,6 +5,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TimetableCodecTest {
+    @Test fun locationVisibilityDefaultsForOldFilesAndRoundTrips() {
+        val original = demoTimetable(Appearance(showLocations = false))
+        assertEquals(original, TimetableCodec.decode(TimetableCodec.encode(original)))
+        for (version in 1..3) {
+            val legacy = TimetableCodec.encode(original).replace("\"schemaVersion\":3", "\"schemaVersion\":$version").replace(",\"showLocations\":false", "")
+            assertTrue(TimetableCodec.decode(legacy).appearance.showLocations)
+        }
+    }
+
     @Test fun roundTripPreservesEverything() {
         val original = demoTimetable(Appearance(ThemePreset.OCEAN, ThemeMode.LIGHT, showIcons = false))
         assertEquals(original, TimetableCodec.decode(TimetableCodec.encode(original)))

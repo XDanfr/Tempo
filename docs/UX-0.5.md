@@ -21,7 +21,7 @@ Outfit type, Material components, theme cards and subject colours.
 - Editor flings stay inside a fixed panel. Close, Cancel, Back and outside taps
   remain available; Save stays outside the scrolling body.
 - PNG appearance uses the same recognisable theme cards and mode chips as app
-  appearance. It is independent of app appearance, starts in light mode and
+  appearance. It is independent of app appearance, starts in System mode and
   includes the selected theme in the exact preview/save snapshot.
 - Session, subject and break summaries use singular forms for one item.
 
