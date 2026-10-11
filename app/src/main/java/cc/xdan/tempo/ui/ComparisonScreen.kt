@@ -76,7 +76,7 @@ fun ComparisonScreen(collection: TimetableCollection, dismiss: () -> Unit) {
                     Checkbox(entry.id in selected, null)
                     Column(Modifier.padding(start = 12.dp)) {
                         Text(entry.timetable.name, style = MaterialTheme.typography.titleMedium)
-                        Text("${entry.timetable.sessions.size} sessions", style = MaterialTheme.typography.bodySmall)
+                        Text(countLabel(entry.timetable.sessions.size, "session"), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

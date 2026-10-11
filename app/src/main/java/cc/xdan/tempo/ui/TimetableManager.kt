@@ -32,7 +32,7 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
                         Icon(if (active) Icons.Outlined.CheckCircle else Icons.Outlined.CalendarViewWeek, null)
                         Column(Modifier.weight(1f)) {
                             Text(saved.timetable.name, style = MaterialTheme.typography.titleMedium)
-                            Text(if (!saved.timetable.onboarded) "Setup in progress" else "${saved.timetable.sessions.size} sessions · ${saved.timetable.subjects.size} subjects", style = MaterialTheme.typography.bodySmall)
+                            Text(if (!saved.timetable.onboarded) "Setup in progress" else "${countLabel(saved.timetable.sessions.size, "session")} · ${countLabel(saved.timetable.subjects.size, "subject")}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     Row {

@@ -65,7 +65,7 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                     } ?: timetable.holidays.firstOrNull { !animatedDate.isBefore(LocalDate.parse(it.startDate)) && !animatedDate.isAfter(LocalDate.parse(it.endDate)) }?.let {
                         Text("${it.name} · holiday", color = MaterialTheme.colorScheme.primary)
                     }
-                    Text("${lessons.size} sessions · ${lessons.sumOf { it.time.minutes } / 60}h ${lessons.sumOf { it.time.minutes } % 60}m scheduled", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${countLabel(lessons.size, "session")} · ${lessons.sumOf { it.time.minutes } / 60}h ${lessons.sumOf { it.time.minutes } % 60}m scheduled", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (today) item {
                     val headline = when {
