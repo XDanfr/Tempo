@@ -6,6 +6,6 @@
       <ImageView android:id="@+id/widget_badge_background" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/widget_badge_flower" android:scaleType="fitXY" android:contentDescription="@null" />
       <ImageView android:id="@+id/widget_icon" android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center" android:contentDescription="@null" />
     </FrameLayout>
-    <TextView android:id="@+id/widget_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/outfit_semibold" android:text="All done" android:textSize="22sp" android:gravity="center" android:maxLines="1" android:ellipsize="end" />
+    <TextView android:id="@+id/widget_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:fontFamily="@font/outfit_semibold" android:text="All done" android:textSize="22sp" android:gravity="center" android:maxLines="1" android:ellipsize="end" />
   </LinearLayout>
 </FrameLayout>
