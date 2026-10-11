@@ -14,6 +14,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarViewWeek
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.Color
+import cc.xdan.tempo.schedule.removeSubject
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -30,6 +35,11 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
     var start by rememberSaveable { mutableStateOf(minuteLabel(timetable.days.firstOrNull()?.time?.start ?: 540)) }
     var end by rememberSaveable { mutableStateOf(minuteLabel(timetable.days.firstOrNull()?.time?.end ?: 990)) }
     var subjectEditor by remember { mutableStateOf(false) }
+    var selectedSubject by remember { mutableStateOf<Subject?>(null) }
+    var weeks by rememberSaveable { mutableStateOf(timetable.cycle.weeks.toString()) }
+    var anchor by rememberSaveable { mutableStateOf(timetable.cycle.anchorDate) }
+    val highestWeek = (timetable.sessions.mapNotNull { it.cycleWeek } + timetable.breaks.mapNotNull { it.cycleWeek }).maxOrNull() ?: 1
+    val cycleValid = weeks.toIntOrNull()?.let { it in highestWeek..52 } == true && validDate(anchor) != null
     val backProgress = remember { Animatable(0f) }
     val latestStep by rememberUpdatedState(step)
     PredictiveBackHandler(enabled = step > 0 && !subjectEditor) { events ->
@@ -72,6 +82,11 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
                         }, label = { Text(day.take(3)) }) }
                     }
                     TimeFields(start, end, { start = it }, { end = it })
+                    Text("How many weeks repeat?", style = MaterialTheme.typography.titleLarge)
+                    CycleWeekFields(weeks, { weeks = it })
+                    DateField("Date in week 1", anchor) { anchor = it }
+                    Text("Choose 1 for the same schedule each week, 2 for A/B weeks, or your own cycle. Weeks begin on Monday.", style = MaterialTheme.typography.bodySmall)
+                    if (!cycleValid) Text("Choose a valid date and $highestWeek–52 weeks.", color = MaterialTheme.colorScheme.error)
                 }
                 1 -> {
                     Text("Shape your day", style = MaterialTheme.typography.headlineMedium)
@@ -81,8 +96,19 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
                 2 -> {
                     Text("What fills your week?", style = MaterialTheme.typography.headlineMedium)
                     Text("Add subjects or work activities, with optional icons, colours and default locations. You can schedule them after setup.")
-                    timetable.subjects.forEach { subject -> Text(subject.name, style = MaterialTheme.typography.titleMedium) }
-                    Button(onClick = { subjectEditor = true }) { Text("Add subject / activity") }
+                    timetable.subjects.forEach { subject ->
+                        Card(onClick = { selectedSubject = subject; subjectEditor = true }, modifier = Modifier.fillMaxWidth(), border = BorderStroke(2.dp, Color(subject.colour))) {
+                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Surface(color = Color(subject.colour), shape = MaterialTheme.shapes.medium) { Icon(subject.icon.vector() ?: Icons.Outlined.GridView, null, Modifier.padding(10.dp), tint = Color(0xFF172116)) }
+                                Column(Modifier.weight(1f)) {
+                                    Text(subject.name, style = MaterialTheme.typography.titleMedium)
+                                    if (subject.location.isNotBlank()) Text(subject.location, style = MaterialTheme.typography.bodySmall)
+                                }
+                                Icon(Icons.Outlined.Edit, "Edit ${subject.name}")
+                            }
+                        }
+                    }
+                    Button(onClick = { selectedSubject = null; subjectEditor = true }) { Text("Add subject / activity") }
                 }
                 3 -> {
                     Text("Find your colour", style = MaterialTheme.typography.headlineMedium)
@@ -95,12 +121,14 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
         }
         Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             if (step > 0) TextButton(onClick = { update { it.copy(onboardingStep = step - 1) } }) { Text("Back") } else Text("1 / 4")
-            Button(enabled = step != 0 || (name.isNotBlank() && validSpan(start, end) != null && selectedDays.isNotEmpty()), onClick = {
-                if (step == 0) update { it.copy(name = name.trim(), days = selectedDays.map { d -> DayHours(d, validSpan(start, end)!!) }, onboardingStep = 1) }
+            Button(enabled = step != 0 || (name.isNotBlank() && validSpan(start, end) != null && selectedDays.isNotEmpty() && cycleValid), onClick = {
+                if (step == 0) update { it.copy(name = name.trim(), days = selectedDays.map { d -> DayHours(d, validSpan(start, end)!!) }, cycle = WeekCycle(weeks.toInt(), anchor), onboardingStep = 1) }
                 else if (step < 3) update { it.copy(onboardingStep = step + 1) }
                 else update { it.copy(onboarded = true) }
             }) { Text(if (step == 3) "Start using Tempo" else if (step == 2 && timetable.subjects.isEmpty()) "Add subjects later" else "Continue") }
         }
     }
-    if (subjectEditor) SubjectEditor(null, 0, { subjectEditor = false }, { subject -> update { it.copy(subjects = it.subjects + subject) }; subjectEditor = false }, {})
+    if (subjectEditor) SubjectEditor(selectedSubject, (timetable.sessions + timetable.exceptions.flatMap { it.sessions }).count { it.subjectId == selectedSubject?.id }, { subjectEditor = false },
+        { subject -> update { it.copy(subjects = it.subjects.filterNot { old -> old.id == subject.id } + subject) }; subjectEditor = false },
+        { id -> update { it.removeSubject(id) }; subjectEditor = false })
 }
