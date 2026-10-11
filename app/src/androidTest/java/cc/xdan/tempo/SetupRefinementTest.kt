@@ -1,8 +1,10 @@
 package cc.xdan.tempo
 
 import androidx.compose.runtime.*
+import androidx.activity.ComponentActivity
+import androidx.activity.BackEventCompat
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import cc.xdan.tempo.design.TempoTheme
@@ -16,7 +18,22 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SetupRefinementTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+
+    @Test fun predictiveSettingsBackCanCancelOrCommit() {
+        val table = Timetable(onboarded = true)
+        compose.setContent { TempoTheme(table.appearance) { SettingsScreen(table, {}, TimetableFileActions({}, {}), {}, false) } }
+        compose.onNodeWithText("Appearance").performClick()
+        compose.onNodeWithText("Subject blocks").performScrollTo().assertIsDisplayed()
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.dispatchOnBackStarted(BackEventCompat(0f, 100f, 0f, BackEventCompat.EDGE_LEFT)) }
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.dispatchOnBackProgressed(BackEventCompat(100f, 100f, .6f, BackEventCompat.EDGE_LEFT)) }
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.dispatchOnBackCancelled() }
+        compose.onNodeWithText("Subject blocks").assertIsDisplayed()
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.dispatchOnBackStarted(BackEventCompat(0f, 100f, 0f, BackEventCompat.EDGE_LEFT)) }
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.dispatchOnBackProgressed(BackEventCompat(200f, 100f, .8f, BackEventCompat.EDGE_LEFT)) }
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithText("Your Tempo").assertIsDisplayed()
+    }
 
     @Test fun onboardingEditsTheExistingSubjectAndKeepsItsIdentity() {
         var value by mutableStateOf(Timetable(onboardingStep = 2, subjects = listOf(Subject("maths", "Maths", location = "Room 5"))))
@@ -47,8 +64,8 @@ class SetupRefinementTest {
             EditorSheet("Monday hours", {}, confirm = { saved = true }, compact = true) { TimeFields("09:00", "16:30", {}, {}) }
         } }
         val panel = compose.onNodeWithTag("editor-panel").fetchSemanticsNode().boundsInRoot
-        val root = compose.onRoot().fetchSemanticsNode().boundsInRoot
-        assertTrue("Short editor should wrap its content", panel.height < root.height * .75f)
+        val screenHeight = InstrumentationRegistry.getInstrumentation().targetContext.resources.displayMetrics.heightPixels
+        assertTrue("Short editor should wrap its content", panel.height < screenHeight * .75f)
         compose.onNodeWithText("Save").assertIsDisplayed().performClick()
         assertTrue(saved)
     }
