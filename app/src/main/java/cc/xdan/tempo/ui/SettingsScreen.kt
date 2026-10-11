@@ -35,6 +35,7 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
             }
         }
         item { AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } } }
+        item { DatedScheduleSettings(timetable, update) }
         item { Text("Day lengths", style = MaterialTheme.typography.titleLarge) }
         items((1..7).toList()) { day ->
             val hours = timetable.days.firstOrNull { it.day == day }

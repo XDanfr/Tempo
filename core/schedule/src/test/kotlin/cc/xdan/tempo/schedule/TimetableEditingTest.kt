@@ -28,4 +28,17 @@ class TimetableEditingTest {
         assertTrue(edited.exceptions.single().sessions.isEmpty())
     }
     @Test(expected = IllegalArgumentException::class) fun splitAtBoundaryIsRejected() { splitSession(session, 540, "b") }
+    @Test fun selectiveBatchChangesOnlySelectedFieldsAndSessions() {
+        val other = session.copy(id = "b", day = 2)
+        val original = table.copy(sessions = listOf(session, other))
+        val edited = SessionBatchEdit(30, day = 3, location = "Lab").apply(original, setOf("a"))
+        assertEquals(other, edited.sessions[1])
+        assertEquals(TimeSpan(570, 690), edited.sessions[0].time)
+        assertEquals(2, edited.sessions[0].cycleWeek)
+        assertEquals("Keep", edited.sessions[0].notes)
+        assertEquals("Lab", edited.sessions[0].location)
+    }
+    @Test(expected = IllegalArgumentException::class) fun invalidBatchCannotPartiallyApply() {
+        SessionBatchEdit(-600).apply(table, setOf("a"))
+    }
 }
