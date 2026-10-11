@@ -72,7 +72,11 @@ fun TimeField(label: String, value: String, change: (String) -> Unit, modifier: 
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         TextButton(onClick = { choosing = false }) { Text("Cancel") }
-                        TextButton(onClick = { change(minuteLabel(state.hour * 60 + state.minute)); choosing = false }) { Text("Choose time") }
+                        TextButton(onClick = {
+                            val selected = state.hour * 60 + state.minute
+                            change(minuteLabel(if (allowEndOfDay && selected == 0) 1440 else selected))
+                            choosing = false
+                        }) { Text("Choose time") }
                     }
                 }
             }

@@ -104,6 +104,9 @@ class UxRefinementTest {
         java.io.File(context.filesDir, "qa-clock-picker.png").outputStream().use { clock.compress(Bitmap.CompressFormat.PNG, 100, it) }
         compose.onNodeWithText("End of day (24:00)").performScrollTo().performClick()
         compose.waitUntil(10_000) { end == "24:00" }
+        compose.onNodeWithText("End time").performClick()
+        compose.onNodeWithText("Choose time").performClick()
+        compose.runOnIdle { assertEquals("24:00", end) }
         assertEquals(TimeSpan(540, 1440), validSpan("09:00", end))
         val plan = scheduleImagePlan(table, date, false, 720, ImagePrivacy())
         for (preset in listOf(ThemePreset.FOREST, ThemePreset.OCEAN, ThemePreset.AMBER)) for (dark in listOf(false, true)) {
