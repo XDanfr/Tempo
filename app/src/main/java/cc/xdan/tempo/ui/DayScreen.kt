@@ -26,27 +26,42 @@ import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.*
 import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Composable
 fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean, selectDay: (Int) -> Unit,
-    edit: (Session) -> Unit, editFree: (Int, TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit) {
+    edit: (Session) -> Unit, editFree: (Int, TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit,
+    date: LocalDate = now.toLocalDate(), selectDate: (LocalDate) -> Unit = {},
+    dateEditing: Boolean = false, setDateEditing: (Boolean) -> Unit = {}) {
     Column(Modifier.fillMaxSize()) {
+        if (!today) DateNavigation(date, selectDate)
         if (!today) ScrollableTabRow(selectedTabIndex = day - 1, edgePadding = 12.dp) {
             weekdayNames.forEachIndexed { i, label -> Tab(selected = day == i + 1, onClick = { selectDay(i + 1) }, text = { Text(label.take(3)) }) }
         }
-        AnimatedContent(targetState = day, label = "selected day", transitionSpec = {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(if (dateEditing) "Edits apply only to $date" else "Edit recurring schedule", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+            Switch(dateEditing, setDateEditing, enabled = timetable.exceptions.none { it.date == date.toString() })
+        }
+        AnimatedContent(targetState = date, label = "selected day", transitionSpec = {
             val direction = if (targetState > initialState) 1 else -1
             (slideInHorizontally(spring(stiffness = 450f, dampingRatio = .9f)) { it * direction / 3 } + fadeIn(tween(180))) togetherWith
                 (slideOutHorizontally(tween(160)) { -it * direction / 5 } + fadeOut(tween(120)))
-        }) { animatedDay ->
-            val dayBlocks = ScheduleResolver.resolve(timetable, animatedDay)
+        }) { animatedDate ->
+            val animatedDay = animatedDate.dayOfWeek.value
+            val dayBlocks = ScheduleResolver.resolve(timetable, animatedDate)
             val lessons = dayBlocks.filterIsInstance<ScheduleBlock.Lesson>()
             val minute = now.hour * 60 + now.minute
-            val current = if (animatedDay == now.dayOfWeek.value) ScheduleResolver.current(dayBlocks, minute) else null
-            val next = if (animatedDay == now.dayOfWeek.value) ScheduleResolver.nextLesson(dayBlocks, minute) else null
+            val current = if (animatedDate == now.toLocalDate()) ScheduleResolver.current(dayBlocks, minute) else null
+            val next = if (animatedDate == now.toLocalDate()) ScheduleResolver.nextLesson(dayBlocks, minute) else null
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 112.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
                     Text(weekdayNames[animatedDay - 1], style = MaterialTheme.typography.headlineLarge)
+                    Text("$animatedDate · Week ${ScheduleResolver.cycleWeek(timetable, animatedDate)} of ${timetable.cycle.weeks}", style = MaterialTheme.typography.labelLarge)
+                    timetable.exceptions.firstOrNull { it.date == animatedDate.toString() }?.let {
+                        Text(if (it.closed) "${it.name.ifBlank { "Day off" }} · closed" else "${it.name.ifBlank { "Dated replacement" }} · edits apply only to this date", color = MaterialTheme.colorScheme.primary)
+                    } ?: timetable.holidays.firstOrNull { animatedDate.toString() >= it.startDate && animatedDate.toString() <= it.endDate }?.let {
+                        Text("${it.name} · holiday", color = MaterialTheme.colorScheme.primary)
+                    }
                     Text("${lessons.size} sessions · ${lessons.sumOf { it.time.minutes } / 60}h ${lessons.sumOf { it.time.minutes } % 60}m scheduled", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (today) item {
@@ -88,14 +103,14 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                         }
                     }
                 }
-                if (ScheduleResolver.blockConflicts(timetable, animatedDay).isNotEmpty()) item {
+                if (ScheduleResolver.blockConflicts(ScheduleResolver.resolvedTemplate(timetable, animatedDate), animatedDay).isNotEmpty()) item {
                     Text("Some sessions or breaks overlap. Tap a block to adjust its times.", color = MaterialTheme.colorScheme.error)
                 }
                 if (dayBlocks.isEmpty()) item {
                     Column(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Outlined.EventAvailable, null, Modifier.size(48.dp))
                         Text("A little breathing room", style = MaterialTheme.typography.titleLarge)
-                        Text("Add a session or enable this day in Settings.")
+                        Text("Add a session for this date, or review holidays and day hours in Settings.")
                     }
                 }
                 items(dayBlocks, key = { when (it) {

@@ -29,10 +29,13 @@ import java.time.LocalDate
 fun ComparisonScreen(collection: TimetableCollection, dismiss: () -> Unit) {
     var selected by rememberSaveable { mutableStateOf(collection.timetables.take(2).map { it.id }) }
     var day by rememberSaveable { mutableIntStateOf(LocalDate.now().dayOfWeek.value) }
+    var dateText by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    val date = LocalDate.parse(dateText)
     var combined by rememberSaveable { mutableStateOf(false) }
     var choosing by rememberSaveable { mutableStateOf(false) }
     val tables = collection.timetables.filter { it.id in selected }
-    val slices = remember(tables, day) { if (tables.size >= 2) compareTimetables(tables.map { it.timetable }, day) else emptyList() }
+    val datedTables = remember(tables, date) { tables.map { it.copy(timetable = ScheduleResolver.resolvedTemplate(it.timetable, date)) } }
+    val slices = remember(tables, date) { if (tables.size >= 2) compareTimetables(tables.map { it.timetable }, date) else emptyList() }
     Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Scaffold(modifier = Modifier.safeDrawingPadding(), topBar = {
@@ -48,8 +51,9 @@ fun ComparisonScreen(collection: TimetableCollection, dismiss: () -> Unit) {
                         TextButton(onClick = { choosing = true }) { Text("Choose") }
                     }
                     Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        (1..7).forEach { d -> FilterChip(day == d, { day = d }, label = { Text(weekdayNames[d - 1].take(3)) }) }
+                        (1..7).forEach { d -> FilterChip(date.dayOfWeek.value == d, { dateText = date.plusDays((d - date.dayOfWeek.value).toLong()).toString(); day = d }, label = { Text(weekdayNames[d - 1].take(3)) }) }
                     }
+                    DateNavigation(date) { dateText = it.toString(); day = it.dayOfWeek.value }
                     SingleChoiceSegmentedButtonRow(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
                         SegmentedButton(selected = !combined, onClick = { combined = false }, shape = SegmentedButtonDefaults.itemShape(0, 2), icon = { Icon(Icons.Outlined.ViewColumn, null, Modifier.size(18.dp)) }) { Text("Side by side") }
                         SegmentedButton(selected = combined, onClick = { combined = true }, shape = SegmentedButtonDefaults.itemShape(1, 2), icon = { Icon(Icons.Outlined.Groups, null, Modifier.size(18.dp)) }) { Text("Together") }
@@ -61,8 +65,8 @@ fun ComparisonScreen(collection: TimetableCollection, dismiss: () -> Unit) {
                             Text("Select timetables for different people or parts of your week.")
                             Button(onClick = { choosing = true }) { Text("Choose timetables") }
                         }
-                    } else if (combined) CombinedAgenda(tables, day, slices, Modifier.weight(1f))
-                    else AlignedTimelines(tables, day, Modifier.weight(1f))
+                    } else if (combined) CombinedAgenda(datedTables, date.dayOfWeek.value, slices, Modifier.weight(1f))
+                    else AlignedTimelines(datedTables, date.dayOfWeek.value, Modifier.weight(1f))
                 }
             }
         }
