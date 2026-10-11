@@ -60,7 +60,7 @@ private fun PeriodEditor(period: PeriodTemplate?, dismiss: () -> Unit, save: (Pe
     var end by rememberSaveable { mutableStateOf(minuteLabel(period?.time?.end ?: 630)) }
     val time = validSpan(start, end)
     EditorSheet(if (period == null) "New usual period" else "Edit usual period", dismiss,
-        confirm = { time?.let { save(PeriodTemplate(id, name.trim(), it)) } }, enabled = time != null && name.isNotBlank()) {
+        confirm = { time?.let { save(PeriodTemplate(id, name.trim(), it)) } }, enabled = time != null && name.isNotBlank(), compact = true) {
         OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         TimeFields(start, end, { start = it }, { end = it })
         Text("Existing sessions keep their saved times when this shortcut changes.", style = MaterialTheme.typography.bodySmall)

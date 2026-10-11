@@ -1,7 +1,9 @@
 package cc.xdan.tempo.ui
 
 import android.os.Build
-import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,8 +22,7 @@ private enum class SettingsPage(val label: String, val detail: String) {
     FILES("Timetables & files", "Manage, import, backup and export images"),
     APPEARANCE("Appearance", "Themes, colours and block styles"),
     SCHEDULE("Schedule", "Repeating weeks, holidays, day hours and usual periods"),
-    UPDATES("Updates", "Release checks and downloads"),
-    ABOUT("About Tempo", "Axis, credits and support")
+    UPDATES("Updates", "Release checks and downloads")
 }
 
 @Composable
@@ -29,27 +30,35 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
     var pngExport by remember { mutableStateOf(false) }
     var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
-    BackHandler(page != null) { page = null }
-    key(page) {
+    PredictiveSettingsHost(page?.name, { page = null }) { shownPage ->
+    val currentPage = shownPage?.let(SettingsPage::valueOf)
+    key(currentPage) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        if (page == null) {
+        if (currentPage == null) {
         item {
             Text("Your Tempo", style = MaterialTheme.typography.headlineMedium)
             Text("Part of Axis", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         items(SettingsPage.entries) { section ->
             ElevatedCard(onClick = { page = section }, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Icon(when (section) { SettingsPage.FILES -> Icons.Outlined.Folder; SettingsPage.APPEARANCE -> Icons.Outlined.Palette; SettingsPage.SCHEDULE -> Icons.Outlined.CalendarMonth; SettingsPage.UPDATES -> Icons.Outlined.SystemUpdate }, null)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(section.label, style = MaterialTheme.typography.titleMedium)
                     Text(section.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Icon(Icons.Outlined.ChevronRight, null)
                 }
             }
         }
+        item { HorizontalDivider(Modifier.padding(top = 12.dp)); AboutTempo() }
         } else item {
-            TextButton(onClick = { page = null }) { Text("Back to settings") }
-            Text(page!!.label, style = MaterialTheme.typography.headlineMedium)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FilledTonalIconButton(onClick = { page = null }, shape = CircleShape) { Icon(Icons.Outlined.ArrowBack, "Back to settings") }
+                Text(currentPage.label, style = MaterialTheme.typography.headlineMedium)
+            }
         }
-        if (page == SettingsPage.FILES) {
+        if (currentPage == SettingsPage.FILES) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Timetables", style = MaterialTheme.typography.titleLarge)
@@ -63,8 +72,8 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
             }
         }
         }
-        if (page == SettingsPage.APPEARANCE) item { AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } } }
-        if (page == SettingsPage.SCHEDULE) {
+        if (currentPage == SettingsPage.APPEARANCE) item { AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } } }
+        if (currentPage == SettingsPage.SCHEDULE) {
         item { DatedScheduleSettings(timetable, update) }
         item { Text("Day lengths", style = MaterialTheme.typography.titleLarge) }
         items((1..7).toList()) { day ->
@@ -84,8 +93,9 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
         }
         item { PeriodSetup(timetable, update) }
         }
-        if (page == SettingsPage.UPDATES) item { UpdateControls() }
-        if (page == SettingsPage.ABOUT) item { AboutTempo() }
+        if (currentPage == SettingsPage.UPDATES) item { UpdateControls() }
+
+    }
     }
     }
     if (pngExport) PngExportSheet(timetable, { pngExport = false }, report)
@@ -99,7 +109,7 @@ private fun HoursEditor(hours: DayHours, dismiss: () -> Unit, save: (DayHours) -
     var start by rememberSaveable { mutableStateOf(minuteLabel(hours.time.start)) }
     var end by rememberSaveable { mutableStateOf(minuteLabel(hours.time.end)) }
     val time = validSpan(start, end)
-    EditorSheet("${weekdayNames[hours.day - 1]} hours", dismiss, confirm = { time?.let { save(hours.copy(time = it)) } }, enabled = time != null) {
+    EditorSheet("${weekdayNames[hours.day - 1]} hours", dismiss, confirm = { time?.let { save(hours.copy(time = it)) } }, enabled = time != null, compact = true) {
         TimeFields(start, end, { start = it }, { end = it })
     }
 }

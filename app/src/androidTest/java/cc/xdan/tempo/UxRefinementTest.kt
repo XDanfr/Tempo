@@ -62,10 +62,10 @@ class UxRefinementTest {
         compose.onNodeWithText("Number of weeks").performTextReplacement("3")
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000) { value.cycle.weeks == 3 }
-        compose.onNodeWithText("Back to settings").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Back to settings").performScrollTo().performClick()
         compose.onNodeWithText("Timetables & files").performClick()
         compose.onNodeWithText("Export day / week PNG").assertIsDisplayed()
-        compose.onNodeWithText("Back to settings").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Back to settings").performScrollTo().performClick()
         compose.onNodeWithText("Appearance").performClick()
         compose.onNodeWithText("Light").performScrollTo().performClick()
         compose.waitUntil(10_000) { value.appearance.mode == ThemeMode.LIGHT }

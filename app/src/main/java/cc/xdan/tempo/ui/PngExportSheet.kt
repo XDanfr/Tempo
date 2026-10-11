@@ -43,7 +43,7 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
     var locations by rememberSaveable { mutableStateOf(false) }
     var notes by rememberSaveable { mutableStateOf(false) }
     var preset by rememberSaveable { mutableStateOf(table.appearance.selectedPreset) }
-    var mode by rememberSaveable { mutableStateOf(ThemeMode.LIGHT) }
+    var mode by rememberSaveable { mutableStateOf(ThemeMode.SYSTEM) }
     val appearance = table.appearance.copy(preset = preset, mode = mode, dynamicColour = false)
     val dark = when (mode) { ThemeMode.SYSTEM -> isSystemInDarkTheme(); ThemeMode.LIGHT -> false; ThemeMode.DARK -> true }
     val scheme = if (preset == ThemePreset.MATERIAL_YOU && Build.VERSION.SDK_INT >= 31) {
@@ -92,7 +92,6 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
         DateField("Date", dateText) { dateText = it }
         Text("Image theme", style = MaterialTheme.typography.titleMedium)
         ThemeSelector(appearance) { preset = it.selectedPreset; mode = it.mode }
-        Text("Changes apply only to this image. Light starts selected for printing.", style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(widthText, { widthText = it }, label = { Text("Image width (px)") }, supportingText = { Text("480–2048 pixels") }, singleLine = true,
             isError = width == null || width !in 480..2048, modifier = Modifier.fillMaxWidth())
         Text("Include in image", style = MaterialTheme.typography.titleMedium)
