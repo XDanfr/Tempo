@@ -3,6 +3,9 @@ package cc.xdan.tempo
 import androidx.compose.runtime.*
 import androidx.activity.ComponentActivity
 import androidx.activity.BackEventCompat
+import androidx.compose.ui.graphics.asAndroidBitmap
+import android.graphics.Bitmap
+import java.io.File
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -39,6 +42,8 @@ class SetupRefinementTest {
         var value by mutableStateOf(Timetable(onboardingStep = 2, subjects = listOf(Subject("maths", "Maths", location = "Room 5"))))
         compose.setContent { TempoTheme(value.appearance) { Onboarding(value, { value = it(value) }, {}) } }
         compose.onNodeWithText("Room 5").assertIsDisplayed()
+        val image = compose.onRoot().captureToImage().asAndroidBitmap()
+        File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "qa-onboarding-subjects.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
         compose.onNodeWithText("Maths").performClick()
         compose.onNodeWithText("Name").performTextReplacement("Mathematics")
         compose.onNodeWithText("Save").performClick()
