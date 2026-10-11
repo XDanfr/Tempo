@@ -77,7 +77,7 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
     EditorSheet("Export timetable image", dismiss) {
         ChoiceField("View", week, listOf(false, true), { if (it) "Week (Monday–Sunday)" else "Day" }, { week = it })
         DateField("Date", dateText) { dateText = it }
-        OutlinedTextField(widthText, { widthText = it }, label = { Text("Width in pixels (480–2048)") }, singleLine = true,
+        OutlinedTextField(widthText, { widthText = it }, label = { Text("Image width (px)") }, supportingText = { Text("480–2048 pixels") }, singleLine = true,
             isError = width == null || width !in 480..2048, modifier = Modifier.fillMaxWidth())
         Text("Include in image", style = MaterialTheme.typography.titleMedium)
         PrivacyToggle("Timetable name", title) { title = it }
@@ -85,15 +85,16 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
         PrivacyToggle("Locations", locations) { locations = it }
         PrivacyToggle("Notes", notes) { notes = it }
         Text("Locations and notes start hidden. Review the preview before saving. Colours and dates remain visible.", style = MaterialTheme.typography.bodySmall)
-        if (bitmap != null) {
-            Text("Preview · ${bitmap.width} × ${bitmap.height} px", style = MaterialTheme.typography.labelLarge)
-            Image(bitmap.asImageBitmap(), "Exact PNG export preview", Modifier.fillMaxWidth().height(300.dp), contentScale = ContentScale.Fit)
-        } else if (plan != null && rendering == null) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CircularProgressIndicator(Modifier.size(24.dp)); Text("Rendering preview…")
+        if (plan != null) {
+            Text(bitmap?.let { "Preview · ${it.width} × ${it.height} px" } ?: "Preview", style = MaterialTheme.typography.labelLarge)
+            Box(Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
+                if (bitmap != null) Image(bitmap.asImageBitmap(), "Exact PNG export preview", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                else if (rendering == null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CircularProgressIndicator(Modifier.size(24.dp)); Text("Rendering preview…")
+                }
+                else Text(rendering?.exceptionOrNull()?.message ?: "Could not render this image", color = MaterialTheme.colorScheme.error)
             }
         }
-        rendering?.exceptionOrNull()?.let { Text(it.message ?: "Could not render this image", color = MaterialTheme.colorScheme.error) }
         Button(onClick = {
             pending = bitmap
             try { launcher.launch("Tempo-${if (week) "week" else "day"}-$dateText.png") }

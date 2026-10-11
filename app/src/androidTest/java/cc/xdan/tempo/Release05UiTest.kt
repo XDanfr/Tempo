@@ -8,7 +8,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -119,13 +118,13 @@ class Release05UiTest {
         saveScreen("qa-preview.png")
         compose.onNodeWithText("Locations").performScrollTo().performClick().assertIsOn()
         compose.onNodeWithText("Locations").performClick().assertIsOff()
-        compose.onNodeWithText("Width in pixels (480–2048)").performScrollTo().performTextReplacement("9999")
+        compose.onNodeWithText("Image width (px)").performScrollTo().performTextReplacement("9999")
         compose.onNodeWithText("Save PNG").performScrollTo().assertIsNotEnabled()
     }
     private fun saveScreen(name: String) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val root = compose.onAllNodes(isRoot()).fetchSemanticsNodes().maxBy { it.boundsInWindow.width * it.boundsInWindow.height }
-        val screenshot = compose.onNode(isRoot() and SemanticsMatcher("largest root") { it.id == root.id }).captureToImage().asAndroidBitmap()
+        compose.waitForIdle()
+        val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
         java.io.File(context.filesDir, name).outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 }
