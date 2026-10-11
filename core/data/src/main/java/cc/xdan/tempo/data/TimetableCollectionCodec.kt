@@ -13,7 +13,14 @@ object TimetableCollectionCodec {
             TimetableCollection(timetables = listOf(SavedTimetable("local", TimetableCodec.decode(text))))
         } else {
             require(root["format"]?.jsonPrimitive?.content == "cc.xdan.tempo.library") { "Unsupported saved format" }
-            json.decodeFromJsonElement<TimetableCollection>(root)
+            val migrated = JsonObject(root.toMutableMap().apply {
+                this["timetables"] = JsonArray(root.getValue("timetables").jsonArray.map { entry ->
+                    JsonObject(entry.jsonObject.toMutableMap().apply {
+                        this["timetable"] = json.parseToJsonElement(TimetableCodec.encode(TimetableCodec.decode(getValue("timetable").toString())))
+                    })
+                })
+            })
+            json.decodeFromJsonElement<TimetableCollection>(migrated)
         }
     }
 }

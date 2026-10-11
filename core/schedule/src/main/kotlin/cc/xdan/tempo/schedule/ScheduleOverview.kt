@@ -2,17 +2,18 @@ package cc.xdan.tempo.schedule
 
 import cc.xdan.tempo.model.*
 import java.time.LocalDateTime
+import java.time.LocalDate
 
 data class UpcomingLesson(val lesson: ScheduleBlock.Lesson, val starts: LocalDateTime)
 data class ScheduleOverview(val current: ScheduleBlock?, val next: UpcomingLesson?, val boundary: LocalDateTime?)
 
 fun overview(timetable: Timetable, now: LocalDateTime): ScheduleOverview {
     val minute = now.hour * 60 + now.minute
-    val today = ScheduleResolver.resolve(timetable, now.dayOfWeek.value)
+    val today = ScheduleResolver.resolve(timetable, now.toLocalDate())
     val current = ScheduleResolver.current(today, minute)
-    val next = (0..7).firstNotNullOfOrNull { offset ->
+    val next = (0..366).firstNotNullOfOrNull { offset ->
         val date = now.toLocalDate().plusDays(offset.toLong())
-        ScheduleResolver.resolve(timetable, date.dayOfWeek.value).filterIsInstance<ScheduleBlock.Lesson>()
+        ScheduleResolver.resolve(timetable, date).filterIsInstance<ScheduleBlock.Lesson>()
             .firstOrNull { offset > 0 || it.time.start > minute }
             ?.let { UpcomingLesson(it, date.atStartOfDay().plusMinutes(it.time.start.toLong())) }
     }
@@ -37,6 +38,9 @@ fun compareTimetables(timetables: List<Timetable>, day: Int): List<ComparisonSli
     }.filter { it.blocks.any { row -> row.isNotEmpty() } }
 }
 
+fun compareTimetables(timetables: List<Timetable>, date: LocalDate): List<ComparisonSlice> =
+    compareTimetables(timetables.map { ScheduleResolver.resolvedTemplate(it, date) }, date.dayOfWeek.value)
+
 enum class WeekStatus { CURRENT, UPCOMING, DONE, EMPTY }
 data class WeekOverview(val status: WeekStatus, val block: ScheduleBlock?, val next: UpcomingLesson?, val boundary: LocalDateTime?)
 
@@ -50,7 +54,7 @@ fun weekOverview(timetable: Timetable, now: LocalDateTime): WeekOverview {
         current is ScheduleBlock.Lesson -> WeekStatus.CURRENT
         next != null && current is ScheduleBlock.Break -> WeekStatus.CURRENT
         next != null -> WeekStatus.UPCOMING
-        timetable.sessions.isNotEmpty() -> WeekStatus.DONE
+        timetable.sessions.isNotEmpty() || timetable.exceptions.any { it.sessions.isNotEmpty() } -> WeekStatus.DONE
         else -> WeekStatus.EMPTY
     }
     return WeekOverview(status, if (status == WeekStatus.CURRENT) current else next?.lesson, next, result.boundary)
