@@ -12,7 +12,7 @@ class TimetableTransferTest {
     }
     @Test fun acceptsLegacySnapshotAndMigratesIt() {
         val value = demoTimetable()
-        val legacy = TimetableCodec.encode(value).replace("\"schemaVersion\":2", "\"schemaVersion\":1")
+        val legacy = TimetableCodec.encode(value).replace("\"schemaVersion\":3", "\"schemaVersion\":1")
         assertEquals(value, TimetableTransfer.decode(legacy))
     }
     @Test(expected = IllegalArgumentException::class) fun rejectsWrongMarker() {

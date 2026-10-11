@@ -5,23 +5,32 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TimetableCodecTest {
+    @Test fun locationVisibilityDefaultsForOldFilesAndRoundTrips() {
+        val original = demoTimetable(Appearance(showLocations = false))
+        assertEquals(original, TimetableCodec.decode(TimetableCodec.encode(original)))
+        for (version in 1..3) {
+            val legacy = TimetableCodec.encode(original).replace("\"schemaVersion\":3", "\"schemaVersion\":$version").replace(",\"showLocations\":false", "")
+            assertTrue(TimetableCodec.decode(legacy).appearance.showLocations)
+        }
+    }
+
     @Test fun roundTripPreservesEverything() {
         val original = demoTimetable(Appearance(ThemePreset.OCEAN, ThemeMode.LIGHT, showIcons = false))
         assertEquals(original, TimetableCodec.decode(TimetableCodec.encode(original)))
     }
     @Test fun emptyOnboardingRoundTrip() { assertEquals(Timetable(), TimetableCodec.decode(TimetableCodec.encode(Timetable()))) }
     @Test(expected = IllegalArgumentException::class) fun futureVersionRejected() {
-        TimetableCodec.decode(TimetableCodec.encode(Timetable()).replace("\"schemaVersion\":2", "\"schemaVersion\":99"))
+        TimetableCodec.decode(TimetableCodec.encode(Timetable()).replace("\"schemaVersion\":3", "\"schemaVersion\":99"))
     }
     @Test fun versionOneMigratesWithoutLosingSessionsOrTheme() {
         val original = demoTimetable(Appearance(dynamicColour = true))
-        val legacy = TimetableCodec.encode(original).replace("\"schemaVersion\":2", "\"schemaVersion\":1")
+        val legacy = TimetableCodec.encode(original).replace("\"schemaVersion\":3", "\"schemaVersion\":1")
         val migrated = TimetableCodec.decode(legacy)
         assertEquals(original, migrated)
         assertEquals(ThemePreset.MATERIAL_YOU, migrated.appearance.selectedPreset)
     }
     @Test fun interruptedOnboardingMovesToMatchingNewStep() {
-        val old = TimetableCodec.encode(Timetable(onboardingStep = 1)).replace("\"schemaVersion\":2", "\"schemaVersion\":1")
+        val old = TimetableCodec.encode(Timetable(onboardingStep = 1)).replace("\"schemaVersion\":3", "\"schemaVersion\":1")
         assertEquals(2, TimetableCodec.decode(old).onboardingStep)
     }
     @Test fun breaksAndOutlineStyleRoundTrip() {

@@ -30,8 +30,9 @@ fun timetableFileActions(model: TempoViewModel, state: TempoState): TimetableFil
         else AlertDialog(onDismissRequest = model::dismissImport,
             title = { Text("Import ${timetable.name}") },
             text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("${timetable.subjects.size} subjects · ${timetable.sessions.size} sessions · ${timetable.breaks.size} breaks")
+                Text("${countLabel(timetable.subjects.size, "subject")} · ${countLabel(timetable.sessions.size, "session")} · ${countLabel(timetable.breaks.size, "break")}")
                 Text("Includes colours, icons, notes, day hours, periods and appearance.")
+                Text("${timetable.cycle.weeks}-week cycle · ${timetable.holidays.size} holidays · ${timetable.exceptions.size} dated exceptions")
                 Button(onClick = { model.acceptImport(false) }, modifier = Modifier.fillMaxWidth()) { Text("Add as a new timetable") }
                 if (target != null) OutlinedButton(onClick = {
                     if (!target.onboarded && target.subjects.isEmpty() && target.sessions.isEmpty() && target.breaks.isEmpty()) model.acceptImport(true)

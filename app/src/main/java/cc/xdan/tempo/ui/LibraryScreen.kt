@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
+import cc.xdan.tempo.schedule.removeSubject
 import java.util.UUID
 
 @Composable
@@ -42,14 +43,14 @@ fun LibraryScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Un
                     Box(Modifier.size(20.dp).background(Color(subject.colour), CircleShape))
                     if (timetable.appearance.showIcons) subject.icon.vector()?.let { Icon(it, null) }
                     Column { Text(subject.name, style = MaterialTheme.typography.titleMedium)
-                        Text("${timetable.sessions.count { it.subjectId == subject.id }} sessions" + if (subject.location.isNotBlank()) " · ${subject.location}" else "", style = MaterialTheme.typography.bodySmall) }
+                        Text(countLabel(timetable.sessions.count { it.subjectId == subject.id }, "session") + if (subject.location.isNotBlank()) " · ${subject.location}" else "", style = MaterialTheme.typography.bodySmall) }
                 }
             }
         }
     }
-    if (editor) SubjectEditor(selected, timetable.sessions.count { it.subjectId == selected?.id }, { editor = false },
+    if (editor) SubjectEditor(selected, (timetable.sessions + timetable.exceptions.flatMap { it.sessions }).count { it.subjectId == selected?.id }, { editor = false },
         { subject -> update { it.copy(subjects = it.subjects.filterNot { s -> s.id == subject.id } + subject) }; editor = false },
-        { id -> update { it.copy(subjects = it.subjects.filterNot { s -> s.id == id }, sessions = it.sessions.filterNot { s -> s.subjectId == id }) }; editor = false })
+        { id -> update { it.removeSubject(id) }; editor = false })
 }
 
 @Composable
@@ -83,6 +84,6 @@ fun SubjectEditor(existing: Subject?, sessionCount: Int, onDismiss: () -> Unit, 
         if (existing != null) TextButton(onClick = { confirmDelete = true }) { Text("Delete subject", color = MaterialTheme.colorScheme.error) }
     }
     if (showIcons) IconPicker(icon, { showIcons = false }, { icon = it; showIcons = false })
-    if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete ${existing?.name}?") }, text = { Text("This also removes $sessionCount scheduled sessions.") },
+    if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete ${existing?.name}?") }, text = { Text("This also removes ${countLabel(sessionCount, "scheduled session")}.") },
         confirmButton = { TextButton(onClick = { onDelete(id) }) { Text("Delete") } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep") } })
 }

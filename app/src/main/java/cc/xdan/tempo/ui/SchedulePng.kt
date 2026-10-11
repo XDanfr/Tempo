@@ -1,0 +1,91 @@
+package cc.xdan.tempo.ui
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.Typeface
+import android.os.Build
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.ColorUtils
+import cc.xdan.tempo.core.designsystem.R
+import cc.xdan.tempo.model.minuteLabel
+import cc.xdan.tempo.schedule.ScheduleImagePlan
+import cc.xdan.tempo.design.presetColorScheme
+import cc.xdan.tempo.model.ThemePreset
+import androidx.compose.material3.ColorScheme
+import androidx.compose.ui.graphics.toArgb
+
+data class ImagePalette(val background: Int, val ink: Int, val accent: Int, val outline: Int)
+
+fun imagePalette(scheme: ColorScheme): ImagePalette = ImagePalette(scheme.surface.toArgb(), scheme.onSurface.toArgb(), scheme.primary.toArgb(), scheme.outline.toArgb())
+
+/** Measure every wrapped line before allocating the same bitmap used for preview and saving. */
+fun renderSchedulePng(context: Context, plan: ScheduleImagePlan, palette: ImagePalette = imagePalette(presetColorScheme(ThemePreset.FOREST, false))): Bitmap {
+    val scale = plan.width / 1080f
+    val margin = (40 * scale).toInt()
+    val contentWidth = plan.width - margin * 2
+    val font = ResourcesCompat.getFont(context, R.font.outfit_medium)
+    val heading = ResourcesCompat.getFont(context, R.font.outfit_semibold)
+    val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { typeface = font }
+    fun layout(text: String, size: Float, width: Int = contentWidth): StaticLayout {
+        textPaint.textSize = size * scale
+        textPaint.color = if (size >= 36f) palette.accent else palette.ink
+        textPaint.typeface = if (Build.VERSION.SDK_INT >= 28) Typeface.create(font, if (size >= 36f) 600 else 500, false)
+            else if (size >= 36f) heading else font
+        return StaticLayout.Builder.obtain(text, 0, text.length, TextPaint(textPaint), width)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false).build()
+    }
+    data class Element(val text: StaticLayout, val x: Int, val y: Int)
+    data class Panel(val rect: RectF, val colour: Int?, val outlined: Boolean)
+    val elements = mutableListOf<Element>()
+    val panels = mutableListOf<Panel>()
+    var y = margin
+    fun add(text: String, size: Float, inset: Int = 0) {
+        val textLayout = layout(text, size, contentWidth - inset * 2)
+        elements += Element(textLayout, margin + inset, y)
+        y += textLayout.height + (10 * scale).toInt()
+        require(y <= 16000) { "This image is too tall. Export individual days or fewer details." }
+    }
+    add(plan.title, 52f)
+    add(if (plan.days.size == 1) "Day timetable" else "Week timetable", 28f)
+    for (day in plan.days) {
+        y += (24 * scale).toInt()
+        add("${weekdayNames[day.date.dayOfWeek.value - 1]} · ${day.date}", 36f)
+        if (day.rows.isEmpty()) add("No scheduled activities", 26f)
+        for (row in day.rows) {
+            val top = y
+            val inset = (24 * scale).toInt()
+            y += inset
+            add("${minuteLabel(row.time.start)}–${minuteLabel(row.time.end)} · ${row.title}", 32f, inset)
+            if (row.location.isNotBlank()) add(row.location, 26f, inset)
+            if (row.notes.isNotBlank()) add(row.notes, 24f, inset)
+            y += (14 * scale).toInt()
+            panels += Panel(RectF(margin.toFloat(), top.toFloat(), (plan.width - margin).toFloat(), y.toFloat()), row.colour?.toInt(), row.outlined)
+            y += (12 * scale).toInt()
+        }
+    }
+    y += margin
+    require(y <= 16384 && plan.width.toLong() * y <= 16_000_000) { "This image is too large. Export individual days or fewer details." }
+    val bitmap = Bitmap.createBitmap(plan.width, y, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    canvas.drawColor(palette.background)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    for (panel in panels) {
+        paint.style = if (panel.outlined) Paint.Style.STROKE else Paint.Style.FILL
+        paint.strokeWidth = 2 * scale
+        paint.color = if (panel.outlined) palette.outline
+            else ColorUtils.blendARGB(palette.background, (panel.colour ?: Color.LTGRAY) or (0xFF shl 24), .24f)
+        canvas.drawRoundRect(panel.rect, 24 * scale, 24 * scale, paint)
+    }
+    for (element in elements) {
+        canvas.save(); canvas.translate(element.x.toFloat(), element.y.toFloat())
+        element.text.draw(canvas); canvas.restore()
+    }
+    return bitmap
+}

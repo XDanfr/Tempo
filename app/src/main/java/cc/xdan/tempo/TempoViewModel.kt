@@ -15,15 +15,20 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import java.util.UUID
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class ImportPreview(val timetable: Timetable, val targetId: String)
 
 data class TempoState(val collection: TimetableCollection? = null, val error: String? = null,
-    val importPreview: ImportPreview? = null, val contentEpoch: Int = 0, val fileBusy: Boolean = false, val message: String? = null) {
+    val importPreview: ImportPreview? = null, val contentEpoch: Int = 0, val fileBusy: Boolean = false, val message: String? = null,
+    val canUndo: Boolean = false, val canRedo: Boolean = false) {
     val timetable: Timetable? get() = collection?.active
 }
 
 class TempoViewModel(private val repository: TimetableRepository) : ViewModel() {
+    private val editLock = Mutex()
+    private val history = EditHistory<TimetableCollection>()
     private val mutable = MutableStateFlow(TempoState())
     val state = mutable.asStateFlow()
     init {
@@ -35,22 +40,22 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
     }
     fun update(transform: (Timetable) -> Timetable) {
         val id = mutable.value.collection?.activeId ?: return
-        save { repository.updateTimetable(id, transform) }
+        save { changeCollection { it.update(id, transform) } }
     }
-    fun select(id: String) = save { repository.updateCollection { it.select(id) } }
+    fun select(id: String) = save { changeCollection { it.select(id) } }
     fun create(name: String) = save {
-        repository.updateCollection { it.add(UUID.randomUUID().toString(), Timetable(name = name.trim())) }
+        changeCollection { it.add(UUID.randomUUID().toString(), Timetable(name = name.trim())) }
     }
-    fun rename(id: String, name: String) = save { repository.updateTimetable(id) { it.copy(name = name.trim()) } }
+    fun rename(id: String, name: String) = save { changeCollection { it.update(id) { t -> t.copy(name = name.trim()) } } }
     fun duplicate(id: String) = save {
-        repository.updateCollection { collection ->
+        changeCollection { collection ->
             val timetable = collection.timetables.first { it.id == id }.timetable
             collection.add(UUID.randomUUID().toString(), timetable.copy(name = uniqueName(timetable.name + " copy", collection)))
         }
     }
-    fun delete(id: String) = save { repository.updateCollection { it.remove(id) } }
+    fun delete(id: String) = save { changeCollection { it.remove(id) } }
     fun importTimetable(timetable: Timetable, replaceId: String?) = save {
-        repository.updateCollection { collection ->
+        changeCollection { collection ->
             val ready = timetable.copy(onboarded = true, onboardingStep = 3)
             if (replaceId != null) collection.update(replaceId) { ready }.select(replaceId)
             else collection.add(UUID.randomUUID().toString(), ready.copy(name = uniqueName(ready.name, collection)))
@@ -66,10 +71,34 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
     }
     private fun save(action: suspend () -> Unit) {
         viewModelScope.launch {
-            try { action() }
+            try { editLock.withLock { action() } }
             catch (e: CancellationException) { throw e }
             catch (e: Exception) { showError("Could not save this change: " + (e.message ?: "Try again.")) }
         }
+    }
+    private suspend fun changeCollection(transform: (TimetableCollection) -> TimetableCollection) {
+        var before: TimetableCollection? = null
+        var after: TimetableCollection? = null
+        repository.updateCollection { old -> transform(old).also { before = old; after = it } }
+        history.record(before!!, after!!)
+        publishHistory()
+    }
+    private fun publishHistory() {
+        mutable.value = mutable.value.copy(canUndo = history.canUndo, canRedo = history.canRedo)
+    }
+    fun undo() = save {
+        val target = history.undoTarget() ?: return@save
+        var current: TimetableCollection? = null
+        repository.updateCollection { current = it; target }
+        history.didUndo(current!!)
+        publishHistory()
+    }
+    fun redo() = save {
+        val target = history.redoTarget() ?: return@save
+        var current: TimetableCollection? = null
+        repository.updateCollection { current = it; target }
+        history.didRedo(current!!)
+        publishHistory()
     }
     private var importTargetId: String? = null
     private var exportSnapshot: Timetable? = null
@@ -120,6 +149,7 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
         }
     }
     fun dismissMessage() { mutable.value = mutable.value.copy(message = null) }
+    fun showMessage(message: String) { mutable.value = mutable.value.copy(message = message) }
     fun showError(message: String) { mutable.value = mutable.value.copy(error = message) }
     fun dismissError() { mutable.value = mutable.value.copy(error = null) }
 }

@@ -21,33 +21,45 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.*
 import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Composable
 fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean, selectDay: (Int) -> Unit,
-    edit: (Session) -> Unit, editFree: (Int, TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit) {
+    edit: (Session) -> Unit, editFree: (Int, TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit,
+    date: LocalDate = now.toLocalDate(), selectDate: (LocalDate) -> Unit = {}) {
     Column(Modifier.fillMaxSize()) {
+        if (!today) DateNavigation(date, selectDate)
         if (!today) ScrollableTabRow(selectedTabIndex = day - 1, edgePadding = 12.dp) {
             weekdayNames.forEachIndexed { i, label -> Tab(selected = day == i + 1, onClick = { selectDay(i + 1) }, text = { Text(label.take(3)) }) }
         }
-        AnimatedContent(targetState = day, label = "selected day", transitionSpec = {
+        AnimatedContent(targetState = date, label = "selected day", transitionSpec = {
             val direction = if (targetState > initialState) 1 else -1
             (slideInHorizontally(spring(stiffness = 450f, dampingRatio = .9f)) { it * direction / 3 } + fadeIn(tween(180))) togetherWith
                 (slideOutHorizontally(tween(160)) { -it * direction / 5 } + fadeOut(tween(120)))
-        }) { animatedDay ->
-            val dayBlocks = ScheduleResolver.resolve(timetable, animatedDay)
+        }) { animatedDate ->
+            val animatedDay = animatedDate.dayOfWeek.value
+            val dayBlocks = ScheduleResolver.resolve(timetable, animatedDate)
             val lessons = dayBlocks.filterIsInstance<ScheduleBlock.Lesson>()
             val minute = now.hour * 60 + now.minute
-            val current = if (animatedDay == now.dayOfWeek.value) ScheduleResolver.current(dayBlocks, minute) else null
-            val next = if (animatedDay == now.dayOfWeek.value) ScheduleResolver.nextLesson(dayBlocks, minute) else null
+            val current = if (animatedDate == now.toLocalDate()) ScheduleResolver.current(dayBlocks, minute) else null
+            val next = if (animatedDate == now.toLocalDate()) ScheduleResolver.nextLesson(dayBlocks, minute) else null
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 112.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
                     Text(weekdayNames[animatedDay - 1], style = MaterialTheme.typography.headlineLarge)
-                    Text("${lessons.size} sessions · ${lessons.sumOf { it.time.minutes } / 60}h ${lessons.sumOf { it.time.minutes } % 60}m scheduled", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("$animatedDate · Week ${ScheduleResolver.cycleWeek(timetable, animatedDate)} of ${timetable.cycle.weeks}", style = MaterialTheme.typography.labelLarge)
+                    timetable.exceptions.firstOrNull { it.date == animatedDate.toString() }?.let {
+                        Text(if (it.closed) "${it.name.ifBlank { "Day off" }} · closed" else it.name.ifBlank { "Schedule for this date" }, color = MaterialTheme.colorScheme.primary)
+                    } ?: timetable.holidays.firstOrNull { !animatedDate.isBefore(LocalDate.parse(it.startDate)) && !animatedDate.isAfter(LocalDate.parse(it.endDate)) }?.let {
+                        Text("${it.name} · holiday", color = MaterialTheme.colorScheme.primary)
+                    }
+                    Text("${countLabel(lessons.size, "session")} · ${lessons.sumOf { it.time.minutes } / 60}h ${lessons.sumOf { it.time.minutes } % 60}m scheduled", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (today) item {
                     val headline = when {
@@ -59,14 +71,14 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                         else -> "You're finished for today"
                     }
                     val detail = when {
-                        current is ScheduleBlock.Lesson -> "${current.location.ifBlank { "No location set" }} · ends ${minuteLabel(current.time.end)}"
+                        current is ScheduleBlock.Lesson -> (if (timetable.appearance.showLocations) "${current.location.ifBlank { "No location set" }} · " else "") + "ends ${minuteLabel(current.time.end)}"
                         current is ScheduleBlock.Break -> "Until ${minuteLabel(current.time.end)}"
                         current is ScheduleBlock.Free -> "Free until ${minuteLabel(current.time.end)}"
                         next != null -> "Starts at ${minuteLabel(next.time.start)}"
                         else -> "Make room for what matters."
                     }
                     val upcoming = if (current is ScheduleBlock.Break || current is ScheduleBlock.Free) {
-                        next?.let { "Up next: ${it.subject.name} · ${minuteLabel(it.time.start)}" + if (it.location.isNotBlank()) " · ${it.location}" else "" }
+                        next?.let { "Up next: ${it.subject.name} · ${minuteLabel(it.time.start)}" + if (timetable.appearance.showLocations && it.location.isNotBlank()) " · ${it.location}" else "" }
                             ?: "No more sessions today"
                     } else null
                     val outlined = (if (current is ScheduleBlock.Break) timetable.appearance.effectiveBreakStyle else timetable.appearance.blockStyle) == BlockStyle.OUTLINED
@@ -88,14 +100,14 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
                         }
                     }
                 }
-                if (ScheduleResolver.blockConflicts(timetable, animatedDay).isNotEmpty()) item {
+                if (ScheduleResolver.blockConflicts(ScheduleResolver.resolvedTemplate(timetable, animatedDate), animatedDay).isNotEmpty()) item {
                     Text("Some sessions or breaks overlap. Tap a block to adjust its times.", color = MaterialTheme.colorScheme.error)
                 }
                 if (dayBlocks.isEmpty()) item {
                     Column(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Outlined.EventAvailable, null, Modifier.size(48.dp))
                         Text("A little breathing room", style = MaterialTheme.typography.titleLarge)
-                        Text("Add a session or enable this day in Settings.")
+                        Text("Add a session for this date, or review holidays and day hours in Settings.")
                     }
                 }
                 items(dayBlocks, key = { when (it) {
@@ -159,7 +171,7 @@ private fun ScheduleItem(block: ScheduleBlock, appearance: Appearance, current: 
                 Text(name, style = if (compact) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleMedium,
                     maxLines = if (block.time.minutes < 75) 1 else 2, overflow = TextOverflow.Ellipsis)
                 Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelLarge)
-                if (block is ScheduleBlock.Lesson && block.location.isNotBlank() && block.time.minutes >= 75) Text(block.location, style = MaterialTheme.typography.bodySmall)
+                if (appearance.showLocations && block is ScheduleBlock.Lesson && block.location.isNotBlank() && block.time.minutes >= 75) Text(block.location, style = MaterialTheme.typography.bodySmall)
                 if (current && block.time.minutes >= 60) Text("NOW", style = MaterialTheme.typography.labelSmall)
             }
             Icon(Icons.Outlined.ChevronRight, "Edit block", Modifier.size(20.dp))

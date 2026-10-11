@@ -12,7 +12,7 @@ internal fun widgetDayPlan(timetable: Timetable, now: LocalDateTime, summary: We
     val primary = summary.block ?: return null
     val date = if (summary.status == WeekStatus.CURRENT) now.toLocalDate() else summary.next?.starts?.toLocalDate() ?: return null
     val minute = if (summary.status == WeekStatus.CURRENT) now.hour * 60 + now.minute else primary.time.start
-    val remaining = ScheduleResolver.resolve(timetable, date.dayOfWeek.value)
+    val remaining = ScheduleResolver.resolve(timetable, date)
         .filter { it !is ScheduleBlock.Free && it.time.end > minute }
     val lessons = remaining.filterIsInstance<ScheduleBlock.Lesson>()
     val finish = lessons.maxOfOrNull { it.time.end } ?: primary.time.end
@@ -23,5 +23,5 @@ internal fun widgetDayPlan(timetable: Timetable, now: LocalDateTime, summary: We
 internal fun widgetDayComplete(timetable: Timetable, now: LocalDateTime, summary: WeekOverview): Boolean {
     if (summary.status != WeekStatus.UPCOMING || summary.next?.starts?.toLocalDate()?.isAfter(now.toLocalDate()) != true) return false
     val minute = now.hour * 60 + now.minute
-    return ScheduleResolver.resolve(timetable, now.dayOfWeek.value).filterIsInstance<ScheduleBlock.Lesson>().none { it.time.end > minute }
+    return ScheduleResolver.resolve(timetable, now.toLocalDate()).filterIsInstance<ScheduleBlock.Lesson>().none { it.time.end > minute }
 }

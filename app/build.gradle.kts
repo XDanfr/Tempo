@@ -19,8 +19,10 @@ android {
         applicationId = "cc.xdan.tempo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.4.1"
+        versionCode = 7
+        versionName = "0.5.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        resValue("string", "app_name", "Tempo")
     }
     signingConfigs {
         if (hasReleaseSigning) {
@@ -33,6 +35,13 @@ android {
         }
     }
     buildTypes {
+        create("qa") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-qa"
+            resValue("string", "app_name", "Tempo QA")
+            matchingFallbacks += listOf("debug")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -40,6 +49,7 @@ android {
             if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
         }
     }
+    testBuildType = providers.gradleProperty("tempoTestBuildType").orElse("debug").get()
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
 }
@@ -60,5 +70,12 @@ dependencies {
     implementation(libs.lifecycle.viewmodel)
     testImplementation(libs.junit)
     testImplementation("org.json:json:20250517")
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation(libs.compose.tooling)
+    add("qaImplementation", "androidx.compose.ui:ui-test-manifest")
+    add("qaImplementation", libs.compose.tooling)
 }

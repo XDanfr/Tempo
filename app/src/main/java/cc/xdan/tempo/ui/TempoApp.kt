@@ -19,6 +19,8 @@ import cc.xdan.tempo.TempoViewModel
 import cc.xdan.tempo.design.TempoTheme
 import cc.xdan.tempo.model.*
 import java.time.LocalDateTime
+import java.time.LocalDate
+import cc.xdan.tempo.schedule.*
 import kotlinx.coroutines.delay
 
 enum class Destination { TODAY, TIMETABLE, LIBRARY, SETTINGS }
@@ -59,8 +61,15 @@ fun TempoApp(model: TempoViewModel) {
             } else {
                 var destination by rememberSaveable { mutableStateOf(Destination.TODAY) }
                 var day by rememberSaveable { mutableIntStateOf(LocalDateTime.now().dayOfWeek.value) }
+                var selectedDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+                var editingBaseDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+                var editorDate by rememberSaveable { mutableStateOf<String?>(null) }
+                val datedTarget = (editorDate ?: editingBaseDate.takeIf { date -> timetable.exceptions.any { it.date == date } })?.let(LocalDate::parse)
+                val editorTable = datedTarget?.let { date ->
+                    timetable.replacementDay(date).let { replacement -> timetable.copy(sessions = replacement.sessions, breaks = replacement.breaks) }
+                } ?: timetable
                 var editingSessionId by rememberSaveable { mutableStateOf<String?>(null) }
-                val editingSession = timetable.sessions.firstOrNull { it.id == editingSessionId }
+                val editingSession = editorTable.sessions.firstOrNull { it.id == editingSessionId }
                 var showEditor by rememberSaveable { mutableStateOf(false) }
                 var initialStart by rememberSaveable { mutableStateOf<Int?>(null) }
                 var initialEnd by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -68,9 +77,19 @@ fun TempoApp(model: TempoViewModel) {
                 var showFree by rememberSaveable { mutableStateOf(false) }
                 var showBreak by rememberSaveable { mutableStateOf(false) }
                 var breakId by rememberSaveable { mutableStateOf<String?>(null) }
-                val editFree: (Int, TimeSpan) -> Unit = { d, time -> slotDay = d; initialStart = time.start; initialEnd = time.end; showFree = true }
-                val editPause: (ScheduledBreak) -> Unit = { pause -> breakId = pause.id; initialStart = null; initialEnd = null; showBreak = true }
                 var now by remember { mutableStateOf(LocalDateTime.now()) }
+                val visibleDate = if (destination == Destination.TODAY) now.toLocalDate() else LocalDate.parse(selectedDate)
+                val scopeDate = LocalDate.parse(editingBaseDate)
+                val scopeLocked = timetable.exceptions.any { it.date == editingBaseDate }
+                val scopeControls: @Composable () -> Unit = {
+                    EditScopeControl(scopeDate, datedTarget != null, scopeLocked) { editorDate = if (it) editingBaseDate else null }
+                }
+                fun beginEdit() {
+                    editingBaseDate = visibleDate.toString()
+                    editorDate = if (timetable.exceptions.any { it.date == editingBaseDate }) editingBaseDate else null
+                }
+                val editFree: (Int, TimeSpan) -> Unit = { d, time -> beginEdit(); slotDay = d; initialStart = time.start; initialEnd = time.end; showFree = true }
+                val editPause: (ScheduledBreak) -> Unit = { pause -> beginEdit(); breakId = pause.id; initialStart = null; initialEnd = null; showBreak = true }
                 LaunchedEffect(Unit) { while (true) { now = LocalDateTime.now(); delay(30_000) } }
                 Scaffold(
                     topBar = { TopAppBar(title = { Column {
@@ -80,43 +99,54 @@ fun TempoApp(model: TempoViewModel) {
                                 modifier = Modifier.weight(1f, fill = false), overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             Icon(Icons.Outlined.ArrowDropDown, null, Modifier.size(18.dp))
                         }
-                    } }, actions = { IconButton(onClick = { showTimetables = true }) { Icon(Icons.Outlined.CalendarMonth, "Manage timetables") } }) },
+                    } }, actions = {
+                        if (state.canUndo) IconButton(onClick = model::undo) { Icon(Icons.Outlined.Undo, "Undo edit") }
+                        if (state.canRedo) IconButton(onClick = model::redo) { Icon(Icons.Outlined.Redo, "Redo edit") }
+                        IconButton(onClick = { showTimetables = true }) { Icon(Icons.Outlined.CalendarMonth, "Manage timetables") }
+                    }) },
                     bottomBar = { NavigationBar {
                         val icons = listOf(Icons.Outlined.Today, Icons.Outlined.CalendarViewWeek, Icons.Outlined.CollectionsBookmark, Icons.Outlined.Settings)
                         Destination.entries.forEachIndexed { index, item ->
                             NavigationBarItem(selected = destination == item, onClick = { destination = item },
-                                icon = { Icon(icons[index], null) }, label = { Text(item.name.lowercase().replaceFirstChar { it.titlecase() }) })
+                                icon = { Icon(icons[index], null) }, label = { Text(item.name.lowercase().replaceFirstChar { it.titlecase() }, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) })
                         }
                     } },
                     floatingActionButton = {
                         if (destination == Destination.TODAY || destination == Destination.TIMETABLE) ExtendedFloatingActionButton(
-                            onClick = { editingSessionId = null; initialStart = null; initialEnd = null; showEditor = true }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Add session") })
+                            onClick = { beginEdit(); editingSessionId = null; initialStart = null; initialEnd = null; showEditor = true }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Add session") })
                     },
                 ) { padding ->
                     Box(Modifier.padding(padding).fillMaxSize()) {
                         PredictiveRouteHost(destination, enabled = !showEditor && !showFree && !showBreak && !showTimetables && !showComparison && state.importPreview == null, navigate = { destination = it }) { shown ->
                         when (shown) {
-                            Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
-                            Destination.TIMETABLE -> DayScreen(timetable, day, now, false, { day = it }, { editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause)
+                            Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause,
+                                date = now.toLocalDate())
+                            Destination.TIMETABLE -> DayScreen(timetable, LocalDate.parse(selectedDate).dayOfWeek.value, now, false,
+                                { d -> selectedDate = LocalDate.parse(selectedDate).plusDays((d - LocalDate.parse(selectedDate).dayOfWeek.value).toLong()).toString(); day = d },
+                                { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause,
+                                date = LocalDate.parse(selectedDate), selectDate = { selectedDate = it.toString(); day = it.dayOfWeek.value })
                             Destination.LIBRARY -> LibraryScreen(timetable, model::update)
-                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, files, { showTimetables = true }, state.fileBusy)
+                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, files, { showTimetables = true }, state.fileBusy, model::showMessage)
                         }
                         }
                     }
                 }
-                if (showEditor) SessionEditor(timetable, editingSession, if (initialStart != null) slotDay else if (destination == Destination.TODAY) now.dayOfWeek.value else day,
+                if (showEditor) SessionEditor(editorTable, editingSession, datedTarget?.dayOfWeek?.value ?: if (initialStart != null) slotDay else visibleDate.dayOfWeek.value,
                     initialTime = initialStart?.let { a -> initialEnd?.let { b -> TimeSpan(a, b) } },
                     onDismiss = { showEditor = false },
-                    onSave = { session -> model.update { it.copy(sessions = it.sessions.filterNot { s -> s.id == session.id } + session) }; showEditor = false },
-                    onDelete = { id -> model.update { it.copy(sessions = it.sessions.filterNot { s -> s.id == id }) }; showEditor = false },
-                    onAddSubject = { subject -> model.update { it.copy(subjects = it.subjects + subject) } })
+                    onSave = { session -> model.update { it.editSessions(datedTarget) { sessions -> sessions.filterNot { s -> s.id == session.id } + session } }; showEditor = false },
+                    onDelete = { id -> model.update { it.editSessions(datedTarget) { sessions -> sessions.filterNot { s -> s.id == id } } }; showEditor = false },
+                    onAddSubject = { subject -> model.update { it.copy(subjects = it.subjects + subject) } },
+                    initialCycleWeek = ScheduleResolver.cycleWeek(timetable, visibleDate), dated = datedTarget != null,
+                    onSplit = { split -> model.update { it.editSessions(datedTarget) { sessions -> sessions.filterNot { s -> s.id == split.first().id } + split } }; showEditor = false }, scopeControls = scopeControls)
                 if (showFree) FreeSlotEditor(slotDay, TimeSpan(initialStart!!, initialEnd!!), { showFree = false },
                     { showFree = false; editingSessionId = null; showEditor = true }, { showFree = false; breakId = null; showBreak = true })
-                if (showBreak) BreakEditor(timetable, timetable.breaks.firstOrNull { it.id == breakId },
-                    initialDay = if (initialStart != null) slotDay else null,
+                if (showBreak) BreakEditor(editorTable, editorTable.breaks.firstOrNull { it.id == breakId },
+                    initialDay = datedTarget?.dayOfWeek?.value ?: if (initialStart != null) slotDay else null,
                     initialTime = initialStart?.let { a -> initialEnd?.let { b -> TimeSpan(a, b) } },
-                    dismiss = { showBreak = false }, save = { pause -> model.update { it.copy(breaks = it.breaks.filterNot { b -> b.id == pause.id } + pause) }; showBreak = false },
-                    delete = { id -> model.update { it.copy(breaks = it.breaks.filterNot { b -> b.id == id }) }; showBreak = false })
+                    dismiss = { showBreak = false }, save = { pause -> model.update { it.editBreaks(datedTarget) { breaks -> breaks.filterNot { b -> b.id == pause.id } + pause } }; showBreak = false },
+                    delete = { id -> model.update { it.editBreaks(datedTarget) { breaks -> breaks.filterNot { b -> b.id == id } } }; showBreak = false },
+                    initialCycleWeek = ScheduleResolver.cycleWeek(timetable, visibleDate), dated = datedTarget != null, scopeControls = scopeControls)
             }
             }
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }

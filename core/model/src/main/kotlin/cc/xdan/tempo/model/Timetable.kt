@@ -1,6 +1,7 @@
 package cc.xdan.tempo.model
 
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 
 @Serializable
 data class TimeSpan(val start: Int, val end: Int) {
@@ -30,7 +31,8 @@ data class Session(
     val time: TimeSpan,
     val location: String = "",
     val notes: String = "",
-) { init { require(id.isNotBlank() && subjectId.isNotBlank() && day in 1..7) } }
+    val cycleWeek: Int? = null,
+) { init { require(id.isNotBlank() && subjectId.isNotBlank() && day in 1..7); require(cycleWeek == null || cycleWeek >= 1) } }
 
 @Serializable
 data class DayHours(val day: Int, val time: TimeSpan) { init { require(day in 1..7) } }
@@ -53,6 +55,7 @@ data class Appearance(
     val showIcons: Boolean = true,
     val blockStyle: BlockStyle = BlockStyle.FILLED,
     val breakStyle: BlockStyle? = null,
+    val showLocations: Boolean = true,
 ) {
     // Keep the first milestone's wallpaper switch readable when migrating saved state.
     val effectiveBreakStyle: BlockStyle get() = breakStyle ?: blockStyle
@@ -72,16 +75,45 @@ data class ScheduledBreak(
     val days: List<Int>,
     val time: TimeSpan,
     val kind: BreakKind = BreakKind.BREAK,
+    val cycleWeek: Int? = null,
 ) {
     init {
         require(id.isNotBlank() && name.isNotBlank())
         require(days.isNotEmpty() && days.all { it in 1..7 } && days.distinct().size == days.size)
+        require(cycleWeek == null || cycleWeek >= 1)
+    }
+}
+
+@Serializable
+data class WeekCycle(val weeks: Int = 1, val anchorDate: String = "2026-01-05") {
+    init { require(weeks in 1..52); LocalDate.parse(anchorDate) }
+}
+
+@Serializable
+data class Holiday(val id: String, val name: String, val startDate: String, val endDate: String) {
+    init {
+        require(id.isNotBlank() && name.isNotBlank())
+        require(!LocalDate.parse(endDate).isBefore(LocalDate.parse(startDate)))
+    }
+}
+
+/** A complete replacement day takes precedence over holidays and recurring weeks. */
+@Serializable
+data class DatedException(val date: String, val name: String = "", val closed: Boolean = false,
+    val sessions: List<Session> = emptyList(), val breaks: List<ScheduledBreak> = emptyList()) {
+    init {
+        val day = LocalDate.parse(date).dayOfWeek.value
+        require(sessions.all { it.day == day && it.cycleWeek == null })
+        require(breaks.all { it.days == listOf(day) && it.cycleWeek == null })
+        require(sessions.map { it.id }.distinct().size == sessions.size)
+        require(breaks.map { it.id }.distinct().size == breaks.size)
+        require(!closed || (sessions.isEmpty() && breaks.isEmpty()))
     }
 }
 
 @Serializable
 data class Timetable(
-    val schemaVersion: Int = 2,
+    val schemaVersion: Int = 3,
     val name: String = "My timetable",
     val onboarded: Boolean = false,
     val onboardingStep: Int = 0,
@@ -96,10 +128,13 @@ data class Timetable(
         PeriodTemplate("p4", "Period 4", TimeSpan(885, 975)),
     ),
     val appearance: Appearance = Appearance(),
+    val cycle: WeekCycle = WeekCycle(),
+    val holidays: List<Holiday> = emptyList(),
+    val exceptions: List<DatedException> = emptyList(),
 ) {
     init {
         require(onboardingStep in 0..3)
-        require(schemaVersion == 2) { "Unsupported timetable version" }
+        require(schemaVersion in 2..3) { "Unsupported timetable version" }
         require(name.isNotBlank())
         require(subjects.map { it.id }.distinct().size == subjects.size)
         require(sessions.map { it.id }.distinct().size == sessions.size)
@@ -107,6 +142,12 @@ data class Timetable(
         require(days.map { it.day }.distinct().size == days.size)
         require(periods.map { it.id }.distinct().size == periods.size)
         require(sessions.all { s -> subjects.any { it.id == s.subjectId } }) { "Unknown session subject" }
+        require(sessions.all { it.cycleWeek == null || it.cycleWeek <= cycle.weeks })
+        require(breaks.all { it.cycleWeek == null || it.cycleWeek <= cycle.weeks })
+        require(holidays.map { it.id }.distinct().size == holidays.size)
+        require(exceptions.map { it.date }.distinct().size == exceptions.size)
+        require(exceptions.flatMap { it.sessions }.all { s -> subjects.any { it.id == s.subjectId } }) { "Unknown exception subject" }
+        require(schemaVersion == 3 || (cycle.weeks == 1 && holidays.isEmpty() && exceptions.isEmpty() && sessions.all { it.cycleWeek == null } && breaks.all { it.cycleWeek == null }))
     }
 }
 

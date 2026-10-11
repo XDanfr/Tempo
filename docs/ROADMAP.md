@@ -26,15 +26,41 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Sponsor button and “Made by XDan” in Settings
 - [X] Validate widget sizing/gestures and signed update installation on devices before release
 
+## 0.5 — dated schedules and image exports
+
+- [x] Shared date resolver for the app, comparison, widgets and image exports
+- [x] A/B and longer cycles (1–52 weeks), anchored to a date in week 1
+- [x] Inclusive holiday ranges and dated replacement schedules / days off
+- [x] Session duplication and splitting, selective recurring-session batch editing
+- [x] Session-local undo/redo for saved timetable and library changes
+- [x] PNG day/week agenda exports with an exact preview, configurable width and privacy controls
+- [x] Schema-1/2 migration and complete schema-3 portable snapshots
+- [x] Calendar/clock pickers, common cycle suggestions and singular session labels
+- [x] Stable scrolling editor panels with scope choices inside editing flows
+- [x] Settings pages with transitions, predictive back, navigation icons and inline About content
+- [x] Compact day-hours and period dialogs; independent PNG themes with System selected by default
+- [x] Scrollable widget timetable/icon/location pills and shared theme cards, with location following
+- [x] Editable onboarding subject cards and initial anchored cycle length
+
 ## Later releases
 
-- [ ] Multiple-week timetables: A/B or longer cycles, anchored to a date
-- [ ] Holidays, dated exceptions, overnight shifts and explicit timetable time zones
+- [ ] Restore bottom-sheet drag handles and swipe-down dismissal without coupling content flings to changing sheet anchors; include boundary-fling and keyboard regression checks
+- [ ] Friendly display dates such as “11th October 2026”, including ordinal edge cases and locale choices; preserve ISO dates in storage and portable files
+- [ ] Landscape timetable image exports with a time-grid/map layout and dotted hour or period guides, matching preview and privacy controls
+- [ ] Suggest icons for recognised subject names, while preserving a user-selected icon and offering manual changes
+- [ ] Tap a Library subject to quickly schedule it; retain an explicit pencil action for full subject editing
+- [ ] Ask when subjects occur during onboarding, with day/time and cycle-week choices, editable summaries and an option to finish later
+- [ ] Overnight shifts and explicit timetable time zones
 - [ ] Calendar `.ics` import/export, recurring events and calendar-app integration
-- [ ] PNG day/week/day-card exports with preview and configurable dimensions
-- [ ] Free tags, splitting, batch editing, duplication and undo/redo
+- [ ] Additional PNG day-card styles and fixed-height exports
+- [ ] Free tags and selective break / dated-exception batch editing
 - [ ] Side-by-side weekly comparison and additional widget views
 - [ ] Tablet/foldable layouts, search and further accessibility improvements
+- [ ] Search/filter sessions and subjects, including cycle-week filters
+- [ ] Contextual session actions and optional advanced editor details, with clear labels
+- [ ] Holiday range calendar and concise previews of affected dates before bulk changes
+- [ ] Remember per-timetable export preferences with an explicit privacy reset
+- [ ] Task-based usability checks for first setup, one-off changes and exports; TalkBack and hardware-keyboard walkthroughs
 - [ ] Selective imports, bundled assets and restore points
 - [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
 - [ ] Reminders, travel buffers, subject-hour summaries and history
@@ -49,4 +75,4 @@ I plan to make homework and assignments an optional part of Tempo, so school tim
 - [ ] Offer optional due-date reminders
 - [ ] Show approaching deadlines in an optional widget section or dedicated assignment view, including future dates after the week’s lessons are all done
 
-Tempo currently uses weekly templates in the device’s local time. Multiple-week cycles and dated exceptions will use a shared dated scheduling model before being exposed across the app, widgets and exports.
+Tempo resolves dated local-day schedules in the device's local time. Explicit zones, overnight shifts and calendar recurrence will build on this foundation.

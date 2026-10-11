@@ -11,13 +11,13 @@ object TimetableCodec {
     fun decode(text: String): Timetable {
         val root = json.parseToJsonElement(text).jsonObject
         val version = root["schemaVersion"]?.jsonPrimitive?.int ?: 1
-        require(version in 1..2) { "Unsupported timetable version: $version" }
+        require(version in 1..3) { "Unsupported timetable version: $version" }
         val migrated = if (version == 1) JsonObject(root.toMutableMap().apply {
-            this["schemaVersion"] = JsonPrimitive(2)
+            this["schemaVersion"] = JsonPrimitive(3)
             val step = root["onboardingStep"]?.jsonPrimitive?.int ?: 0
             val onboarded = root["onboarded"]?.jsonPrimitive?.boolean ?: false
             this["onboardingStep"] = JsonPrimitive(if (onboarded) step else when (step) { 1 -> 2; 2 -> 3; else -> step })
-        }) else root
+        }) else if (version == 2) JsonObject(root.toMutableMap().apply { this["schemaVersion"] = JsonPrimitive(3) }) else root
         return json.decodeFromJsonElement<Timetable>(migrated)
     }
 }

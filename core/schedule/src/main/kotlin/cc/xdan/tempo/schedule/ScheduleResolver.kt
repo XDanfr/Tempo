@@ -1,6 +1,8 @@
 package cc.xdan.tempo.schedule
 
 import cc.xdan.tempo.model.*
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 sealed interface ScheduleBlock {
     val time: TimeSpan
@@ -15,6 +17,28 @@ sealed interface ScheduleBlock {
 data class SessionConflict(val first: Session, val second: Session)
 
 object ScheduleResolver {
+    fun cycleWeek(timetable: Timetable, date: LocalDate): Int {
+        val anchor = LocalDate.parse(timetable.cycle.anchorDate)
+        val monday = anchor.minusDays((anchor.dayOfWeek.value - 1).toLong())
+        val weeks = Math.floorDiv(ChronoUnit.DAYS.between(monday, date), 7L)
+        return Math.floorMod(weeks, timetable.cycle.weeks.toLong()).toInt() + 1
+    }
+
+    fun resolvedTemplate(timetable: Timetable, date: LocalDate): Timetable {
+        val exception = timetable.exceptions.firstOrNull { it.date == date.toString() }
+        val closed = exception?.closed ?: timetable.holidays.any {
+            !date.isBefore(LocalDate.parse(it.startDate)) && !date.isAfter(LocalDate.parse(it.endDate))
+        }
+        val week = cycleWeek(timetable, date)
+        return timetable.copy(schemaVersion = 3,
+            sessions = if (closed) emptyList() else exception?.sessions ?: timetable.sessions.filter { it.cycleWeek == null || it.cycleWeek == week },
+            breaks = if (closed) emptyList() else exception?.breaks ?: timetable.breaks.filter { it.cycleWeek == null || it.cycleWeek == week },
+            days = if (closed) emptyList() else timetable.days,
+            exceptions = emptyList(), holidays = emptyList())
+    }
+
+    fun resolve(timetable: Timetable, date: LocalDate): List<ScheduleBlock> = resolve(resolvedTemplate(timetable, date), date.dayOfWeek.value)
+
     /** Frees occupy the configured day only. Sessions outside it remain visible. */
     fun resolve(timetable: Timetable, day: Int): List<ScheduleBlock> {
         require(day in 1..7)
@@ -46,7 +70,7 @@ object ScheduleResolver {
     fun conflicts(sessions: List<Session>): List<SessionConflict> = buildList {
         for (i in sessions.indices) for (j in i + 1 until sessions.size) {
             val a = sessions[i]; val b = sessions[j]
-            if (a.day == b.day && a.time.start < b.time.end && b.time.start < a.time.end) {
+            if (a.day == b.day && (a.cycleWeek == null || b.cycleWeek == null || a.cycleWeek == b.cycleWeek) && a.time.start < b.time.end && b.time.start < a.time.end) {
                 add(SessionConflict(a, b))
             }
         }

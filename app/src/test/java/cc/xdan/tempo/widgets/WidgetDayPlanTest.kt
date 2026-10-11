@@ -54,4 +54,19 @@ class WidgetDayPlanTest {
         val friday = LocalDateTime.of(2026, 10, 9, 11, 0)
         assertFalse(widgetDayComplete(t, friday, weekOverview(t, friday)))
     }
+    @Test fun datedCycleAndHolidayResolveHeroAndAgendaOnTheSameDate() {
+        val t = Timetable(subjects = listOf(subject), cycle = WeekCycle(2, "2026-10-05"),
+            sessions = listOf(Session("a", "s", 1, TimeSpan(600, 660), cycleWeek = 2),
+                Session("b", "s", 1, TimeSpan(720, 780), cycleWeek = 2)))
+        val now = LocalDateTime.of(2026, 10, 12, 10, 15)
+        val result = plan(t, now)!!
+        assertEquals(2, result.lessonsLeft)
+        assertEquals("b", (result.later.single() as ScheduleBlock.Lesson).session.id)
+        assertNull(plan(t.copy(holidays = listOf(Holiday("h", "Off", "2026-10-12", "2026-10-12"))), now))
+    }
+    @Test fun exceptionOnlyTimetableStillProducesWidgetAgenda() {
+        val t = table().copy(exceptions = listOf(DatedException("2026-10-12", sessions = listOf(Session("a", "s", 1, TimeSpan(600, 660))))))
+        assertEquals(1, plan(t, LocalDateTime.of(2026, 10, 12, 10, 15))!!.lessonsLeft)
+        assertEquals(WeekStatus.DONE, weekOverview(t, LocalDateTime.of(2026, 10, 12, 11, 0)).status)
+    }
 }
