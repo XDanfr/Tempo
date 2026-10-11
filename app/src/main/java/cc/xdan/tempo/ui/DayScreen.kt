@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
@@ -40,7 +42,8 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(if (dateEditing) "Edits apply only to $date" else "Edit recurring schedule", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
-            Switch(dateEditing, setDateEditing, enabled = timetable.exceptions.none { it.date == date.toString() })
+            Switch(dateEditing, setDateEditing, enabled = timetable.exceptions.none { it.date == date.toString() },
+                modifier = Modifier.semantics { contentDescription = "Edit only this date" })
         }
         AnimatedContent(targetState = date, label = "selected day", transitionSpec = {
             val direction = if (targetState > initialState) 1 else -1

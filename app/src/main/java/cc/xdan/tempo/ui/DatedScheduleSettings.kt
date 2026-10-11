@@ -1,12 +1,14 @@
 package cc.xdan.tempo.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.replacementDay
 import java.time.LocalDate
@@ -83,8 +85,8 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
         }, enabled = parsed != null && !duplicate) {
             if (exception == null) DateField("Date", date) { date = it } else Text(date)
             OutlinedTextField(name, { name = it }, label = { Text("Reason / label (optional)") }, modifier = Modifier.fillMaxWidth())
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Day off", Modifier.weight(1f)); Switch(closed, { closed = it })
+            Row(Modifier.fillMaxWidth().toggleable(closed, role = Role.Switch) { closed = it }, verticalAlignment = Alignment.CenterVertically) {
+                Text("Day off", Modifier.weight(1f)); Switch(closed, null)
             }
             Text(if (closed) "This date will have no sessions, breaks or frees." else "Start with this date's recurring schedule. Open the date in Timetable to edit its sessions and breaks.")
             if (duplicate) Text("An exception already exists for this date. Edit it from the list.", color = MaterialTheme.colorScheme.error)

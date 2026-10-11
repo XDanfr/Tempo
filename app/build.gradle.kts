@@ -19,8 +19,9 @@ android {
         applicationId = "cc.xdan.tempo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.4.1"
+        versionCode = 7
+        versionName = "0.5.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
         if (hasReleaseSigning) {
@@ -60,5 +61,10 @@ dependencies {
     implementation(libs.lifecycle.viewmodel)
     testImplementation(libs.junit)
     testImplementation("org.json:json:20250517")
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation(libs.compose.tooling)
 }

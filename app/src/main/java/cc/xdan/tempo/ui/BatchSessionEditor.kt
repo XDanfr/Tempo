@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.*
 
@@ -41,7 +42,7 @@ fun BatchSessionEditor(table: Timetable, update: ((Timetable) -> Timetable) -> U
         if (table.cycle.weeks > 1) ChoiceField("Cycle week", week, (-1..table.cycle.weeks).toList(), {
             when (it) { -1 -> "Keep current weeks"; 0 -> "Every week"; else -> "Week $it" }
         }, { week = it })
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Replace location overrides", Modifier.weight(1f)); Switch(changeLocation, { changeLocation = it }) }
+        Row(Modifier.fillMaxWidth().toggleable(changeLocation, role = Role.Switch) { changeLocation = it }, verticalAlignment = Alignment.CenterVertically) { Text("Replace location overrides", Modifier.weight(1f)); Switch(changeLocation, null) }
         if (changeLocation) OutlinedTextField(location, { location = it }, label = { Text("New location (empty uses subject default)") }, modifier = Modifier.fillMaxWidth())
         if (selected.isNotEmpty() && preview == null) Text("The change would create invalid times. All sessions must stay within 00:00–24:00.", color = MaterialTheme.colorScheme.error)
         if (preview != null && ScheduleResolver.conflicts(preview.sessions).any { it.first.id in selected || it.second.id in selected }) Text("The selected change creates overlapping sessions. Keep it if intentional.", color = MaterialTheme.colorScheme.error)
