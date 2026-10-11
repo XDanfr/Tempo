@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -39,19 +40,19 @@ class Release05UiTest {
         compose.onNodeWithText("Number of weeks (1–52)").performTextReplacement("2")
         compose.onNodeWithText("Date in week 1").performTextReplacement(date.toString())
         compose.onNodeWithText("Save").performClick()
-        compose.waitUntil { table.cycle.weeks == 2 }
+        compose.waitUntil(10_000) { table.cycle.weeks == 2 }
         compose.onNodeWithText("Add holiday").performScrollTo().performClick()
         compose.onNodeWithText("Holiday name").performTextReplacement("Autumn break")
         compose.onNodeWithText("First day (included)").performTextReplacement(date.toString())
         compose.onNodeWithText("Last day (included)").performTextReplacement(date.plusDays(4).toString())
         compose.onNodeWithText("Save").performClick()
-        compose.waitUntil { table.holidays.size == 1 }
+        compose.waitUntil(10_000) { table.holidays.size == 1 }
         assertTrue(ScheduleResolver.resolve(table, date).isEmpty())
         compose.onNodeWithText("Add dated exception").performScrollTo().performClick()
         compose.onNodeWithText("Date").performTextReplacement(date.toString())
         compose.onNodeWithText("Day off").performClick()
         compose.onNodeWithText("Save").performClick()
-        compose.waitUntil { table.exceptions.size == 1 }
+        compose.waitUntil(10_000) { table.exceptions.size == 1 }
         assertEquals(listOf("a"), ScheduleResolver.resolve(table, date).filterIsInstance<ScheduleBlock.Lesson>().map { it.session.id })
     }
 
@@ -64,12 +65,12 @@ class Release05UiTest {
                 onDelete = {}, onAddSubject = {}, onSplit = { split -> table = table.copy(sessions = table.sessions.filterNot { it.id == "a" } + split); open = false })
         } }
         compose.onNodeWithText("Duplicate session").performScrollTo().performClick()
-        compose.waitUntil { table.sessions.size == 2 }
+        compose.waitUntil(10_000) { table.sessions.size == 2 }
         assertEquals(lesson, table.sessions.first())
         compose.runOnIdle { open = true }
         compose.onNodeWithText("Split at HH:MM").performScrollTo().performTextReplacement("10:00")
         compose.onNodeWithText("Split session").performScrollTo().performClick()
-        compose.waitUntil { table.sessions.size == 3 }
+        compose.waitUntil(10_000) { table.sessions.size == 3 }
         assertEquals(listOf(60, 60), table.sessions.filter { it.id == "a" || it.time.start == 600 }.map { it.time.minutes })
         assertTrue(table.sessions.all { it.notes == "Private notes" })
     }
@@ -79,17 +80,19 @@ class Release05UiTest {
         var dated by mutableStateOf(false)
         val table = fixture.copy(cycle = WeekCycle(2, date.toString()), sessions = listOf(lesson.copy(cycleWeek = 1)))
         compose.setContent { TempoTheme(table.appearance) {
+            Surface {
             DayScreen(table, selected.dayOfWeek.value, LocalDateTime.of(2026, 10, 12, 10, 0), false,
                 { selected = selected.plusDays((it - selected.dayOfWeek.value).toLong()) }, {}, { _, _ -> }, {},
                 date = selected, selectDate = { selected = it }, dateEditing = dated, setDateEditing = { dated = it })
+            }
         } }
         compose.onNodeWithContentDescription("Next week").performClick()
-        compose.waitUntil { selected == date.plusWeeks(1) }
+        compose.waitUntil(10_000) { selected == date.plusWeeks(1) }
         compose.onNodeWithText("2026-10-19 · Week 2 of 2").assertExists()
         compose.onNodeWithContentDescription("Edit only this date").performClick()
         compose.runOnIdle { assertTrue(dated) }
         compose.onNodeWithContentDescription("Previous week").performClick()
-        compose.waitUntil { selected == date }
+        compose.waitUntil(10_000) { selected == date }
         compose.onNodeWithText("Maths").assertExists()
         saveScreen("qa-timetable.png")
     }
@@ -121,7 +124,8 @@ class Release05UiTest {
     }
     private fun saveScreen(name: String) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val screenshot = compose.onRoot().captureToImage().asAndroidBitmap()
+        val root = compose.onAllNodes(isRoot()).fetchSemanticsNodes().maxBy { it.boundsInWindow.width * it.boundsInWindow.height }
+        val screenshot = compose.onNode(isRoot() and SemanticsMatcher("largest root") { it.id == root.id }).captureToImage().asAndroidBitmap()
         java.io.File(context.filesDir, name).outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 }

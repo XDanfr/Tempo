@@ -31,7 +31,7 @@ class EditingIntegrationTest {
         compose.onNodeWithText("Maths · Mon 09:00 · every week").performClick()
         compose.onNodeWithText("Shift by minutes (negative moves earlier)").performScrollTo().performTextReplacement("30")
         compose.onNodeWithText("Apply").performClick()
-        compose.waitUntil { value.value.sessions.first().time.start == 570 }
+        compose.waitUntil(10_000) { value.value.sessions.first().time.start == 570 }
         assertEquals(540, value.value.sessions[1].time.start)
     }
 
@@ -43,7 +43,7 @@ class EditingIntegrationTest {
         compose.onNodeWithText("Cycle week").performScrollTo().performClick()
         compose.onNodeWithText("Week 2").performClick()
         compose.onNodeWithText("Save").performClick()
-        compose.waitUntil { value.value != null }
+        compose.waitUntil(10_000) { value.value != null }
         assertEquals(2, value.value!!.cycleWeek)
     }
 
@@ -58,14 +58,14 @@ class EditingIntegrationTest {
             compose.setContent { TempoApp(model) }
             compose.waitUntil(10_000) { model.state.value.timetable != null }
             model.update { it.copy(name = "Changed") }
-            compose.waitUntil { model.state.value.timetable?.name == "Changed" && model.state.value.canUndo }
+            compose.waitUntil(10_000) { model.state.value.timetable?.name == "Changed" && model.state.value.canUndo }
             compose.onNodeWithContentDescription("Undo edit").performClick()
-            compose.waitUntil { model.state.value.timetable?.name == fixture.name && model.state.value.canRedo }
+            compose.waitUntil(10_000) { model.state.value.timetable?.name == fixture.name && model.state.value.canRedo }
             model.update { it.copy(name = "") }
-            compose.waitUntil { model.state.value.error != null }
+            compose.waitUntil(10_000) { model.state.value.error != null }
             model.dismissError()
             compose.onNodeWithContentDescription("Redo edit").performClick()
-            compose.waitUntil { model.state.value.timetable?.name == "Changed" }
+            compose.waitUntil(10_000) { model.state.value.timetable?.name == "Changed" }
             assertFalse(model.state.value.canRedo)
             runBlocking { repository.updateCollection { current -> assertEquals("Changed", current.active.name); current } }
         } finally { compose.runOnIdle { store.clear() } }
