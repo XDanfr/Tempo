@@ -1,6 +1,7 @@
 package cc.xdan.tempo
 
 import androidx.compose.runtime.*
+import androidx.compose.material3.Surface
 import androidx.activity.ComponentActivity
 import androidx.activity.BackEventCompat
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -40,8 +41,8 @@ class SetupRefinementTest {
 
     @Test fun onboardingEditsTheExistingSubjectAndKeepsItsIdentity() {
         var value by mutableStateOf(Timetable(onboardingStep = 2, subjects = listOf(Subject("maths", "Maths", location = "Room 5"))))
-        compose.setContent { TempoTheme(value.appearance) { Onboarding(value, { value = it(value) }, {}) } }
-        compose.onNodeWithText("Room 5").assertIsDisplayed()
+        compose.setContent { TempoTheme(value.appearance) { Surface { Onboarding(value, { value = it(value) }, {}) } } }
+        compose.onNodeWithText("Room 5").performScrollTo().assertIsDisplayed()
         val image = compose.onRoot().captureToImage().asAndroidBitmap()
         File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "qa-onboarding-subjects.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
         compose.onNodeWithText("Maths").performClick()
@@ -54,7 +55,7 @@ class SetupRefinementTest {
 
     @Test fun onboardingPersistsCustomCycleBeforeProceeding() {
         var value by mutableStateOf(Timetable())
-        compose.setContent { TempoTheme(value.appearance) { Onboarding(value, { value = it(value) }, {}) } }
+        compose.setContent { TempoTheme(value.appearance) { Surface { Onboarding(value, { value = it(value) }, {}) } } }
         compose.onNodeWithText("Number of weeks").performScrollTo().performTextReplacement("0")
         compose.onNodeWithText("Continue").assertIsNotEnabled()
         compose.onNodeWithText("Number of weeks").performTextReplacement("3")
