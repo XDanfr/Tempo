@@ -27,8 +27,8 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
     var subject by rememberSaveable { mutableStateOf(existing?.subjectId ?: timetable.subjects.first().id) }
     var day by rememberSaveable { mutableIntStateOf(existing?.day ?: initialDay) }
     var week by rememberSaveable { mutableIntStateOf(existing?.cycleWeek ?: if (existing == null && timetable.cycle.weeks > 1) initialCycleWeek else 0) }
-    var splitAt by rememberSaveable { mutableStateOf("") }
     val startingTime = existing?.time ?: initialTime ?: timetable.periods.firstOrNull()?.time ?: TimeSpan(540, 630)
+    var splitAt by rememberSaveable { mutableStateOf(minuteLabel(startingTime.start + startingTime.minutes / 2)) }
     var start by rememberSaveable { mutableStateOf(minuteLabel(startingTime.start)) }
     var end by rememberSaveable { mutableStateOf(minuteLabel(startingTime.end)) }
     var location by rememberSaveable { mutableStateOf(existing?.location ?: "") }
@@ -60,7 +60,7 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
         OutlinedTextField(notes, { notes = it }, label = { Text("Notes") }, minLines = 2, modifier = Modifier.fillMaxWidth())
         if (existing != null) {
             OutlinedButton(onClick = { candidate?.let { onSave(it.copy(id = UUID.randomUUID().toString())) } }, enabled = candidate != null) { Text("Duplicate session") }
-            OutlinedTextField(splitAt, { splitAt = it }, label = { Text("Split at HH:MM") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            TimeField("Split at", splitAt, { splitAt = it })
             val minute = parseMinute(splitAt)
             OutlinedButton(onClick = { candidate?.let { onSplit(splitSession(it, minute!!, UUID.randomUUID().toString())) } },
                 enabled = candidate != null && minute != null && minute > candidate.time.start && minute < candidate.time.end) { Text("Split session") }

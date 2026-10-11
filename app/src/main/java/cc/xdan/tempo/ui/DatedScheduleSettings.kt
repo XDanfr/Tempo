@@ -46,7 +46,14 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
         EditorSheet("Repeating weeks", { cycleEditor = false }, confirm = {
             update { it.copy(schemaVersion = 3, cycle = WeekCycle(count!!, anchor)) }; cycleEditor = false
         }, enabled = valid) {
-            OutlinedTextField(weeks, { weeks = it }, label = { Text("Number of weeks (1–52)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(1, 2, 4).forEach { suggestion ->
+                    FilterChip(weeks == suggestion.toString(), { weeks = suggestion.toString() }, label = { Text(if (suggestion == 1) "1 week" else "$suggestion weeks") })
+                }
+            }
+            OutlinedTextField(weeks, { weeks = it }, label = { Text("Number of weeks") }, supportingText = { Text("Choose a suggestion or enter 1–52") },
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                singleLine = true, modifier = Modifier.fillMaxWidth())
             DateField("Date in week 1", anchor) { anchor = it }
             Text("Weeks run Monday to Sunday. Existing sessions repeat every week until you assign them to a cycle week.")
             if (count != null && count < highest) Text("Move sessions and breaks out of week $highest before shortening this cycle.", color = MaterialTheme.colorScheme.error)

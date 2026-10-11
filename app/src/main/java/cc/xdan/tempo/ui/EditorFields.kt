@@ -16,8 +16,8 @@ fun validSpan(start: String, end: String): TimeSpan? {
 @Composable
 fun TimeFields(start: String, end: String, changeStart: (String) -> Unit, changeEnd: (String) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        OutlinedTextField(start, changeStart, label = { Text("Start · HH:mm") }, singleLine = true, modifier = Modifier.weight(1f))
-        OutlinedTextField(end, changeEnd, label = { Text("End · HH:mm") }, singleLine = true, modifier = Modifier.weight(1f))
+        TimeField("Start time", start, changeStart, Modifier.weight(1f))
+        TimeField("End time", end, changeEnd, Modifier.weight(1f), allowEndOfDay = true)
     }
-    if (validSpan(start, end) == null) Text("Use 24-hour times with the end after the start. Overnight sessions arrive in a later milestone.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+    if (validSpan(start, end) == null) Text("Choose an end time after the start time.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
 }
