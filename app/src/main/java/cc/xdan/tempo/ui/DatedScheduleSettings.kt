@@ -76,11 +76,15 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
         val parsed = validDate(date)
         val duplicate = timetable.exceptions.any { it.date == date && it.date != exception?.date }
         EditorSheet("Dated exception", { exceptionEditor = false }, confirm = {
+            val original = exception
+            val chosenDate = date
+            val chosenName = name.trim()
+            val chosenClosed = closed
             update { table ->
-                val replacement = if (closed) DatedException(date, name.trim(), closed = true)
-                else if (exception != null && !exception!!.closed) exception!!.copy(name = name.trim())
-                else table.copy(exceptions = table.exceptions.filterNot { it.date == date }, holidays = emptyList()).replacementDay(parsed!!).copy(name = name.trim())
-                table.copy(exceptions = table.exceptions.filterNot { it.date == exception?.date || it.date == date } + replacement)
+                val replacement = if (chosenClosed) DatedException(chosenDate, chosenName, closed = true)
+                else if (original != null && !original.closed) original.copy(name = chosenName)
+                else table.copy(exceptions = table.exceptions.filterNot { it.date == chosenDate }, holidays = emptyList()).replacementDay(LocalDate.parse(chosenDate)).copy(name = chosenName)
+                table.copy(exceptions = table.exceptions.filterNot { it.date == original?.date || it.date == chosenDate } + replacement)
             }; exceptionEditor = false
         }, enabled = parsed != null && !duplicate) {
             if (exception == null) DateField("Date", date) { date = it } else Text(date)
@@ -91,7 +95,8 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
             Text(if (closed) "This date will have no sessions, breaks or frees." else "Start with this date's recurring schedule. Open the date in Timetable to edit its sessions and breaks.")
             if (duplicate) Text("An exception already exists for this date. Edit it from the list.", color = MaterialTheme.colorScheme.error)
             if (exception != null) TextButton(onClick = {
-                update { it.copy(exceptions = it.exceptions.filterNot { e -> e.date == exception!!.date }) }; exceptionEditor = false
+                val originalDate = exception!!.date
+                update { it.copy(exceptions = it.exceptions.filterNot { e -> e.date == originalDate }) }; exceptionEditor = false
             }) { Text("Remove exception and restore recurring schedule") }
         }
     }

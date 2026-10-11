@@ -26,4 +26,16 @@ class DatedTransferTest {
     @Test(expected = java.time.format.DateTimeParseException::class) fun invalidDatesFailBeforeImport() {
         TimetableTransfer.decode(TimetableTransfer.encode(Timetable()).replace("2026-01-05", "bad-date"))
     }
+    @Test fun legacyWeeklyFileRetainsSessionsBreaksHoursAndAppearance() {
+        val legacy = """{"schemaVersion":2,"name":"College","onboarded":true,"subjects":[{"id":"s","name":"Maths","location":"Lab"}],"sessions":[{"id":"a","subjectId":"s","day":1,"time":{"start":540,"end":600},"notes":"Keep notes"}],"breaks":[{"id":"b","name":"Lunch","days":[1,3],"time":{"start":720,"end":750}}],"days":[{"day":1,"time":{"start":480,"end":960}}],"appearance":{"preset":"OCEAN","mode":"LIGHT","blockStyle":"OUTLINED"}}"""
+        val table = TimetableTransfer.decode(legacy)
+        assertEquals(3, table.schemaVersion)
+        assertEquals("Keep notes", table.sessions.single().notes)
+        assertNull(table.sessions.single().cycleWeek)
+        assertEquals(listOf(1, 3), table.breaks.single().days)
+        assertEquals(TimeSpan(480, 960), table.days.single().time)
+        assertEquals(BlockStyle.OUTLINED, table.appearance.effectiveBreakStyle)
+        assertEquals(ThemePreset.OCEAN, table.appearance.preset)
+        assertEquals(table, TimetableTransfer.decode(TimetableTransfer.encode(table)))
+    }
 }
