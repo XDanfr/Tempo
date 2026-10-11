@@ -23,6 +23,20 @@ fun ThemePreset.label(): String = when (this) { ThemePreset.FOREST -> "Forest"; 
 fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Appearance", style = MaterialTheme.typography.titleLarge)
+        ThemeSelector(appearance, change)
+        ChoiceField("Subject blocks", appearance.blockStyle, BlockStyle.entries,
+            { if (it == BlockStyle.FILLED) "Filled" else "Outlines" },
+            { change(appearance.copy(blockStyle = it, breakStyle = appearance.effectiveBreakStyle)) })
+        ChoiceField("Break blocks", appearance.effectiveBreakStyle, BlockStyle.entries,
+            { if (it == BlockStyle.FILLED) "Filled" else "Outlines" },
+            { change(appearance.copy(breakStyle = it)) })
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Show icons", Modifier.weight(1f)); Switch(appearance.showIcons, { change(appearance.copy(showIcons = it)) }) }
+    }
+}
+
+@Composable
+fun ThemeSelector(appearance: Appearance, change: (Appearance) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(ThemePreset.entries, key = { it.name }) { preset ->
                 val active = appearance.selectedPreset == preset
@@ -50,12 +64,5 @@ fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ThemeMode.entries.forEach { mode -> FilterChip(appearance.mode == mode, { change(appearance.copy(mode = mode)) }, label = { Text(mode.name.lowercase().replaceFirstChar { it.titlecase() }) }) }
         }
-        ChoiceField("Subject blocks", appearance.blockStyle, BlockStyle.entries,
-            { if (it == BlockStyle.FILLED) "Filled" else "Outlines" },
-            { change(appearance.copy(blockStyle = it, breakStyle = appearance.effectiveBreakStyle)) })
-        ChoiceField("Break blocks", appearance.effectiveBreakStyle, BlockStyle.entries,
-            { if (it == BlockStyle.FILLED) "Filled" else "Outlines" },
-            { change(appearance.copy(breakStyle = it)) })
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Show icons", Modifier.weight(1f)); Switch(appearance.showIcons, { change(appearance.copy(showIcons = it)) }) }
     }
 }

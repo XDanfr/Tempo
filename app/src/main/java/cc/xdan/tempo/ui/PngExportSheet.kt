@@ -1,10 +1,12 @@
 package cc.xdan.tempo.ui
 
 import android.graphics.Bitmap
+import android.os.Build
 import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -17,7 +19,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.Role
-import cc.xdan.tempo.model.Timetable
+import cc.xdan.tempo.model.*
+import cc.xdan.tempo.design.presetColorScheme
 import cc.xdan.tempo.schedule.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +28,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
-private data class RenderedImage(val plan: ScheduleImagePlan, val result: Result<Bitmap>)
+private data class ImageRequest(val plan: ScheduleImagePlan, val palette: ImagePalette)
+private data class RenderedImage(val request: ImageRequest, val result: Result<Bitmap>)
 
 @Composable
 fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Unit) {
@@ -38,6 +42,14 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
     var subjects by rememberSaveable { mutableStateOf(true) }
     var locations by rememberSaveable { mutableStateOf(false) }
     var notes by rememberSaveable { mutableStateOf(false) }
+    var preset by rememberSaveable { mutableStateOf(table.appearance.selectedPreset) }
+    var mode by rememberSaveable { mutableStateOf(ThemeMode.LIGHT) }
+    val appearance = table.appearance.copy(preset = preset, mode = mode, dynamicColour = false)
+    val dark = when (mode) { ThemeMode.SYSTEM -> isSystemInDarkTheme(); ThemeMode.LIGHT -> false; ThemeMode.DARK -> true }
+    val scheme = if (preset == ThemePreset.MATERIAL_YOU && Build.VERSION.SDK_INT >= 31) {
+        if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    } else presetColorScheme(preset, dark)
+    val palette = imagePalette(scheme)
     var busy by remember { mutableStateOf(false) }
     var pending by remember { mutableStateOf<Bitmap?>(null) }
     val date = validDate(dateText)
@@ -45,14 +57,15 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
     val plan = remember(table, date, week, width, title, subjects, locations, notes) {
         if (date != null && width != null && width in 480..2048) scheduleImagePlan(table, date, week, width, ImagePrivacy(title, subjects, locations, notes)) else null
     }
-    val rendered by produceState<RenderedImage?>(null, plan) {
+    val request = plan?.let { ImageRequest(it, palette) }
+    val rendered by produceState<RenderedImage?>(null, request) {
         value = null
-        if (plan != null) {
-            try { value = withContext(Dispatchers.Default) { RenderedImage(plan, runCatching { renderSchedulePng(context, plan) }) } }
+        if (request != null) {
+            try { value = withContext(Dispatchers.Default) { RenderedImage(request, runCatching { renderSchedulePng(context, request.plan, request.palette) }) } }
             catch (e: CancellationException) { throw e }
         }
     }
-    val rendering = rendered?.takeIf { it.plan == plan }?.result
+    val rendering = rendered?.takeIf { it.request == request }?.result
     val bitmap = rendering?.getOrNull()
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri ->
         val snapshot = pending
@@ -77,6 +90,9 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
     EditorSheet("Export timetable image", dismiss) {
         ChoiceField("View", week, listOf(false, true), { if (it) "Week (Monday–Sunday)" else "Day" }, { week = it })
         DateField("Date", dateText) { dateText = it }
+        Text("Image theme", style = MaterialTheme.typography.titleMedium)
+        ThemeSelector(appearance) { preset = it.selectedPreset; mode = it.mode }
+        Text("Changes apply only to this image. Light starts selected for printing.", style = MaterialTheme.typography.bodySmall)
         OutlinedTextField(widthText, { widthText = it }, label = { Text("Image width (px)") }, supportingText = { Text("480–2048 pixels") }, singleLine = true,
             isError = width == null || width !in 480..2048, modifier = Modifier.fillMaxWidth())
         Text("Include in image", style = MaterialTheme.typography.titleMedium)

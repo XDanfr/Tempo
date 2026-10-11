@@ -16,17 +16,26 @@ import androidx.core.graphics.ColorUtils
 import cc.xdan.tempo.core.designsystem.R
 import cc.xdan.tempo.model.minuteLabel
 import cc.xdan.tempo.schedule.ScheduleImagePlan
+import cc.xdan.tempo.design.presetColorScheme
+import cc.xdan.tempo.model.ThemePreset
+import androidx.compose.material3.ColorScheme
+import androidx.compose.ui.graphics.toArgb
+
+data class ImagePalette(val background: Int, val ink: Int, val accent: Int, val outline: Int)
+
+fun imagePalette(scheme: ColorScheme): ImagePalette = ImagePalette(scheme.surface.toArgb(), scheme.onSurface.toArgb(), scheme.primary.toArgb(), scheme.outline.toArgb())
 
 /** Measure every wrapped line before allocating the same bitmap used for preview and saving. */
-fun renderSchedulePng(context: Context, plan: ScheduleImagePlan): Bitmap {
+fun renderSchedulePng(context: Context, plan: ScheduleImagePlan, palette: ImagePalette = imagePalette(presetColorScheme(ThemePreset.FOREST, false))): Bitmap {
     val scale = plan.width / 1080f
     val margin = (40 * scale).toInt()
     val contentWidth = plan.width - margin * 2
     val font = ResourcesCompat.getFont(context, R.font.outfit_medium)
     val heading = ResourcesCompat.getFont(context, R.font.outfit_semibold)
-    val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { typeface = font; color = Color.rgb(23, 33, 22) }
+    val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { typeface = font }
     fun layout(text: String, size: Float, width: Int = contentWidth): StaticLayout {
         textPaint.textSize = size * scale
+        textPaint.color = if (size >= 36f) palette.accent else palette.ink
         textPaint.typeface = if (Build.VERSION.SDK_INT >= 28) Typeface.create(font, if (size >= 36f) 600 else 500, false)
             else if (size >= 36f) heading else font
         return StaticLayout.Builder.obtain(text, 0, text.length, TextPaint(textPaint), width)
@@ -65,13 +74,13 @@ fun renderSchedulePng(context: Context, plan: ScheduleImagePlan): Bitmap {
     require(y <= 16384 && plan.width.toLong() * y <= 16_000_000) { "This image is too large. Export individual days or fewer details." }
     val bitmap = Bitmap.createBitmap(plan.width, y, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    canvas.drawColor(Color.WHITE)
+    canvas.drawColor(palette.background)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     for (panel in panels) {
         paint.style = if (panel.outlined) Paint.Style.STROKE else Paint.Style.FILL
         paint.strokeWidth = 2 * scale
-        paint.color = if (panel.outlined) Color.rgb(100, 110, 100)
-            else ColorUtils.blendARGB(Color.WHITE, (panel.colour ?: Color.LTGRAY) or (0xFF shl 24), .3f)
+        paint.color = if (panel.outlined) palette.outline
+            else ColorUtils.blendARGB(palette.background, (panel.colour ?: Color.LTGRAY) or (0xFF shl 24), .24f)
         canvas.drawRoundRect(panel.rect, 24 * scale, 24 * scale, paint)
     }
     for (element in elements) {
