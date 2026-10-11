@@ -58,7 +58,7 @@ Your timetable stays on your device unless you export it. Tempo has no accounts 
 
 ## What’s next
 
-Calendar `.ics` integration, overnight shifts, explicit time zones, free tags, share links and optional homework or assignment tracking with widget due dates are planned. See the [roadmap](docs/ROADMAP.md) and [0.5 guide](docs/RELEASE-0.5.md) for details.
+Calendar `.ics` integration, overnight shifts, explicit time zones, free tags, share links and optional homework or assignment tracking with widget due dates are planned. See the [roadmap](docs/ROADMAP.md) for details.
 
 ## Support Tempo
 

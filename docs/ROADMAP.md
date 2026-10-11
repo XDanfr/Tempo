@@ -42,8 +42,6 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Scrollable widget timetable/icon/location pills and shared theme cards, with location following
 - [x] Editable onboarding subject cards and initial anchored cycle length
 
-See [the 0.5 guide](RELEASE-0.5.md) for scope, compatibility and validation.
-
 ## Later releases
 
 - [ ] Restore bottom-sheet drag handles and swipe-down dismissal without coupling content flings to changing sheet anchors; include boundary-fling and keyboard regression checks
