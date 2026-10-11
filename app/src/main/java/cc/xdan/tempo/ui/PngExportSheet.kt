@@ -22,6 +22,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
+private data class RenderedImage(val plan: ScheduleImagePlan, val result: Result<Bitmap>)
+
 @Composable
 fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Unit) {
     val context = LocalContext.current
@@ -40,13 +42,14 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
     val plan = remember(table, date, week, width, title, subjects, locations, notes) {
         if (date != null && width != null && width in 480..2048) scheduleImagePlan(table, date, week, width, ImagePrivacy(title, subjects, locations, notes)) else null
     }
-    val rendering by produceState<Result<Bitmap>?>(null, plan) {
+    val rendered by produceState<RenderedImage?>(null, plan) {
         value = null
         if (plan != null) {
-            try { value = withContext(Dispatchers.Default) { runCatching { renderSchedulePng(context, plan) } } }
+            try { value = withContext(Dispatchers.Default) { RenderedImage(plan, runCatching { renderSchedulePng(context, plan) }) } }
             catch (e: CancellationException) { throw e }
         }
     }
+    val rendering = rendered?.takeIf { it.plan == plan }?.result
     val bitmap = rendering?.getOrNull()
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri ->
         val snapshot = pending

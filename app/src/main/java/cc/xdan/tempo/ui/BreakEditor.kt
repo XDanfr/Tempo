@@ -29,8 +29,8 @@ fun BreakEditor(timetable: Timetable, existing: ScheduledBreak? = null, initialD
     var confirmDelete by remember { mutableStateOf(false) }
     var week by rememberSaveable { mutableIntStateOf(existing?.cycleWeek ?: if (existing == null && timetable.cycle.weeks > 1) initialCycleWeek else 0) }
     val span = validSpan(start, end)
-    val overlaps = span != null && (timetable.sessions.any { it.day in selectedDays && it.time.start < span.end && span.start < it.time.end } ||
-        timetable.breaks.any { it.id != id && it.days.any { d -> d in selectedDays } && it.time.start < span.end && span.start < it.time.end })
+    val overlaps = span != null && (timetable.sessions.any { (week == 0 || it.cycleWeek == null || week == it.cycleWeek) && it.day in selectedDays && it.time.start < span.end && span.start < it.time.end } ||
+        timetable.breaks.any { (week == 0 || it.cycleWeek == null || week == it.cycleWeek) && it.id != id && it.days.any { d -> d in selectedDays } && it.time.start < span.end && span.start < it.time.end })
     EditorSheet(if (existing == null) "Add break time" else "Edit break time", dismiss,
         confirm = { span?.let { save(ScheduledBreak(id, name.trim(), if (dated) listOf(initialDay!!) else selectedDays, it, kind, if (dated || week == 0) null else week)) } }, enabled = span != null && name.isNotBlank() && selectedDays.isNotEmpty()) {
         ChoiceField("Type", kind, BreakKind.entries, { it.label() }, { chosen -> if (name == kind.label()) name = chosen.label(); kind = chosen })
