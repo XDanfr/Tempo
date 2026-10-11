@@ -13,6 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.window.DialogProperties
 import cc.xdan.tempo.model.minuteLabel
 import cc.xdan.tempo.model.parseMinute
 import java.time.Instant
@@ -60,12 +62,20 @@ fun TimeField(label: String, value: String, change: (String) -> Unit, modifier: 
     if (choosing) {
         val minute = (parseMinute(value) ?: 540) % 1440
         val state = rememberTimePickerState(initialHour = minute / 60, initialMinute = minute % 60, is24Hour = true)
-        AlertDialog(onDismissRequest = { choosing = false }, title = { Text(label) },
-            text = { Column(Modifier.verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
-                TimePicker(state)
-                if (allowEndOfDay) TextButton(onClick = { change("24:00"); choosing = false }) { Text("End of day (24:00)") }
-            } },
-            confirmButton = { TextButton(onClick = { change(minuteLabel(state.hour * 60 + state.minute)); choosing = false }) { Text("Choose time") } },
-            dismissButton = { TextButton(onClick = { choosing = false }) { Text("Cancel") } })
+        BasicAlertDialog(onDismissRequest = { choosing = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+            Surface(Modifier.widthIn(max = 420.dp).fillMaxWidth().padding(12.dp), shape = MaterialTheme.shapes.extraLarge) {
+                Column(Modifier.heightIn(max = (LocalConfiguration.current.screenHeightDp * .9f).dp).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(label, style = MaterialTheme.typography.titleLarge)
+                    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                        TimePicker(state)
+                        if (allowEndOfDay) TextButton(onClick = { change("24:00"); choosing = false }) { Text("End of day (24:00)") }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { choosing = false }) { Text("Cancel") }
+                        TextButton(onClick = { change(minuteLabel(state.hour * 60 + state.minute)); choosing = false }) { Text("Choose time") }
+                    }
+                }
+            }
+        }
     }
 }
