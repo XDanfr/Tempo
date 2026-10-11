@@ -11,8 +11,10 @@ Outfit type, Material components, theme cards and subject colours.
   valid schedules. Split starts at the midpoint and can be adjusted.
 - 1/2/4-week suggestions cover common patterns; a numeric field preserves custom
   1–52-week cycles. Suggestions never silently change a saved schedule.
-- Settings groups tasks into Timetables & files, Appearance, Schedule, Updates
-  and About. Both the visible Back action and Android Back return to the list.
+- Settings groups tasks into Timetables & files, Appearance, Schedule and Updates,
+  with About at the bottom of the home page. Icons and chevrons mark navigation.
+  A circular Back action returns to the list; predictive Back reveals it during
+  the gesture and restores the current page if cancelled.
 - Today and Timetable show the resolved schedule without a persistent editing
   toggle. The session/break editor's labelled Applies to choice states either
   Repeating schedule or Only the actual date. Existing date replacements lock
@@ -20,6 +22,13 @@ Outfit type, Material components, theme cards and subject colours.
 - Undo/redo appear only when available, reducing disabled toolbar controls.
 - Editor flings stay inside a fixed panel. Close, Cancel, Back and outside taps
   remain available; Save stays outside the scrolling body.
+- Short day-hours and usual-period editors wrap their content in centered dialogs;
+  long editors keep the fixed panel that passed the boundary-fling regression.
+- Widget timetable choices and icon/location options use scrollable pills. Custom
+  themes reuse the app theme cards. Location following tracks the real timetable
+  display preference, while old widget overrides remain readable.
+- Setup asks for an anchored cycle without adding a saved onboarding step. Subject
+  cards expose colour, icon and default location; tapping edits the same subject.
 - PNG appearance uses the same recognisable theme cards and mode chips as app
   appearance. It is independent of app appearance, starts in System mode and
   includes the selected theme in the exact preview/save snapshot.

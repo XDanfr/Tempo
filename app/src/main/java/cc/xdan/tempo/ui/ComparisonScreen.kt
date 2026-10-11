@@ -150,7 +150,7 @@ private fun ComparisonBlock(block: ScheduleBlock, appearance: Appearance, modifi
             }
             if (!compact) {
                 Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (block is ScheduleBlock.Lesson && block.location.isNotBlank()) Text(block.location, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                if (appearance.showLocations && block is ScheduleBlock.Lesson && block.location.isNotBlank()) Text(block.location, style = MaterialTheme.typography.labelSmall, maxLines = 1)
             }
         }
     }
