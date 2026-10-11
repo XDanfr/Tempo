@@ -16,8 +16,9 @@ import cc.xdan.tempo.model.*
 import java.util.UUID
 
 @Composable
-fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, files: TimetableFileActions, manageTimetables: () -> Unit, fileBusy: Boolean) {
+fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, files: TimetableFileActions, manageTimetables: () -> Unit, fileBusy: Boolean, report: (String) -> Unit = {}) {
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
+    var pngExport by remember { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             Text("Your Tempo", style = MaterialTheme.typography.headlineMedium)
@@ -32,6 +33,7 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
                     OutlinedButton(onClick = files.export, enabled = !fileBusy, modifier = Modifier.weight(1f)) { Text("Export file") }
                 }
                 Text("Tempo files include subjects, colours, times, breaks and settings.", style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick = { pngExport = true }, enabled = !fileBusy, modifier = Modifier.fillMaxWidth()) { Text("Export day / week PNG") }
             }
         }
         item { AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } } }
@@ -56,6 +58,7 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
         item { UpdateControls() }
         item { AboutTempo() }
     }
+    if (pngExport) PngExportSheet(timetable, { pngExport = false }, report)
     editingDay?.let { hours ->
         HoursEditor(hours, { editingDay = null }) { new -> update { t -> t.copy(days = t.days.filterNot { it.day == new.day } + new) }; editingDay = null }
     }

@@ -120,7 +120,7 @@ fun TempoApp(model: TempoViewModel) {
                                 date = LocalDate.parse(selectedDate), selectDate = { selectedDate = it.toString(); day = it.dayOfWeek.value },
                                 dateEditing = effectiveDateEditing, setDateEditing = { dateEditing = it })
                             Destination.LIBRARY -> LibraryScreen(timetable, model::update)
-                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, files, { showTimetables = true }, state.fileBusy)
+                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, files, { showTimetables = true }, state.fileBusy, model::showMessage)
                         }
                         }
                     }

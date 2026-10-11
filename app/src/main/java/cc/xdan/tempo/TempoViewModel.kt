@@ -149,6 +149,7 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
         }
     }
     fun dismissMessage() { mutable.value = mutable.value.copy(message = null) }
+    fun showMessage(message: String) { mutable.value = mutable.value.copy(message = message) }
     fun showError(message: String) { mutable.value = mutable.value.copy(error = message) }
     fun dismissError() { mutable.value = mutable.value.copy(error = null) }
 }
