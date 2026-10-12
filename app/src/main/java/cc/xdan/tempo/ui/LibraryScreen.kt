@@ -64,11 +64,12 @@ fun SubjectEditor(existing: Subject?, sessionCount: Int, onDismiss: () -> Unit, 
     var location by rememberSaveable { mutableStateOf(existing?.location ?: "") }
     var colour by rememberSaveable { mutableLongStateOf(existing?.colour ?: 0xFFB7F397) }
     var icon by rememberSaveable { mutableStateOf(existing?.icon ?: SubjectIcon.NONE) }
+    var manualIcon by rememberSaveable { mutableStateOf(existing != null) }
     var showIcons by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     EditorSheet(if (existing == null) "New subject / activity" else "Edit subject / activity", onDismiss,
         confirm = { onSave(Subject(id, name.trim(), colour, icon, location.trim())) }, enabled = name.isNotBlank()) {
-        OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(name, { name = it; if (!manualIcon) icon = suggestedSubjectIcon(it) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(location, { location = it }, label = { Text("Default location") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         Text("Subject colour", style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -85,9 +86,10 @@ fun SubjectEditor(existing: Subject?, sessionCount: Int, onDismiss: () -> Unit, 
             Icon(icon.vector() ?: Icons.Outlined.GridView, null)
             Text("${icon.label()} · Choose icon", Modifier.padding(start = 12.dp))
         }
+        if (!manualIcon && icon != SubjectIcon.NONE) Text("Suggested from the subject name. You can choose another icon.", style = MaterialTheme.typography.bodySmall)
         if (existing != null) TextButton(onClick = { confirmDelete = true }) { Text("Delete subject", color = MaterialTheme.colorScheme.error) }
     }
-    if (showIcons) IconPicker(icon, { showIcons = false }, { icon = it; showIcons = false })
+    if (showIcons) IconPicker(icon, { showIcons = false }, { icon = it; manualIcon = true; showIcons = false })
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete ${existing?.name}?") }, text = { Text("This also removes ${countLabel(sessionCount, "scheduled session")}.") },
         confirmButton = { TextButton(onClick = { onDelete(id) }) { Text("Delete") } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep") } })
 }
