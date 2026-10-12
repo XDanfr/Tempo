@@ -4,9 +4,6 @@ import android.os.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -29,6 +26,9 @@ fun ThemePreset.label(): String = when (this) {
     ThemePreset.VIOLET -> "Violet"; ThemePreset.ROSE -> "Rose"
 }
 
+private val themePresetOptions = listOf(ThemePreset.FOREST, ThemePreset.MATERIAL_YOU, ThemePreset.OCEAN,
+    ThemePreset.AMBER, ThemePreset.RED, ThemePreset.VIOLET, ThemePreset.ROSE)
+
 @Composable
 fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -48,34 +48,46 @@ fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
 @Composable
 fun ThemeSelector(appearance: Appearance, change: (Appearance) -> Unit) {
     val dark = when (appearance.mode) { ThemeMode.DARK -> true; ThemeMode.LIGHT -> false; ThemeMode.SYSTEM -> isSystemInDarkTheme() }
-    val presets = rememberLazyListState(initialFirstVisibleItemIndex = ThemePreset.entries.indexOf(appearance.selectedPreset))
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        LazyRow(Modifier.testTag("theme-presets"), state = presets, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(ThemePreset.entries, key = { it.name }) { preset ->
-                val active = appearance.selectedPreset == preset
-                val enabled = preset != ThemePreset.MATERIAL_YOU || Build.VERSION.SDK_INT >= 31
-                val preview = if (preset == ThemePreset.MATERIAL_YOU && Build.VERSION.SDK_INT >= 31) {
-                    val context = androidx.compose.ui.platform.LocalContext.current
-                    if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-                } else presetColorScheme(preset, dark)
-                val swatches = listOf(preview.primary, preview.tertiary, preview.surfaceContainerHigh)
-                Surface(onClick = { change(appearance.copy(preset = preset, dynamicColour = false)) }, enabled = enabled,
-                    modifier = Modifier.semantics { selected = active },
-                    color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shape = MaterialTheme.shapes.large, border = if (active) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null) {
-                    Column(Modifier.width(128.dp).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { swatches.forEach { colour -> Box(Modifier.size(26.dp).background(colour, CircleShape)) } }
-                        Text(preset.label(), style = MaterialTheme.typography.titleSmall)
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(if (active) Icons.Outlined.CheckCircleOutline else Icons.Outlined.Palette, null, Modifier.size(16.dp))
-                            Text(if (!enabled) "Android 12+" else if (active) "Selected" else if (preset == ThemePreset.MATERIAL_YOU) "Wallpaper" else "Preset", style = MaterialTheme.typography.labelSmall)
+        Column(Modifier.fillMaxWidth().testTag("theme-presets"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            themePresetOptions.chunked(2).forEach { row ->
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    row.forEach { preset ->
+                        ThemePresetCard(preset, dark, appearance.selectedPreset == preset,
+                            Modifier.weight(1f).fillMaxHeight()) {
+                            change(appearance.copy(preset = preset, dynamicColour = false))
                         }
                     }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ThemeMode.entries.forEach { mode -> FilterChip(appearance.mode == mode, { change(appearance.copy(mode = mode)) }, label = { Text(mode.name.lowercase().replaceFirstChar { it.titlecase() }) }) }
+        }
+    }
+}
+
+@Composable
+private fun ThemePresetCard(preset: ThemePreset, dark: Boolean, active: Boolean, modifier: Modifier, choose: () -> Unit) {
+    val enabled = preset != ThemePreset.MATERIAL_YOU || Build.VERSION.SDK_INT >= 31
+    val preview = if (preset == ThemePreset.MATERIAL_YOU && Build.VERSION.SDK_INT >= 31) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    } else presetColorScheme(preset, dark)
+    val swatches = listOf(preview.primary, preview.tertiary, preview.surfaceContainerHigh)
+    Surface(onClick = choose, enabled = enabled, modifier = modifier.semantics { selected = active },
+        color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.large, border = if (active) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                swatches.forEach { colour -> Box(Modifier.size(26.dp).background(colour, CircleShape)) }
+            }
+            Text(preset.label(), style = MaterialTheme.typography.titleSmall)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Icon(if (active) Icons.Outlined.CheckCircleOutline else Icons.Outlined.Palette, null, Modifier.size(16.dp))
+                Text(if (!enabled) "Android 12+" else if (active) "Selected" else if (preset == ThemePreset.MATERIAL_YOU) "Wallpaper" else "Preset", style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }

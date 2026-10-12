@@ -21,7 +21,6 @@ import cc.xdan.tempo.data.TimetableRepository
 import cc.xdan.tempo.design.TempoTheme
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.ui.PillChoiceField
-import cc.xdan.tempo.ui.ThemeSelector
 
 class WidgetConfigureActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,8 +65,10 @@ class WidgetConfigureActivity : ComponentActivity() {
                             PillChoiceField("Timetable", table, listOf("") + c.timetables.map { it.id },
                                 { key -> c.timetables.firstOrNull { it.id == key }?.timetable?.name ?: if (key.isBlank()) "Follow current timetable" else "Removed timetable" }, { table = it })
                         }
-                        PillChoiceField("Theme", theme.isBlank(), listOf(true, false), { if (it) "Follow timetable" else "Custom theme" }, { follow -> theme = if (follow) "" else previewAppearance.selectedPreset.name })
-                        if (theme.isNotBlank()) ThemeSelector(Appearance(preset = ThemePreset.valueOf(theme), mode = mode)) { appearance -> theme = appearance.selectedPreset.name; mode = appearance.mode }
+                        WidgetThemeControl(theme.takeIf { it.isNotBlank() }?.let(ThemePreset::valueOf), mode, previewAppearance) { preset, chosenMode ->
+                            theme = preset?.name ?: ""
+                            mode = chosenMode
+                        }
                         if (pill || square) WidgetOptionCards("Background", lessonBackground, "Theme colour", "Lesson colour", WidgetPreview.THEME, WidgetPreview.LESSON, pill) { lessonBackground = it }
                         PillChoiceField("Icons", icons, listOf("Follow timetable", "Show icons", "Hide icons"), { it }, { icons = it })
                         PillChoiceField("Show locations", location, listOf("Follow timetable", "Show", "Hide"), { it }, { location = it })

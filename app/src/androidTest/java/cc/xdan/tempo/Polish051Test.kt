@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.view.KeyEvent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -40,14 +42,13 @@ class Polish051Test {
 
     @Test fun newThemesCanBeSelectedInLightDarkAndSystemModes() {
         var appearance by mutableStateOf(Appearance())
-        compose.setContent { TempoTheme(appearance) { Surface { Column(Modifier.padding(20.dp)) {
+        compose.setContent { TempoTheme(appearance) { Surface { Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp)) {
             ThemeSelector(appearance) { appearance = it }
         } } } }
         for (mode in ThemeMode.entries) {
-            compose.onNodeWithText(mode.name.lowercase().replaceFirstChar { it.titlecase() }).performClick()
+            compose.onNodeWithText(mode.name.lowercase().replaceFirstChar { it.titlecase() }).performScrollTo().performClick()
             for (preset in listOf(ThemePreset.RED, ThemePreset.VIOLET, ThemePreset.ROSE)) {
-                compose.onNodeWithTag("theme-presets").performScrollToIndex(ThemePreset.entries.indexOf(preset))
-                compose.onNodeWithText(preset.label()).performClick()
+                compose.onNodeWithText(preset.label()).performScrollTo().performClick()
                 compose.runOnIdle { assertEquals(preset, appearance.selectedPreset); assertEquals(mode, appearance.mode) }
                 compose.onNodeWithText("Selected").assertIsDisplayed()
                 screenshot("${preset.name.lowercase()}-${mode.name.lowercase()}")
