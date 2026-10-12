@@ -15,9 +15,15 @@ class PaletteTest {
                 s.secondary to s.onSecondary, s.secondaryContainer to s.onSecondaryContainer,
                 s.tertiary to s.onTertiary, s.tertiaryContainer to s.onTertiaryContainer,
                 s.surface to s.onSurface, s.surfaceVariant to s.onSurfaceVariant,
-                s.surfaceContainerHighest to s.onSurface, s.inverseSurface to s.inverseOnSurface,
-                s.primaryFixed to s.onPrimaryFixed, s.primaryFixedDim to s.onPrimaryFixedVariant,
-                s.secondaryFixedDim to s.onSecondaryFixedVariant, s.tertiaryFixedDim to s.onTertiaryFixedVariant)
+                s.background to s.onBackground, s.surfaceContainerHighest to s.onSurface,
+                s.surfaceContainerHighest to s.onSurfaceVariant, s.inverseSurface to s.inverseOnSurface,
+                s.primaryFixed to s.onPrimaryFixed, s.primaryFixed to s.onPrimaryFixedVariant,
+                s.primaryFixedDim to s.onPrimaryFixed, s.primaryFixedDim to s.onPrimaryFixedVariant,
+                s.secondaryFixed to s.onSecondaryFixed, s.secondaryFixed to s.onSecondaryFixedVariant,
+                s.secondaryFixedDim to s.onSecondaryFixed, s.secondaryFixedDim to s.onSecondaryFixedVariant,
+                s.tertiaryFixed to s.onTertiaryFixed, s.tertiaryFixed to s.onTertiaryFixedVariant,
+                s.tertiaryFixedDim to s.onTertiaryFixed, s.tertiaryFixedDim to s.onTertiaryFixedVariant,
+                s.error to s.onError, s.errorContainer to s.onErrorContainer)
             for ((background, ink) in pairs) assertTrue("$preset dark=$dark: $background / $ink",
                 colourContrast(background, ink) >= 4.5f)
         }

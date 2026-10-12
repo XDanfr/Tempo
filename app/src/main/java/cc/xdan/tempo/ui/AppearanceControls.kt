@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -20,6 +21,7 @@ import cc.xdan.tempo.design.presetColorScheme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.platform.testTag
 
 fun ThemePreset.label(): String = when (this) {
     ThemePreset.FOREST -> "Forest"; ThemePreset.OCEAN -> "Ocean"; ThemePreset.AMBER -> "Amber"
@@ -46,8 +48,9 @@ fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
 @Composable
 fun ThemeSelector(appearance: Appearance, change: (Appearance) -> Unit) {
     val dark = when (appearance.mode) { ThemeMode.DARK -> true; ThemeMode.LIGHT -> false; ThemeMode.SYSTEM -> isSystemInDarkTheme() }
+    val presets = rememberLazyListState(initialFirstVisibleItemIndex = ThemePreset.entries.indexOf(appearance.selectedPreset))
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyRow(Modifier.testTag("theme-presets"), state = presets, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(ThemePreset.entries, key = { it.name }) { preset ->
                 val active = appearance.selectedPreset == preset
                 val enabled = preset != ThemePreset.MATERIAL_YOU || Build.VERSION.SDK_INT >= 31

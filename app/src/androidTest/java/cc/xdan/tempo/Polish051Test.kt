@@ -6,7 +6,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -24,11 +25,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@OptIn(ExperimentalTestApi::class)
 class Polish051Test {
     @get:Rule val compose = createComposeRule()
 
     private fun screenshot(name: String) {
-        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        val bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
         File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "qa-051-$name.png").outputStream().use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
@@ -42,7 +44,8 @@ class Polish051Test {
         for (mode in ThemeMode.entries) {
             compose.onNodeWithText(mode.name.lowercase().replaceFirstChar { it.titlecase() }).performClick()
             for (preset in listOf(ThemePreset.RED, ThemePreset.VIOLET, ThemePreset.ROSE)) {
-                compose.onNodeWithText(preset.label()).performScrollTo().performClick()
+                compose.onNodeWithTag("theme-presets").performScrollToIndex(ThemePreset.entries.indexOf(preset))
+                compose.onNodeWithText(preset.label()).performClick()
                 compose.runOnIdle { assertEquals(preset, appearance.selectedPreset); assertEquals(mode, appearance.mode) }
                 compose.onNodeWithText("Selected").assertIsDisplayed()
                 screenshot("${preset.name.lowercase()}-${mode.name.lowercase()}")
@@ -59,6 +62,10 @@ class Polish051Test {
         for (colour in subjectColours) {
             compose.onNodeWithContentDescription("${colour.name} subject colour").performScrollTo().performClick().assertIsSelected()
         }
+        val blue = compose.onNodeWithContentDescription("Blue subject colour").performScrollTo()
+        blue.performSemanticsAction(SemanticsActions.RequestFocus) { it() }
+        blue.performKeyInput { pressKey(Key.Enter) }
+        blue.assertIsSelected()
         compose.onNodeWithContentDescription("Red subject colour").performScrollTo().performClick().assertIsSelected()
         screenshot("subject-red-light")
         compose.onNodeWithText("Save").performClick()

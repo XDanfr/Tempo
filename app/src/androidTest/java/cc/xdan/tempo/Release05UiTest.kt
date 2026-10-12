@@ -89,7 +89,8 @@ class Release05UiTest {
         } }
         compose.onNodeWithContentDescription("Next week").performClick()
         compose.waitUntil(10_000) { selected == date.plusWeeks(1) }
-        compose.onNodeWithText("2026-10-19 · Week 2 of 2").assertExists()
+        val locale = InstrumentationRegistry.getInstrumentation().targetContext.resources.configuration.locales[0]
+        compose.onNodeWithText("${displayDate(date.plusWeeks(1), locale)} · Week 2 of 2").assertExists()
         compose.onNodeWithContentDescription("Edit only this date").assertDoesNotExist()
         compose.onNodeWithContentDescription("Previous week").performClick()
         compose.waitUntil(10_000) { selected == date }
