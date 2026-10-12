@@ -109,7 +109,31 @@ Treat Feel & Flow as a cross-release quality workstream, not a single rushed fea
 
 **1.0 quality bar:** coherent interaction language; polished day/week navigation; accurate dated-state summaries; accessible/responsive behaviour; fast start/scroll; reliable import/export and widgets; documentation that matches shipped capabilities. Sharing and profiles should not be claimed as 1.0 requirements until feasibility and dependencies are validated.
 
-## Research and design reference
+## Behavioural UX principles and practical review checks
 
-- Discussion inspiration: [gamification / micro-interactions video](https://youtu.be/2TlIg3VokY8) (reference for future review; examples have not been individually validated here).
-- Validate with users who rely on Tempo for college/work schedules, including people who want **no gamification**.
+The following principles are informed by the two linked videos' **publicly available descriptions and secondary transcript summaries**, not an independent frame-by-frame review. They are hypotheses to test with real users rather than claims that particular conversion tactics will work for Tempo.
+
+| Principle | Tempo application | Do not do |
+| --- | --- | --- |
+| **Smart defaults / choice reduction** | Preselect useful day hours and cycle lengths where the context supports them, provide editable templates, and group advanced options behind clearly labelled secondary controls. | Silently assume everyone's schedule is a five-day school week; hide settings that people need to finish a task. |
+| **Early tangible value** | Let users create, preview and personalise a timetable immediately, before any optional account or publishing step. Offer local import as an equally prominent starting path. | Delay useful features until registration, email verification or consent to publicity. |
+| **Ownership through personalisation** | Invite a name, subject colours or icons during setup; show a real preview that reflects those edits. Make choices reversible. | Force a prolonged onboarding tour or make people customise things they do not care about. |
+| **Honest goal progress** | Show actual completed setup steps, accurate time remaining in a scheduled interval and whole/remaining week counts. | Present fictitious head starts in onboarding, equate time elapsed with attendance, or turn the user's timetable into a compulsory daily goal. |
+| **Competence over vanity badges** | Optional permanent milestones recognise useful firsts (first schedule, widget, import/export, sharing) and point to what was accomplished. | Award points for opening the app, create daily streak anxiety, or gate essential themes and controls. |
+| **Delight with restraint** | Use small motion/haptic confirmations for successful edits and first-use discoveries; reserve richer confetti for rare voluntary milestones. | Repeated alerts, randomised rewards designed to prolong use, autoplay audio or blocking celebration overlays. |
+| **Clarity over pressure** | Make consequences of destructive actions, overwrite and public sharing plain, with preview and undo/revoke where appropriate. | Use countdown urgency, deceptive loss framing, bait-and-switch prompts or manipulative pricing comparisons. |
+
+### Task-based acceptance checks
+
+- A first-time user can make or import a usable timetable without registering and without needing to understand every appearance setting.
+- After onboarding, a user can identify today's next activity and swipe or otherwise navigate to tomorrow without a guided tutorial.
+- A user can find and compare this week's real subject counts and free time, including exception dates, without guessing what "remaining" means.
+- A user who dismisses achievements and discovery hints can complete everything with the same efficiency.
+- Public sharing exposes an exact, inspectable set of fields, with a clear way back out; selecting a creator profile never exposes the owner's other private timetables.
+- A reduced-motion user and a screen-reader user receive equivalent meaning, navigation and success confirmation.
+
+## Research and design references
+
+- [Tim Gabe — How to Design Gamification That Actually Works](https://youtu.be/LXX_qOA5D8E) (11 May 2026): useful caution against substituting XP, badges and leaderboards for intrinsically valuable behaviour; favour genuine competence feedback, completion clarity and feature restraint. Interpreted from a secondary transcript summary.
+- [uxpeak — The UX Psychology Behind Apps People Can't Stop Using](https://youtu.be/2TlIg3VokY8) (2 July 2026): smart defaults, choice overload, early value before sign-up, ownership through customisation and visible progress. Some examples emphasise conversion/loss aversion; Tempo should **not** adopt manipulative pressure framing. Interpreted from a secondary transcript summary.
+- Validate the designs with people relying on Tempo for education, work and personal schedules, including people who want **no gamification**.
