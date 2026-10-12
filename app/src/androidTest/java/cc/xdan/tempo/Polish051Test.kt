@@ -1,12 +1,12 @@
 package cc.xdan.tempo
 
 import android.graphics.Bitmap
+import android.view.KeyEvent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -25,7 +25,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(ExperimentalTestApi::class)
 class Polish051Test {
     @get:Rule val compose = createComposeRule()
 
@@ -66,9 +65,14 @@ class Polish051Test {
             compose.onNodeWithContentDescription("${colour.name} subject colour").performScrollTo().performClick().assertIsSelected()
         }
         val blue = compose.onNodeWithContentDescription("Blue subject colour").performScrollTo()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_TAB)
+        compose.waitForIdle()
         blue.performSemanticsAction(SemanticsActions.RequestFocus) { it() }
-        blue.performKeyInput { pressKey(Key.Enter) }
+        blue.assertIsFocused()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_ENTER)
+        compose.waitForIdle()
         blue.assertIsSelected()
+        blue.assertIsFocused()
         compose.onNodeWithContentDescription("Red subject colour").performScrollTo().performClick().assertIsSelected()
         screenshot("subject-red-light")
         compose.onNodeWithText("Save").performClick()
@@ -82,9 +86,11 @@ class Polish051Test {
         compose.setContent { TempoTheme(Appearance()) { SubjectEditor(null, 0, {}, { saved = it }, {}) } }
         compose.onNodeWithText("Name").performTextReplacement("Maths")
         compose.onNodeWithText("Maths · Choose icon").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("None").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("None").performScrollTo().performClick()
         compose.onNodeWithText("Use icon").performClick()
         compose.onNodeWithText("Name").performScrollTo().performTextReplacement("Physics")
+        compose.onNodeWithText("Name").performImeAction()
         compose.onNodeWithText("None · Choose icon").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000) { saved != null }
@@ -96,8 +102,10 @@ class Polish051Test {
         var saved: Subject? = null
         compose.setContent { TempoTheme(Appearance()) { SubjectEditor(original, 0, {}, { saved = it }, {}) } }
         compose.onNodeWithText("Name").performTextReplacement("Biology")
-        compose.onNodeWithContentDescription("Forest subject colour").performScrollTo()
-            .performSemanticsAction(SemanticsActions.RequestFocus) { it() }
+        val forest = compose.onNodeWithContentDescription("Forest subject colour").performScrollTo()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_TAB)
+        compose.waitForIdle()
+        forest.performSemanticsAction(SemanticsActions.RequestFocus) { it() }
         compose.onNodeWithText("Saved custom colour").performScrollTo().assertIsDisplayed()
         screenshot("subject-custom-dark")
         compose.onNodeWithText("Save").performClick()

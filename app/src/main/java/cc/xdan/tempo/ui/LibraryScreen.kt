@@ -10,6 +10,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
@@ -25,6 +28,13 @@ import cc.xdan.tempo.design.*
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.text.input.ImeAction
 import cc.xdan.tempo.schedule.removeSubject
 import java.util.UUID
 
@@ -69,12 +79,17 @@ fun SubjectEditor(existing: Subject?, sessionCount: Int, onDismiss: () -> Unit, 
     var confirmDelete by remember { mutableStateOf(false) }
     EditorSheet(if (existing == null) "New subject / activity" else "Edit subject / activity", onDismiss,
         confirm = { onSave(Subject(id, name.trim(), colour, icon, location.trim())) }, enabled = name.isNotBlank()) {
-        OutlinedTextField(name, { name = it; if (!manualIcon) icon = suggestedSubjectIcon(it) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(location, { location = it }, label = { Text("Default location") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        val focus = LocalFocusManager.current
+        val keyboard = LocalSoftwareKeyboardController.current
+        val inputMode = LocalInputModeManager.current
+        val done = KeyboardActions(onDone = { focus.clearFocus(); keyboard?.hide() })
+        val textOptions = KeyboardOptions(imeAction = ImeAction.Done)
+        OutlinedTextField(name, { name = it; if (!manualIcon) icon = suggestedSubjectIcon(it) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth(), keyboardOptions = textOptions, keyboardActions = done)
+        OutlinedTextField(location, { location = it }, label = { Text("Default location") }, singleLine = true, modifier = Modifier.fillMaxWidth(), keyboardOptions = textOptions, keyboardActions = done)
         Text("Subject colour", style = MaterialTheme.typography.labelLarge)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            subjectColours.forEach { option -> Surface(onClick = { colour = option.argb }, color = Color(option.argb), shape = CircleShape,
-                modifier = Modifier.semantics { contentDescription = "${option.name} subject colour"; selected = colour == option.argb },
+        FlowRow(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            subjectColours.forEach { option -> Surface(onClick = { if (inputMode.inputMode == InputMode.Touch) focus.clearFocus(); keyboard?.hide(); colour = option.argb }, color = Color(option.argb), shape = CircleShape,
+                modifier = Modifier.semantics { contentDescription = "${option.name} subject colour"; selected = colour == option.argb; role = Role.RadioButton },
                 border = BorderStroke(if (colour == option.argb) 3.dp else 1.dp, subjectOutline(Color(option.argb), MaterialTheme.colorScheme.surface))) {
                 Box(Modifier.size(48.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
                     if (colour == option.argb) Icon(Icons.Outlined.Check, null, tint = subjectForeground(Color(option.argb)))
@@ -82,7 +97,7 @@ fun SubjectEditor(existing: Subject?, sessionCount: Int, onDismiss: () -> Unit, 
             } }
         }
         Text(subjectColours.firstOrNull { it.argb == colour }?.name ?: "Saved custom colour", style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = { showIcons = true }, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { focus.clearFocus(); keyboard?.hide(); showIcons = true }, modifier = Modifier.fillMaxWidth()) {
             Icon(icon.vector() ?: Icons.Outlined.GridView, null)
             Text("${icon.label()} · Choose icon", Modifier.padding(start = 12.dp))
         }

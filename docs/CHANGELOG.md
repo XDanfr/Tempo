@@ -2,7 +2,7 @@
 
 ## 0.5.1
 
-- Twelve named subject colours, adding Red, Orange, Lemon, Teal, Blue and Magenta to the original six. Colour choices wrap and expose their names and selection state to accessibility services.
+- Twelve named subject colours, adding Red, Orange, Lemon, Teal, Blue and Magenta to the original six. Colour choices wrap and expose their names and selection state as a radio group to accessibility services. Choosing a colour, opening the icon picker or using the subject fields' Done key dismisses the text keyboard to keep the controls visible. Hardware-keyboard colour selection keeps focus on the chosen control.
 - Red, Violet and Rose themes, in light, dark and system modes. Theme cards preview the selected mode's actual palette, including wallpaper colours on Android 12 and newer. The same presets are available for widgets and PNG exports.
 - Subject card text chooses a readable foreground. Outlines and icons adapt to their background, and comparison cards use readable text on their blended fill. Imported translucent subject colours use the visible blended background when checking text contrast, including widget lesson panels. Improved contrast for text on dimmed fixed theme accents.
 - Friendly dates throughout date controls, timetable headings, schedule settings, editing scopes and PNG headings. English dates use ordinals; other languages follow the device locale's long-date convention.
