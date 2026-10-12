@@ -60,6 +60,7 @@ class UxRefinementTest {
         compose.onNodeWithText("Edit week cycle").performScrollTo().performClick()
         compose.onNodeWithText("4 weeks").performClick()
         compose.onNodeWithText("Number of weeks").performTextReplacement("3")
+        compose.onNodeWithText("Number of weeks").performImeAction()
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000) { value.cycle.weeks == 3 }
         compose.onNodeWithContentDescription("Back to settings").performScrollTo().performClick()

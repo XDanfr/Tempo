@@ -7,6 +7,7 @@
 - Subject card text chooses a readable foreground. Outlines and icons adapt to their background, and comparison cards use readable text on their blended fill. Imported translucent subject colours use the visible blended background when checking text contrast, including widget lesson panels. Improved contrast for text on dimmed fixed theme accents.
 - Friendly dates throughout date controls, timetable headings, schedule settings, editing scopes and PNG headings. English dates use ordinals; other languages follow the device locale's long-date convention.
 - Recognised names suggest icons for new subjects. Saved icons and manual choices, including None, survive name changes.
+- Cycle-length input exposes a Done action that dismisses its numeric keyboard before continuing or saving.
 
 ### Compatibility
 

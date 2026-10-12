@@ -49,6 +49,7 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Readable subject text and comparison fills, contrasting outlines/icons, named colour controls and explicit selection state
 - [x] Friendly display dates such as “11th October 2026”, including ordinal edge cases and locale-aware alternatives; preserve ISO dates in storage and portable files
 - [x] Suggest icons for recognised new subject names, while preserving saved and manually selected icons, including None
+- [x] Subject and cycle fields expose keyboard Done actions; colour/icon choices dismiss text keyboards, with retained focus for hardware-keyboard colour selection
 
 ## Later releases
 
