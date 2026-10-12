@@ -16,8 +16,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
+import cc.xdan.tempo.design.presetColorScheme
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 
-fun ThemePreset.label(): String = when (this) { ThemePreset.FOREST -> "Forest"; ThemePreset.OCEAN -> "Ocean"; ThemePreset.AMBER -> "Amber"; ThemePreset.MATERIAL_YOU -> "Material You" }
+fun ThemePreset.label(): String = when (this) {
+    ThemePreset.FOREST -> "Forest"; ThemePreset.OCEAN -> "Ocean"; ThemePreset.AMBER -> "Amber"
+    ThemePreset.MATERIAL_YOU -> "Material You"; ThemePreset.RED -> "Red"
+    ThemePreset.VIOLET -> "Violet"; ThemePreset.ROSE -> "Rose"
+}
 
 @Composable
 fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
@@ -37,18 +45,19 @@ fun AppearanceControls(appearance: Appearance, change: (Appearance) -> Unit) {
 
 @Composable
 fun ThemeSelector(appearance: Appearance, change: (Appearance) -> Unit) {
+    val dark = when (appearance.mode) { ThemeMode.DARK -> true; ThemeMode.LIGHT -> false; ThemeMode.SYSTEM -> isSystemInDarkTheme() }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(ThemePreset.entries, key = { it.name }) { preset ->
                 val active = appearance.selectedPreset == preset
                 val enabled = preset != ThemePreset.MATERIAL_YOU || Build.VERSION.SDK_INT >= 31
-                val swatches = when (preset) {
-                    ThemePreset.FOREST -> listOf(Color(0xFFB7F397), Color(0xFF79B89D), Color(0xFF142718))
-                    ThemePreset.OCEAN -> listOf(Color(0xFFA2DFFF), Color(0xFF6ABACD), Color(0xFF173845))
-                    ThemePreset.AMBER -> listOf(Color(0xFFFFD59B), Color(0xFFE7AF72), Color(0xFF45351C))
-                    ThemePreset.MATERIAL_YOU -> listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.tertiary)
-                }
+                val preview = if (preset == ThemePreset.MATERIAL_YOU && Build.VERSION.SDK_INT >= 31) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+                } else presetColorScheme(preset, dark)
+                val swatches = listOf(preview.primary, preview.tertiary, preview.surfaceContainerHigh)
                 Surface(onClick = { change(appearance.copy(preset = preset, dynamicColour = false)) }, enabled = enabled,
+                    modifier = Modifier.semantics { selected = active },
                     color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
                     shape = MaterialTheme.shapes.large, border = if (active) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null) {
                     Column(Modifier.width(128.dp).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

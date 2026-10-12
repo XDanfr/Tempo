@@ -35,6 +35,9 @@ fun presetColorScheme(preset: ThemePreset, dark: Boolean): ColorScheme {
         ThemePreset.FOREST, ThemePreset.MATERIAL_YOU -> Triple(Color(0xFFB7F397), Color(0xFF386A25), Color(0xFFACE0D3))
         ThemePreset.OCEAN -> Triple(Color(0xFFA2DFFF), Color(0xFF00658A), Color(0xFF9DE3CF))
         ThemePreset.AMBER -> Triple(Color(0xFFFFD59B), Color(0xFF805600), Color(0xFFFFBEA5))
+        ThemePreset.RED -> Triple(Color(0xFFFFB4AB), Color(0xFF9C4146), Color(0xFFFFD2A5))
+        ThemePreset.VIOLET -> Triple(Color(0xFFD3BCFF), Color(0xFF67508D), Color(0xFFF4B8DB))
+        ThemePreset.ROSE -> Triple(Color(0xFFFFB6C6), Color(0xFF914660), Color(0xFFD3BCFF))
     }
     val neutral = lerp(seed, Color(0xFFBFC6BE), .45f)
     val darkText = lerp(Color.Black, seed, .12f)

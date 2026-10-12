@@ -5,6 +5,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TimetableCodecTest {
+    @Test fun expandedPresetsAndExistingCustomColoursRoundTripWithoutMigration() {
+        for (preset in ThemePreset.entries) {
+            val table = Timetable(subjects = listOf(Subject("red", "Red", 0xFFE57373), Subject("custom", "Custom", 0xFF123456)),
+                appearance = Appearance(preset = preset))
+            assertEquals(table, TimetableCodec.decode(TimetableCodec.encode(table)))
+            assertEquals(3, table.schemaVersion)
+        }
+    }
     @Test fun locationVisibilityDefaultsForOldFilesAndRoundTrips() {
         val original = demoTimetable(Appearance(showLocations = false))
         assertEquals(original, TimetableCodec.decode(TimetableCodec.encode(original)))

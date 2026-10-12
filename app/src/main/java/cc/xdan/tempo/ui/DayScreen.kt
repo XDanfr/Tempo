@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
+import cc.xdan.tempo.design.subjectForeground
+import cc.xdan.tempo.design.subjectOutline
 import cc.xdan.tempo.schedule.*
 import java.time.LocalDateTime
 import java.time.LocalDate
@@ -154,11 +156,10 @@ private fun ScheduleItem(block: ScheduleBlock, appearance: Appearance, current: 
         is ScheduleBlock.Break -> when (block.scheduled.kind) { BreakKind.LUNCH -> Color(0xFFFFD59B); BreakKind.CHANGEOVER -> Color(0xFFACE0D3); BreakKind.BREAK -> Color(0xFFFFB6C6); BreakKind.CUSTOM -> Color(0xFFD3BCFF) }
         is ScheduleBlock.Free -> Color.Transparent
     }
-    val light = MaterialTheme.colorScheme.background.luminance() > .5f
-    val accent = if (light) colour.copy(red = colour.red * .45f, green = colour.green * .45f, blue = colour.blue * .45f) else colour
+    val accent = subjectOutline(colour, MaterialTheme.colorScheme.surface)
     val click = { when (block) { is ScheduleBlock.Lesson -> edit(block.session); is ScheduleBlock.Break -> editBreak(block.scheduled); else -> {} } }
     Surface(onClick = click, color = if (outlined) Color.Transparent else colour,
-        contentColor = if (outlined) MaterialTheme.colorScheme.onSurface else Color(0xFF172116),
+        contentColor = if (outlined) MaterialTheme.colorScheme.onSurface else subjectForeground(colour),
         shape = shape, border = if (outlined) BorderStroke(if (current) 2.dp else 1.5.dp, accent) else null,
         modifier = modifier.fillMaxWidth().heightIn(min = height)) {
         val compact = block.time.minutes < 45

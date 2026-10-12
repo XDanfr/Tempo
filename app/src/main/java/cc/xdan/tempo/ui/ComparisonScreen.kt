@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import cc.xdan.tempo.model.*
+import cc.xdan.tempo.design.subjectForeground
+import cc.xdan.tempo.design.subjectOutline
 import cc.xdan.tempo.schedule.*
 import java.time.LocalDate
 
@@ -142,14 +144,14 @@ private fun ComparisonBlock(block: ScheduleBlock, appearance: Appearance, modifi
     val free = block is ScheduleBlock.Free
     val outlined = free || (if (block is ScheduleBlock.Break) appearance.effectiveBreakStyle else appearance.blockStyle) == BlockStyle.OUTLINED
     val fill = if (outlined) MaterialTheme.colorScheme.surface else lerp(MaterialTheme.colorScheme.surface, accent, if (dark) .30f else .55f)
-    Surface(modifier, color = fill, shape = RoundedCornerShape(14.dp), border = BorderStroke(if (free) .6.dp else 1.dp, accent.copy(alpha = if (free) .25f else .70f))) {
+    Surface(modifier, color = fill, contentColor = subjectForeground(fill), shape = RoundedCornerShape(14.dp), border = BorderStroke(if (free) .6.dp else 1.dp, subjectOutline(accent, fill))) {
         Column(Modifier.padding(if (compact) 6.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                if (!compact && appearance.showIcons) block.symbol()?.let { Icon(it, null, Modifier.size(18.dp), tint = if (dark) accent else lerp(Color.Black, accent, .45f)) }
+                if (!compact && appearance.showIcons) block.symbol()?.let { Icon(it, null, Modifier.size(18.dp), tint = subjectOutline(accent, fill)) }
                 Text(block.title(), style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleSmall, maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
             }
             if (!compact) {
-                Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${minuteLabel(block.time.start)}–${minuteLabel(block.time.end)}", style = MaterialTheme.typography.labelSmall)
                 if (appearance.showLocations && block is ScheduleBlock.Lesson && block.location.isNotBlank()) Text(block.location, style = MaterialTheme.typography.labelSmall, maxLines = 1)
             }
         }
