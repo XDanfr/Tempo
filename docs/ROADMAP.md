@@ -64,6 +64,8 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [ ] Selective imports, bundled assets and restore points
 - [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
 - [ ] Reminders, travel buffers, subject-hour summaries and history
+- [ ] Expand subject and app theme colour palettes, explicitly including requested red, with a broader range of distinct presets and suitable light/dark variants
+- [ ] Explore custom HEX colour selection for subjects and themes; maintain readable text, icons and outlines across timetables, overviews, exports and widgets
 - [ ] Launcher icon colours following the app theme, alongside launcher-supported Material You themed icons
 
 ### Homework and assignments
