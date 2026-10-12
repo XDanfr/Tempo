@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import cc.xdan.tempo.schedule.removeSubject
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -105,7 +106,8 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
                     timetable.subjects.forEach { subject ->
                         Card(onClick = { selectedSubject = subject; subjectEditor = true }, modifier = Modifier.fillMaxWidth(), border = BorderStroke(2.dp, subjectOutline(Color(subject.colour), MaterialTheme.colorScheme.surfaceContainerHighest))) {
                             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Surface(color = Color(subject.colour), shape = MaterialTheme.shapes.medium) { Icon(subject.icon.vector() ?: Icons.Outlined.GridView, null, Modifier.padding(10.dp), tint = subjectForeground(Color(subject.colour))) }
+                                val fill = Color(subject.colour).compositeOver(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                Surface(color = fill, shape = MaterialTheme.shapes.medium) { Icon(subject.icon.vector() ?: Icons.Outlined.GridView, null, Modifier.padding(10.dp), tint = subjectForeground(fill)) }
                                 Column(Modifier.weight(1f)) {
                                     Text(subject.name, style = MaterialTheme.typography.titleMedium)
                                     if (subject.location.isNotBlank()) Text(subject.location, style = MaterialTheme.typography.bodySmall)

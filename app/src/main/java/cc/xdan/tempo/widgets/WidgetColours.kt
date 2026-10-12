@@ -2,6 +2,7 @@ package cc.xdan.tempo.widgets
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 
@@ -25,4 +26,4 @@ internal fun widgetOutline(scheme: ColorScheme): Color = scheme.primary
 
 internal fun widgetLessonBackground(scheme: ColorScheme, accent: Color, dark: Boolean,
     themed: Boolean, prominent: Boolean): Color =
-    if (!themed) accent else lerp(widgetThemeBackground(scheme, dark), Color.Black, if (prominent) .30f else .43f)
+    if (!themed) accent.compositeOver(widgetThemeBackground(scheme, dark)) else lerp(widgetThemeBackground(scheme, dark), Color.Black, if (prominent) .30f else .43f)

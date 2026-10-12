@@ -1,6 +1,7 @@
 package cc.xdan.tempo.ui
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import cc.xdan.tempo.design.*
 import cc.xdan.tempo.model.ThemePreset
@@ -30,12 +31,15 @@ class PaletteTest {
     }
 
     @Test fun subjectsAndImportedColoursStayReadableInCardsComparisonAndOutlines() {
-        val colours = subjectColours.map { Color(it.argb) } + (0..255).map { Color(it / 255f, it / 255f, it / 255f) }
+        val colours = subjectColours.map { Color(it.argb) } + (0..255).map { Color(it / 255f, it / 255f, it / 255f) } +
+            listOf(Color.Black, Color.White, Color.Red).flatMap { c -> listOf(0f, .25f, .5f, .75f).map { c.copy(alpha = it) } }
         for (colour in colours) {
             assertTrue(colourContrast(colour, subjectForeground(colour)) >= 4.5f)
             for (preset in ThemePreset.entries) for (dark in listOf(false, true)) {
                 val s = presetColorScheme(preset, dark)
-                val fill = lerp(s.surface, colour, if (dark) .30f else .55f)
+                val rendered = colour.compositeOver(s.surface)
+                assertTrue(colourContrast(rendered, subjectForeground(rendered)) >= 4.5f)
+                val fill = lerp(s.surface, rendered, if (dark) .30f else .55f)
                 assertTrue(colourContrast(fill, subjectForeground(fill)) >= 4.5f)
                 assertTrue(colourContrast(s.surface, subjectOutline(colour, s.surface)) >= 3f)
                 assertTrue(colourContrast(fill, subjectOutline(colour, fill)) >= 3f)

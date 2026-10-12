@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
@@ -157,9 +158,10 @@ private fun ScheduleItem(block: ScheduleBlock, appearance: Appearance, current: 
         is ScheduleBlock.Free -> Color.Transparent
     }
     val accent = subjectOutline(colour, MaterialTheme.colorScheme.surface)
+    val fill = colour.compositeOver(MaterialTheme.colorScheme.surface)
     val click = { when (block) { is ScheduleBlock.Lesson -> edit(block.session); is ScheduleBlock.Break -> editBreak(block.scheduled); else -> {} } }
-    Surface(onClick = click, color = if (outlined) Color.Transparent else colour,
-        contentColor = if (outlined) MaterialTheme.colorScheme.onSurface else subjectForeground(colour),
+    Surface(onClick = click, color = if (outlined) Color.Transparent else fill,
+        contentColor = if (outlined) MaterialTheme.colorScheme.onSurface else subjectForeground(fill),
         shape = shape, border = if (outlined) BorderStroke(if (current) 2.dp else 1.5.dp, accent) else null,
         modifier = modifier.fillMaxWidth().heightIn(min = height)) {
         val compact = block.time.minutes < 45

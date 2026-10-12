@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextOverflow
@@ -139,7 +140,7 @@ private fun AlignedTimelines(tables: List<SavedTimetable>, day: Int, modifier: M
 
 @Composable
 private fun ComparisonBlock(block: ScheduleBlock, appearance: Appearance, modifier: Modifier, compact: Boolean = false) {
-    val accent = block.accent(MaterialTheme.colorScheme.primary)
+    val accent = block.accent(MaterialTheme.colorScheme.primary).compositeOver(MaterialTheme.colorScheme.surface)
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val free = block is ScheduleBlock.Free
     val outlined = free || (if (block is ScheduleBlock.Break) appearance.effectiveBreakStyle else appearance.blockStyle) == BlockStyle.OUTLINED

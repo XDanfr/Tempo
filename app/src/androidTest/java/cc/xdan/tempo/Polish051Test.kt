@@ -30,6 +30,9 @@ class Polish051Test {
     @get:Rule val compose = createComposeRule()
 
     private fun screenshot(name: String) {
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
         val bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
         File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "qa-051-$name.png").outputStream().use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
@@ -93,6 +96,8 @@ class Polish051Test {
         var saved: Subject? = null
         compose.setContent { TempoTheme(Appearance()) { SubjectEditor(original, 0, {}, { saved = it }, {}) } }
         compose.onNodeWithText("Name").performTextReplacement("Biology")
+        compose.onNodeWithContentDescription("Forest subject colour").performScrollTo()
+            .performSemanticsAction(SemanticsActions.RequestFocus) { it() }
         compose.onNodeWithText("Saved custom colour").performScrollTo().assertIsDisplayed()
         screenshot("subject-custom-dark")
         compose.onNodeWithText("Save").performClick()

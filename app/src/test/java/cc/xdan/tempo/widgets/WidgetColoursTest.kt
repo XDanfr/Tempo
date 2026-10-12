@@ -27,6 +27,16 @@ class WidgetColoursTest {
             assertTrue(contrast(colour, widgetForeground(colour)) >= 4.5f)
         }
     }
+    @Test fun importedTranslucentSubjectsUseTheVisibleWidgetFillForContrast() {
+        for (preset in ThemePreset.entries) for (dark in listOf(false, true)) {
+            val scheme = presetColorScheme(preset, dark)
+            for (colour in listOf(Color.Transparent, Color.White.copy(alpha = .25f), Color.Black.copy(alpha = .25f))) {
+                val fill = widgetLessonBackground(scheme, colour, dark, false, true)
+                assertEquals(1f, fill.alpha)
+                assertTrue(contrast(fill, widgetForeground(fill)) >= 4.5f)
+            }
+        }
+    }
     @Test fun allSizesShareTheEstablishedPillPaletteAndCompletionUsesTheTheme() {
         for (preset in ThemePreset.entries) for (dark in listOf(false, true)) {
             val scheme = presetColorScheme(preset, dark)
