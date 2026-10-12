@@ -82,7 +82,7 @@ class UxRefinementTest {
             compose.onNodeWithContentDescription("Edit only this date").assertDoesNotExist()
             compose.onNodeWithContentDescription("Edit block").performClick()
             compose.onNodeWithText("Applies to").performScrollTo().performClick()
-            compose.onNodeWithText("Only $date").performClick()
+            compose.onNodeWithText("Only ${displayDate(date, InstrumentationRegistry.getInstrumentation().targetContext.resources.configuration.locales[0])}").performClick()
             compose.onNodeWithText("Day").assertDoesNotExist()
             compose.onNodeWithText("Room / location override").performScrollTo().performTextReplacement("Dated room")
             compose.onNodeWithText("Save").performClick()
@@ -90,7 +90,7 @@ class UxRefinementTest {
             assertEquals("", model.state.value.timetable!!.sessions.single().location)
             compose.waitUntil(10_000) { compose.onAllNodesWithText("Dated room").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription("Edit block").performSemanticsAction(SemanticsActions.OnClick) { it() }
-            compose.waitUntil(10_000) { compose.onAllNodesWithText("Applies only to $date. This date has its own schedule.").fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(10_000) { compose.onAllNodesWithText("Applies only to ${displayDate(date, InstrumentationRegistry.getInstrumentation().targetContext.resources.configuration.locales[0])}. This date has its own schedule.").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("Day").assertDoesNotExist()
         } finally { compose.runOnIdle { store.clear() } }
     }
@@ -109,12 +109,12 @@ class UxRefinementTest {
         compose.runOnIdle { assertEquals("24:00", end) }
         assertEquals(TimeSpan(540, 1440), validSpan("09:00", end))
         val plan = scheduleImagePlan(table, date, false, 720, ImagePrivacy())
-        for (preset in listOf(ThemePreset.FOREST, ThemePreset.OCEAN, ThemePreset.AMBER)) for (dark in listOf(false, true)) {
+        for (preset in ThemePreset.entries) for (dark in listOf(false, true)) {
             val palette = imagePalette(presetColorScheme(preset, dark))
             val bitmap = renderSchedulePng(context, plan, palette)
             assertEquals(palette.background, bitmap.getPixel(0, 0))
             java.io.File(context.filesDir, "qa-${preset.name.lowercase()}-${if (dark) "dark" else "light"}.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            for (subject in listOf(0xFF000000.toInt(), 0xFFFFFFFF.toInt(), table.subjects.single().colour.toInt())) {
+            for (subject in listOf(0xFF000000.toInt(), 0xFFFFFFFF.toInt()) + cc.xdan.tempo.design.subjectColours.map { it.argb.toInt() }) {
                 val fill = ColorUtils.blendARGB(palette.background, subject, .24f)
                 assertTrue("$preset dark=$dark subject=$subject", ColorUtils.calculateContrast(palette.ink, fill) >= 4.5)
             }

@@ -76,7 +76,7 @@ fun presetColorScheme(preset: ThemePreset, dark: Boolean): ColorScheme {
         surfaceContainerHigh = if (dark) darkTone(.24f) else lightTone(.38f),
         surfaceContainerHighest = if (dark) darkTone(.29f) else lightTone(.48f),
         primaryFixed = seed, primaryFixedDim = lerp(seed, ink, .20f),
-        onPrimaryFixed = darkText, onPrimaryFixedVariant = ink,
+        onPrimaryFixed = darkText, onPrimaryFixedVariant = lerp(ink, Color.Black, .35f),
         secondaryFixed = neutral, secondaryFixedDim = lerp(neutral, Color.Black, .10f),
         onSecondaryFixed = darkText, onSecondaryFixedVariant = darkTone(.36f),
         tertiaryFixed = complement, tertiaryFixedDim = lerp(complement, Color.Black, .10f),
