@@ -42,12 +42,18 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Scrollable widget timetable/icon/location pills and shared theme cards, with location following
 - [x] Editable onboarding subject cards and initial anchored cycle length
 
+## 0.5.1 — colour and everyday polish
+
+- [x] Expand subject colours from six to twelve, including red, orange, lemon, teal, blue and magenta; preserve existing saved colours
+- [x] Add Red, Violet and Rose app themes with complete light/dark palettes, shared widget/export selectors and accurate theme previews
+- [x] Readable subject text and comparison fills, contrasting outlines/icons, named colour controls and explicit selection state
+- [x] Friendly display dates such as “11th October 2026”, including ordinal edge cases and locale-aware alternatives; preserve ISO dates in storage and portable files
+- [x] Suggest icons for recognised new subject names, while preserving saved and manually selected icons, including None
+
 ## Later releases
 
 - [ ] Restore bottom-sheet drag handles and swipe-down dismissal without coupling content flings to changing sheet anchors; include boundary-fling and keyboard regression checks
-- [ ] Friendly display dates such as “11th October 2026”, including ordinal edge cases and locale choices; preserve ISO dates in storage and portable files
 - [ ] Landscape timetable image exports with a time-grid/map layout and dotted hour or period guides, matching preview and privacy controls
-- [ ] Suggest icons for recognised subject names, while preserving a user-selected icon and offering manual changes
 - [ ] Tap a Library subject to quickly schedule it; retain an explicit pencil action for full subject editing
 - [ ] Ask when subjects occur during onboarding, with day/time and cycle-week choices, editable summaries and an option to finish later
 - [ ] Overnight shifts and explicit timetable time zones
@@ -64,7 +70,6 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [ ] Selective imports, bundled assets and restore points
 - [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
 - [ ] Reminders, travel buffers, subject-hour summaries and history
-- [ ] Expand subject and app theme colour palettes, explicitly including requested red, with a broader range of distinct presets and suitable light/dark variants
 - [ ] Explore custom HEX colour selection for subjects and themes; maintain readable text, icons and outlines across timetables, overviews, exports and widgets
 - [ ] Launcher icon colours following the app theme, alongside launcher-supported Material You themed icons
 

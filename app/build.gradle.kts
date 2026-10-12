@@ -19,8 +19,8 @@ android {
         applicationId = "cc.xdan.tempo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.5.0"
+        versionCode = 8
+        versionName = "0.5.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resValue("string", "app_name", "Tempo")
     }

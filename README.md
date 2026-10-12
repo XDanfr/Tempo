@@ -23,7 +23,7 @@ Once a public stable release is available, you can check for updates in Settings
 - **Edit with less repetition.** Duplicate or split sessions, change selected recurring sessions together, and undo or redo saved edits while Tempo remains open.
 - **See the day at a glance.** Check what’s happening now, follow a proportional timeline and fill an open period when plans change.
 - **Compare timetables.** Put schedules side by side or combine several people’s lessons into one agenda to find shared free time.
-- **Make it yours.** Give subjects their own colours, locations and optional icons. Choose Forest, Ocean, Amber or a wallpaper-based Material You theme, in light, dark or system mode.
+- **Make it yours.** Give subjects one of 12 colours, including red, plus locations and optional icons. Choose Forest, Ocean, Amber, Red, Violet, Rose or a wallpaper-based Material You theme, in light, dark or system mode. Recognised new subject names suggest an icon you can change.
 - **Keep your schedule close.** Add a 2×1, 2×2 or 4×2 widget for current and upcoming periods, with subject colours and theme options.
 - **Move your timetable when you need to.** Import during setup or export a `.tempo.json` backup with your subjects, times, breaks, notes, icons and appearance.
 - **Save an image of your plans.** Preview a day or week PNG, choose its width, and decide whether to include names, locations and notes.
