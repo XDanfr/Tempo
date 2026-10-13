@@ -113,7 +113,7 @@ private fun animateColorScheme(target: ColorScheme): ColorScheme {
         surfaceVariant = color("surface variant") { it.surfaceVariant }, onSurfaceVariant = color("on surface variant") { it.onSurfaceVariant },
         surfaceTint = color("surface tint") { it.surfaceTint }, inverseSurface = color("inverse surface") { it.inverseSurface },
         inverseOnSurface = color("inverse on surface") { it.inverseOnSurface }, outline = color("outline") { it.outline },
-        outlineVariant = color("outline variant") { it.outlineVariant }, scrim = color("scrim") { it.scrim }, shadow = color("shadow") { it.shadow },
+        outlineVariant = color("outline variant") { it.outlineVariant }, scrim = color("scrim") { it.scrim },
         surfaceBright = color("surface bright") { it.surfaceBright }, surfaceDim = color("surface dim") { it.surfaceDim },
         surfaceContainer = color("surface container") { it.surfaceContainer }, surfaceContainerHigh = color("surface container high") { it.surfaceContainerHigh },
         surfaceContainerHighest = color("surface container highest") { it.surfaceContainerHighest }, surfaceContainerLow = color("surface container low") { it.surfaceContainerLow },
