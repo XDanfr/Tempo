@@ -18,15 +18,11 @@ import cc.xdan.tempo.ui.label
 fun WidgetThemeControl(preset: ThemePreset?, mode: ThemeMode, followed: Appearance,
     change: (ThemePreset?, ThemeMode) -> Unit) {
     var choosing by rememberSaveable { mutableStateOf(false) }
-    var pendingPreset by rememberSaveable { mutableStateOf(preset ?: followed.selectedPreset) }
-    var pendingMode by rememberSaveable { mutableStateOf(if (preset == null) followed.mode else mode) }
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     val open = {
         focus.clearFocus()
         keyboard?.hide()
-        pendingPreset = preset ?: followed.selectedPreset
-        pendingMode = if (preset == null) followed.mode else mode
         choosing = true
     }
     Column {
@@ -38,14 +34,10 @@ fun WidgetThemeControl(preset: ThemePreset?, mode: ThemeMode, followed: Appearan
             TextButton(onClick = open) { Text("Change theme") }
         }
     }
-    if (choosing) EditorSheet("Widget theme", { choosing = false }, confirm = {
-        change(pendingPreset, pendingMode)
-        choosing = false
-    }, confirmLabel = "Use theme") {
-        Text("Applies only to this widget.", style = MaterialTheme.typography.bodyMedium)
-        ThemeSelector(Appearance(preset = pendingPreset, mode = pendingMode)) {
-            pendingPreset = it.selectedPreset
-            pendingMode = it.mode
+    if (choosing) EditorSheet("Widget theme", { choosing = false }) {
+        Text("Changes apply as soon as you choose them.", style = MaterialTheme.typography.bodyMedium)
+        ThemeSelector(Appearance(preset = preset ?: followed.selectedPreset, mode = if (preset == null) followed.mode else mode)) {
+            change(it.selectedPreset, it.mode)
         }
     }
 }

@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
@@ -23,9 +24,17 @@ import cc.xdan.tempo.model.*
 import cc.xdan.tempo.ui.PillChoiceField
 
 class WidgetConfigureActivity : ComponentActivity() {
+    private var saveForExit: (() -> Unit)? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                saveForExit?.invoke()
+                finish()
+            }
+        })
         val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
         if (id == AppWidgetManager.INVALID_APPWIDGET_ID) { finish(); return }
         val provider = AppWidgetManager.getInstance(this).getAppWidgetInfo(id)?.provider?.className
@@ -47,6 +56,14 @@ class WidgetConfigureActivity : ComponentActivity() {
             var outerOutline by rememberSaveable { mutableStateOf(initial.outerOutline) }
             var doneForDay by rememberSaveable { mutableStateOf(initial.doneForDayMessage) }
             var empty by rememberSaveable { mutableStateOf(initial.emptyText) }
+            val saveConfiguration = {
+                WidgetSettings(table.ifBlank { null }, theme.takeIf { it.isNotBlank() }?.let(ThemePreset::valueOf), mode, location != "Hide", empty.ifBlank { "Nothing scheduled this week" },
+                    when (icons) { "Show icons" -> true; "Hide icons" -> false; else -> null },
+                    initial.outlined, lessonBackground, showOutline, doneForDay, themedLessons, outerOutline, followLocations = location == "Follow timetable").save(applicationContext, id)
+                WidgetRefresh.start(applicationContext)
+                setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
+            }
+            SideEffect { saveForExit = saveConfiguration }
             val previewAppearance = collection?.let { c -> c.timetables.firstOrNull { it.id == table }?.timetable?.appearance ?: c.active.appearance } ?: Appearance()
             TempoTheme(if (theme.isBlank()) previewAppearance else Appearance(preset = ThemePreset.valueOf(theme), mode = mode)) {
                 val view = LocalView.current
@@ -81,16 +98,19 @@ class WidgetConfigureActivity : ComponentActivity() {
                         Text("Touch and hold the widget on your home screen to change these settings. Drag its edges to resize. The 4×2 shows later periods and your day’s finish time when there is room.", style = MaterialTheme.typography.bodySmall)
                         Text("Countdowns tick on your home screen. Android may delay changing activities in battery-saving modes.", style = MaterialTheme.typography.bodySmall)
                         Button(onClick = {
-                            WidgetSettings(table.ifBlank { null }, theme.takeIf { it.isNotBlank() }?.let(ThemePreset::valueOf), mode, location != "Hide", empty.ifBlank { "Nothing scheduled this week" },
-                                when (icons) { "Show icons" -> true; "Hide icons" -> false; else -> null },
-                                initial.outlined, lessonBackground, showOutline, doneForDay, themedLessons, outerOutline, followLocations = location == "Follow timetable").save(applicationContext, id)
-                            WidgetRefresh.start(applicationContext)
-                            setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)); finish()
+                            saveConfiguration()
+                            finish()
                         }, enabled = collection != null && (table.isBlank() || collection!!.timetables.any { it.id == table }), modifier = Modifier.fillMaxWidth()) { Text("Save widget") }
                         TextButton(onClick = { finish() }) { Text("Cancel") }
                     }
                 }
             }
         }
+    }
+
+    override fun onUserLeaveHint() {
+        saveForExit?.invoke()
+        finish()
+        super.onUserLeaveHint()
     }
 }

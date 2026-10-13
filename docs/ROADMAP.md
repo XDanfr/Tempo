@@ -46,6 +46,8 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 
 - [x] Expand subject colours from six to twelve, including red, orange, lemon, teal, blue and magenta; preserve existing saved colours
 - [x] Add Red, Violet and Rose app themes with complete light/dark palettes, shared widget/export selectors and accurate theme previews
+- [x] Animate theme colour changes, strengthen theme colour in dark surfaces, and tune Red to read as saturated red
+- [x] Apply widget theme choices immediately and save widget setup when leaving for the home screen
 - [x] Readable subject text and comparison fills, contrasting outlines/icons, named colour controls and explicit selection state
 - [x] Friendly display dates such as “11th October 2026”, including ordinal edge cases and locale-aware alternatives; preserve ISO dates in storage and portable files
 - [x] Suggest icons for recognised new subject names, while preserving saved and manually selected icons, including None
