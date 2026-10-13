@@ -53,6 +53,29 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Suggest icons for recognised new subject names, while preserving saved and manually selected icons, including None
 - [x] Subject and cycle fields expose keyboard Done actions; colour/icon choices dismiss text keyboards, with retained focus for hardware-keyboard colour selection
 
+## 0.6 candidate — Widget 2.0: Material 3 Expressive & Remote Compose
+
+The 2×1 widget needs a more legible subject/countdown balance, and larger widgets should use their space for useful visual structure rather than just additional text. This is a **proposed follow-on milestone**, not a guarantee that experimental Android APIs will be production-ready. The full research, design constraints, phased development plan, device matrix and go/no-go criteria live in [Widget 2.0](WIDGET_2_0.md).
+
+### Design and compatibility
+
+- [ ] Design expressive 2×1, 2×2, 4×2 and expanded widget layouts around a large, clearly labelled countdown, subject and next activity
+- [ ] Use official Material 3 shape/corner values and a **strict consistent-corner rule**: standalone corners match; connected pairs mirror their inner/outer radii; middle segments of three-part groups have consistent inner radii
+- [ ] Use semantic icons, restrained coloured segments and an optional compact timeline to organise available space; take visual inspiration from [Material 3 UI Widgets on Figma](https://www.figma.com/community/file/1504472410356443638/material-3-ui-widgets) and Google's widget examples
+- [ ] Fix density/readability on compact widgets and adaptive behaviour on 4-, 5- and 6+-column launchers, including resizing, font scaling, landscape and accessible layout alternatives
+- [ ] Preserve accurate current/next, break/free, done-today, week-done and empty states; keep the existing native countdown's efficient update behaviour unless an alternative is proven
+- [ ] Preserve per-widget timetable selection, Material You/custom themes, subject colours, icons, location privacy, fills, outlines and configuration previews
+
+### Remote Compose feasibility and delivery
+
+- [ ] Prototype **Remote Compose** with isolated experimental dependencies; establish whether a public, compatible home-screen host pathway actually renders shapes, text, taps, size changes and countdowns (an in-app player alone is insufficient)
+- [ ] Check Glance/Glance Adaptive release maturity, host capability, Android/launcher coverage, build-tool compatibility and performance before choosing a renderer
+- [ ] Share the schedule presentation model between renderers; retain **RemoteViews/XML/vector shapes as the production fallback** for Android 8+ and unsupported launchers
+- [ ] Make an explicit **adopt / defer / reject** decision based on [Widget 2.0's acceptance gates](WIDGET_2_0.md); do not delay visual improvements if Remote Compose support is not ready
+- [ ] Validate real launcher behaviour, TalkBack, long subject names, large text, light/dark contrast, clock/time-zone transitions, battery efficiency, recovery updates and release/QA CI before rollout
+
+The Expressive widget redesign is the user-facing target for 0.6; adopting Remote Compose is conditional on successful device-level tests. This work can proceed independently of Feel & Flow.
+
 ## Towards 1.0 — Feel & Flow
 
 I want Tempo to feel like a polished, expressive utility, not a productivity game. The following is a **design direction**, not a commitment to pack every feature into 1.0: suitable parts may arrive in intermediate releases alongside the existing functional backlog. Details and acceptance criteria live in [Feel & Flow](FEEL_AND_FLOW.md).
