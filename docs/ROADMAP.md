@@ -53,6 +53,34 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Suggest icons for recognised new subject names, while preserving saved and manually selected icons, including None
 - [x] Subject and cycle fields expose keyboard Done actions; colour/icon choices dismiss text keyboards, with retained focus for hardware-keyboard colour selection
 
+## Towards 1.0 — Feel & Flow
+
+I want Tempo to feel like a polished, expressive utility, not a productivity game. The following is a **design direction**, not a commitment to pack every feature into 1.0: suitable parts may arrive in intermediate releases alongside the existing functional backlog. Details and acceptance criteria live in [Feel & Flow](FEEL_AND_FLOW.md).
+
+### Schedule and week-at-a-glance
+
+- [ ] Combine Today and Timetable into a single day-first **Schedule** destination: starts on today, swipes between actual dates, offers a date strip and return-to-today shortcut
+- [ ] Build a genuinely different **Overview** destination: time-aligned week grid with subject-coloured blocks, overlap handling, week selection and tap-through to a day
+- [ ] Summarise the resolved week: number of sessions for each subject, scheduled breaks, free periods/gaps and free time; distinguish the **whole week** from what is **still ahead**
+- [ ] Reuse the dated resolver for cycle weeks, holidays, one-off replacements, days off and weekends; calculate free time inside configured day hours and avoid double counts
+- [ ] Ensure readable tablet/foldable and accessibility-friendly alternatives to the dense week grid
+
+### Feel and feedback
+
+- [ ] Shared Material 3 Expressive motion and feedback conventions: spring navigation, selection and editing transitions, restrained haptics and predictable state changes
+- [ ] Living timetable states for past/current/next activities, clear elapsed/remaining progress and calm end-of-day/week transitions
+- [ ] Small, optional celebrations and **permanent discovery achievements** with rounded top-of-screen notices; no login streaks, XP, leaderboards or gated essentials
+- [ ] Dismissible contextual post-onboarding hints, replayable from Help, introducing gestures and relevant customisation when needed
+- [ ] Audit reduced motion, animation scale, TalkBack, large text, contrast, gesture conflicts, performance and system-back behaviour
+- [ ] Consider an optional factual weekly recap (schedule counts and hours, never inferred attendance)
+
+### Sharing and identity (dependent on a hosted service)
+
+- [ ] Explicit snapshot sharing through validated `xdan.cc/tempo/share/<code>` links, with publication preview, independent imports and revocation; anonymous recipients need no account
+- [ ] Design a secure, **optional creator profile** for attributed public timetables, kept separate from private on-device timetables; no account required to use Tempo
+- [ ] Define safe publication defaults, sensitive-field redaction, abuse handling, retention, authentication and account deletion before launching profiles
+- [ ] Consider profiles a later phase if backend and privacy work would otherwise delay the main 1.0 experience
+
 ## Later releases
 
 - [ ] Restore bottom-sheet drag handles and swipe-down dismissal without coupling content flings to changing sheet anchors; include boundary-fling and keyboard regression checks
@@ -71,7 +99,6 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [ ] Remember per-timetable export preferences with an explicit privacy reset
 - [ ] Task-based usability checks for first setup, one-off changes and exports; TalkBack and hardware-keyboard walkthroughs
 - [ ] Selective imports, bundled assets and restore points
-- [ ] Share links at `xdan.cc/tempo/share/<code>` with marked, validated codes and a storage service
 - [ ] Reminders, travel buffers, subject-hour summaries and history
 - [ ] Explore custom HEX colour selection for subjects and themes; maintain readable text, icons and outlines across timetables, overviews, exports and widgets
 - [ ] Launcher icon colours following the app theme, alongside launcher-supported Material You themed icons
