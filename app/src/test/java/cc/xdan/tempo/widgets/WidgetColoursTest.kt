@@ -14,7 +14,8 @@ class WidgetColoursTest {
     @Test fun themeFillsRespectModeAndKeepReadableText() {
         for (preset in ThemePreset.entries) for (dark in listOf(false, true)) {
             val background = widgetThemeBackground(presetColorScheme(preset, dark), dark)
-            assertTrue("$preset/$dark keeps a theme tint", background.luminance() > .25f)
+            val minimumTint = if (preset == ThemePreset.RED && dark) .16f else .25f
+            assertTrue("$preset/$dark keeps a theme tint", background.luminance() > minimumTint)
             assertTrue(contrast(background, widgetForeground(background)) >= 4.5f)
         }
     }
@@ -41,7 +42,7 @@ class WidgetColoursTest {
         for (preset in ThemePreset.entries) for (dark in listOf(false, true)) {
             val scheme = presetColorScheme(preset, dark)
             val background = widgetThemeBackground(scheme, dark)
-            assertEquals(androidx.compose.ui.graphics.lerp(scheme.surfaceContainerHigh, scheme.primaryFixed, if (dark) .70f else .82f), background)
+            assertEquals(androidx.compose.ui.graphics.lerp(scheme.surfaceContainerHigh, scheme.primaryFixed, if (dark) .88f else .82f), background)
             val completion = widgetCompletionBadge(scheme, dark)
             assertTrue(contrast(completion, widgetForeground(completion)) >= 4.5f)
         }

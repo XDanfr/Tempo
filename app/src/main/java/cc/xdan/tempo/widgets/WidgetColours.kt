@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 
 internal fun widgetThemeBackground(scheme: ColorScheme, dark: Boolean): Color =
-    lerp(scheme.surfaceContainerHigh, scheme.primaryFixed, if (dark) .70f else .82f)
+    lerp(scheme.surfaceContainerHigh, scheme.primaryFixed, if (dark) .88f else .82f)
 
 internal fun widgetCompletionBadge(scheme: ColorScheme, dark: Boolean): Color =
     if (dark) scheme.primaryFixedDim else scheme.primaryFixed
