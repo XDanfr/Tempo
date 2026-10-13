@@ -2,11 +2,12 @@ package cc.xdan.tempo.widgets
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 
 internal fun widgetThemeBackground(scheme: ColorScheme, dark: Boolean): Color =
-    lerp(scheme.surfaceContainerHigh, scheme.primaryFixed, if (dark) .70f else .82f)
+    lerp(scheme.surfaceContainerHigh, scheme.primaryFixed, if (dark) .88f else .82f)
 
 internal fun widgetCompletionBadge(scheme: ColorScheme, dark: Boolean): Color =
     if (dark) scheme.primaryFixedDim else scheme.primaryFixed
@@ -25,4 +26,4 @@ internal fun widgetOutline(scheme: ColorScheme): Color = scheme.primary
 
 internal fun widgetLessonBackground(scheme: ColorScheme, accent: Color, dark: Boolean,
     themed: Boolean, prominent: Boolean): Color =
-    if (!themed) accent else lerp(widgetThemeBackground(scheme, dark), Color.Black, if (prominent) .30f else .43f)
+    if (!themed) accent.compositeOver(widgetThemeBackground(scheme, dark)) else lerp(widgetThemeBackground(scheme, dark), Color.Black, if (prominent) .30f else .43f)

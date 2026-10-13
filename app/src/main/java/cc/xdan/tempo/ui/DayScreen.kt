@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
@@ -26,6 +27,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
+import cc.xdan.tempo.design.subjectForeground
+import cc.xdan.tempo.design.subjectOutline
 import cc.xdan.tempo.schedule.*
 import java.time.LocalDateTime
 import java.time.LocalDate
@@ -53,7 +56,7 @@ fun DayScreen(timetable: Timetable, day: Int, now: LocalDateTime, today: Boolean
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 112.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
                     Text(weekdayNames[animatedDay - 1], style = MaterialTheme.typography.headlineLarge)
-                    Text("$animatedDate · Week ${ScheduleResolver.cycleWeek(timetable, animatedDate)} of ${timetable.cycle.weeks}", style = MaterialTheme.typography.labelLarge)
+                    Text("${friendlyDate(animatedDate)} · Week ${ScheduleResolver.cycleWeek(timetable, animatedDate)} of ${timetable.cycle.weeks}", style = MaterialTheme.typography.labelLarge)
                     timetable.exceptions.firstOrNull { it.date == animatedDate.toString() }?.let {
                         Text(if (it.closed) "${it.name.ifBlank { "Day off" }} · closed" else it.name.ifBlank { "Schedule for this date" }, color = MaterialTheme.colorScheme.primary)
                     } ?: timetable.holidays.firstOrNull { !animatedDate.isBefore(LocalDate.parse(it.startDate)) && !animatedDate.isAfter(LocalDate.parse(it.endDate)) }?.let {
@@ -154,11 +157,11 @@ private fun ScheduleItem(block: ScheduleBlock, appearance: Appearance, current: 
         is ScheduleBlock.Break -> when (block.scheduled.kind) { BreakKind.LUNCH -> Color(0xFFFFD59B); BreakKind.CHANGEOVER -> Color(0xFFACE0D3); BreakKind.BREAK -> Color(0xFFFFB6C6); BreakKind.CUSTOM -> Color(0xFFD3BCFF) }
         is ScheduleBlock.Free -> Color.Transparent
     }
-    val light = MaterialTheme.colorScheme.background.luminance() > .5f
-    val accent = if (light) colour.copy(red = colour.red * .45f, green = colour.green * .45f, blue = colour.blue * .45f) else colour
+    val accent = subjectOutline(colour, MaterialTheme.colorScheme.surface)
+    val fill = colour.compositeOver(MaterialTheme.colorScheme.surface)
     val click = { when (block) { is ScheduleBlock.Lesson -> edit(block.session); is ScheduleBlock.Break -> editBreak(block.scheduled); else -> {} } }
-    Surface(onClick = click, color = if (outlined) Color.Transparent else colour,
-        contentColor = if (outlined) MaterialTheme.colorScheme.onSurface else Color(0xFF172116),
+    Surface(onClick = click, color = if (outlined) Color.Transparent else fill,
+        contentColor = if (outlined) MaterialTheme.colorScheme.onSurface else subjectForeground(fill),
         shape = shape, border = if (outlined) BorderStroke(if (current) 2.dp else 1.5.dp, accent) else null,
         modifier = modifier.fillMaxWidth().heightIn(min = height)) {
         val compact = block.time.minutes < 45

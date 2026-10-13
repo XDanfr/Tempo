@@ -18,7 +18,7 @@ fun DateNavigation(date: LocalDate, select: (LocalDate) -> Unit) {
     var choosing by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = { select(date.minusWeeks(1)) }) { Icon(Icons.Outlined.ChevronLeft, "Previous week") }
-        TextButton(onClick = { choosing = true }, modifier = Modifier.weight(1f)) { Text(date.toString()) }
+        TextButton(onClick = { choosing = true }, modifier = Modifier.weight(1f)) { Text(friendlyDate(date)) }
         TextButton(onClick = { select(LocalDate.now()) }) { Text("Today") }
         IconButton(onClick = { select(date.plusWeeks(1)) }) { Icon(Icons.Outlined.ChevronRight, "Next week") }
     }

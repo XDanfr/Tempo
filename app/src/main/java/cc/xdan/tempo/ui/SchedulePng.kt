@@ -15,6 +15,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.ColorUtils
 import cc.xdan.tempo.core.designsystem.R
 import cc.xdan.tempo.model.minuteLabel
+import cc.xdan.tempo.model.displayDate
 import cc.xdan.tempo.schedule.ScheduleImagePlan
 import cc.xdan.tempo.design.presetColorScheme
 import cc.xdan.tempo.model.ThemePreset
@@ -56,7 +57,7 @@ fun renderSchedulePng(context: Context, plan: ScheduleImagePlan, palette: ImageP
     add(if (plan.days.size == 1) "Day timetable" else "Week timetable", 28f)
     for (day in plan.days) {
         y += (24 * scale).toInt()
-        add("${weekdayNames[day.date.dayOfWeek.value - 1]} · ${day.date}", 36f)
+        add("${weekdayNames[day.date.dayOfWeek.value - 1]} · ${displayDate(day.date, context.resources.configuration.locales[0])}", 36f)
         if (day.rows.isEmpty()) add("No scheduled activities", 26f)
         for (row in day.rows) {
             val top = y

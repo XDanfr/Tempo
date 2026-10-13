@@ -43,7 +43,7 @@ data class PeriodTemplate(val id: String, val name: String, val time: TimeSpan) 
 }
 
 @Serializable
-enum class ThemePreset { FOREST, OCEAN, AMBER, MATERIAL_YOU }
+enum class ThemePreset { FOREST, OCEAN, AMBER, MATERIAL_YOU, RED, VIOLET, ROSE }
 @Serializable
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 

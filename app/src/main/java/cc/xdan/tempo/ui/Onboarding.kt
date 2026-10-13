@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import cc.xdan.tempo.schedule.removeSubject
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,6 +29,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
+import cc.xdan.tempo.design.subjectForeground
+import cc.xdan.tempo.design.subjectOutline
 
 @Composable
 fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, importTimetable: () -> Unit, manageTimetables: (() -> Unit)? = null) {
@@ -101,9 +104,10 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
                     Text("What fills your week?", style = MaterialTheme.typography.headlineMedium)
                     Text("Add subjects or work activities, with optional icons, colours and default locations. You can schedule them after setup.")
                     timetable.subjects.forEach { subject ->
-                        Card(onClick = { selectedSubject = subject; subjectEditor = true }, modifier = Modifier.fillMaxWidth(), border = BorderStroke(2.dp, Color(subject.colour))) {
+                        Card(onClick = { selectedSubject = subject; subjectEditor = true }, modifier = Modifier.fillMaxWidth(), border = BorderStroke(2.dp, subjectOutline(Color(subject.colour), MaterialTheme.colorScheme.surfaceContainerHighest))) {
                             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Surface(color = Color(subject.colour), shape = MaterialTheme.shapes.medium) { Icon(subject.icon.vector() ?: Icons.Outlined.GridView, null, Modifier.padding(10.dp), tint = Color(0xFF172116)) }
+                                val fill = Color(subject.colour).compositeOver(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                Surface(color = fill, shape = MaterialTheme.shapes.medium) { Icon(subject.icon.vector() ?: Icons.Outlined.GridView, null, Modifier.padding(10.dp), tint = subjectForeground(fill)) }
                                 Column(Modifier.weight(1f)) {
                                     Text(subject.name, style = MaterialTheme.typography.titleMedium)
                                     if (subject.location.isNotBlank()) Text(subject.location, style = MaterialTheme.typography.bodySmall)
@@ -116,7 +120,7 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
                 }
                 3 -> {
                     Text("Find your colour", style = MaterialTheme.typography.headlineMedium)
-                    Text("A calm forest palette, a warmer preset or colours from your wallpaper.")
+                    Text("Choose a colour palette or use colours from your wallpaper, in light or dark mode.")
                     AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } }
                     Text("Your timetable stays on this device. Setup can be changed whenever you need.")
                 }

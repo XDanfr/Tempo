@@ -50,7 +50,7 @@ fun DateSelectionDialog(date: LocalDate, dismiss: () -> Unit, select: (LocalDate
 @Composable
 fun DateField(label: String, value: String, change: (String) -> Unit) {
     var choosing by remember { mutableStateOf(false) }
-    PickerField(label, value, Icons.Outlined.CalendarMonth, Modifier.fillMaxWidth()) { choosing = true }
+    PickerField(label, friendlyDate(value), Icons.Outlined.CalendarMonth, Modifier.fillMaxWidth()) { choosing = true }
     if (choosing) DateSelectionDialog(validDate(value) ?: LocalDate.now(), { choosing = false }) { change(it.toString()) }
 }
 

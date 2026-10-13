@@ -24,15 +24,15 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
     var batchEditor by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Dates and repeating weeks", style = MaterialTheme.typography.titleLarge)
-        Text("${timetable.cycle.weeks}-week cycle · week 1 starts in the week of ${timetable.cycle.anchorDate}")
+        Text("${timetable.cycle.weeks}-week cycle · week 1 starts in the week of ${friendlyDate(timetable.cycle.anchorDate)}")
         OutlinedButton(onClick = { cycleEditor = true }, modifier = Modifier.fillMaxWidth()) { Text("Edit week cycle") }
         Text("Holidays close every block, including automatic frees. Dated replacements take priority; the cycle keeps counting through days off.", style = MaterialTheme.typography.bodySmall)
         timetable.holidays.forEach { item ->
-            TextButton(onClick = { holiday = item; holidayEditor = true }) { Text("${item.name} · ${item.startDate} to ${item.endDate}") }
+            TextButton(onClick = { holiday = item; holidayEditor = true }) { Text("${item.name} · ${friendlyDate(item.startDate)} to ${friendlyDate(item.endDate)}") }
         }
         OutlinedButton(onClick = { holiday = null; holidayEditor = true }, modifier = Modifier.fillMaxWidth()) { Text("Add holiday") }
         timetable.exceptions.sortedBy { it.date }.forEach { item ->
-            TextButton(onClick = { exception = item; exceptionEditor = true }) { Text("${item.date} · ${item.name.ifBlank { if (item.closed) "Day off" else "Replacement schedule" }}") }
+            TextButton(onClick = { exception = item; exceptionEditor = true }) { Text("${friendlyDate(item.date)} · ${item.name.ifBlank { if (item.closed) "Day off" else "Replacement schedule" }}") }
         }
         OutlinedButton(onClick = { exception = null; exceptionEditor = true }, modifier = Modifier.fillMaxWidth()) { Text("Add dated exception") }
         OutlinedButton(onClick = { batchEditor = true }, enabled = timetable.sessions.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("Edit selected recurring sessions") }
