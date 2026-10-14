@@ -1,4 +1,4 @@
-# Widget 2.0 — Expressive home-screen widgets and Remote Compose exploration
+# Widget 2.0 — Adaptive, canonical Material 3 Expressive widgets
 
 Status: **planned / feasibility-first**, proposed for **0.6** (not a blocker for Feel & Flow or 1.0). Last researched: **14 October 2026**. This is a planning document, not a claim that Remote Compose is already shipping in Tempo.
 
@@ -6,9 +6,37 @@ Status: **planned / feasibility-first**, proposed for **0.6** (not a blocker for
 
 Real user feedback: the 2×1 widget feels oversized for its amount of information, yet the text is small. Larger widgets often use their extra area for more text rather than a stronger hierarchy. Different home-screen grids, particularly grids with more than four columns, make nominally identical widget footprints look very different.
 
-**Goal:** recognisably Material 3 Expressive widgets that make the current/next subject, time remaining, and day context legible at a glance. Shapes should structure information, not decorate arbitrary cards. The app, not the home screen, remains the home for rich shape morphing and animation.
+**Goal:** a ground-up redesign of the widget presentation and responsive layout architecture, not a reskin of the existing pill, square and wide layouts. Tempo should feel at home on Android, using canonical widget patterns, meaningful expressive shapes and a clear current/next countdown. A user should feel they gain useful information as they resize rather than seeing stretched text. The app, not the home screen, remains the home for rich shape morphing and animation.
 
-**Out of scope for first pass:** a separate timetable engine, a new account/service, second-by-second app wake-ups, artificial productivity mechanics, rebuilding the main app UI, requiring Android 16, or dropping Android 8–15 users.
+**Out of scope for first pass:** a separate timetable engine, a new account/service, second-by-second app wake-ups, artificial productivity mechanics, rebuilding the main app UI, requiring Android 16, or dropping Android 8–15 users. The ground-up scope is **presentation, composition, layout classification, preview and rendering architecture**; preserve the proven schedule/data logic.
+
+## Product direction: one adaptive widget, progressive disclosure
+
+The main new launcher-pickers experience should be **one Adaptive Tempo widget**, initially presented at a useful compact footprint and freely resizable horizontally/vertically. The user picks the timetable/theme once and can resize to reveal more capability. A smaller layout is never merely a clipped larger layout; it is a deliberately composed representation of the **same widget data and actions**.
+
+The concept follows Google's [canonical widget layouts](https://developer.android.com/design/ui/mobile/guides/widgets/layouts) and [widget sizing/breakpoint guidance](https://developer.android.com/design/ui/mobile/guides/widgets/sizing), as illustrated by the user's referenced [Android widget design video](https://youtu.be/VnjgKzAa0ws) (specifically the single-entity concept and visual progression when resizing). Google's [Widget Canonical Builder](https://goo.gle/widgets-figma) and [Android Platform Samples](https://github.com/android/platform-samples) are primary reference material. Distinguish these authoritative guidelines from design concepts in the community [Material 3 UI Widgets Figma pack](https://www.figma.com/community/file/1504472410356443638/material-3-ui-widgets).
+
+### Important lifecycle / migration constraint
+
+**An AppWidgetProvider cannot simply morph into a different installed provider on resize.** The installed instance retains its provider component and ID; only its rendered layout and content switch at breakpoints. Existing Tempo installs have **three distinct provider components** (`PillWidget`, `SquareWidget`, `WideWidget`) and independent per-ID settings. Adding one unified provider for new placements must **not orphan old instances or reset their configuration**. Keep the legacy receivers and make them use the same new adaptive rendering pipeline; decide whether duplicate picker entries can safely be retired or reduced after verifying actual launchers and upgrade behaviour. Do not disable old providers unless installed widget continuity is proven.
+
+### Canonical composition hierarchy
+
+1. **Single-entity / compact** (typically 2×1): one current/next event and a prominent **labelled** countdown, with optional icon only if it remains readable. This is the primary Tempo widget identity. Two connected pieces are allowed when they clarify subject versus time and obey mirrored corners.
+2. **Visual single-entity / square** (typically 2×2): promote the countdown to a circular/cookie-like display or another intentional Material shape; add an appropriate event state and a useful next-time detail where possible.
+3. **Multi-entity / wide** (typically 4×2): a deliberately split hero (subject + countdown/progress) and **one supplementary entity** such as next event, without making the current event smaller.
+4. **Expanded dashboard / agenda** (4×3+, 2×3 or tablet equivalents): reveal an ordered mini-timeline, multiple upcoming sessions, free/break blocks or finish-time detail only if sufficient width/height. It must remain glanceable, not become a full app page.
+5. **Aspect-ratio and font-scale variations**: tall but narrow widgets may reveal a vertical stack; wide but short widgets stay a horizontal hero. Do not infer a layout only from nominal cell count or treat a tall widget like a wide one.
+
+**Progressive disclosure:** retain the subject/status/countdown through every size, then reveal progress, next event, and finally the mini agenda as space permits. The widget should feel more useful on expansion without promising gimmicky “unlocks”. Resizing must never introduce misleading activity claims, delayed timer updates or accidental taps.
+
+**Sizing/breakpoints:** test with the actual bounds and pixel-density-independent reported dimensions; size buckets should be based on usable dp width *and* height, adjusted for font scale and icon/text measurements, not fixed grid-cell names. Google's published handheld reference ranges are roughly 109–306dp wide for 2-column footprints and 245–624dp wide for 4-column footprints; cells vary considerably with device, launcher, orientation and grid settings. Do not blindly use those ranges as final breakpoints. Prefer a small explicit responsive layout map for Android 12+ (e.g. RemoteViews size-map) and compatible option-size fallback for older hosts. Min/max constraints and visual inset must be tested, including Google's guidance that the widget fill its allotted host bounds; don't introduce arbitrary transparent outer margins that make it look misaligned.
+
+### Ground-up work versus preserved foundations
+
+**Replace or redesign:** the current distinct XML visual templates, ad-hoc per-size branches, text-dense wide agenda presentation, size-bucket contract, picker previews and widget configuration's preview UI. Extract a renderer-agnostic presentation snapshot and implement deliberate compact/square/wide/tall canonical compositions. Avoid mechanically translating every old layout into Glance.
+
+**Keep and modernise:** the domain schedule resolver, persistent widget IDs/settings, Chronometer-driven efficiency, provider refresh/recovery architecture, user-selected timetables, Material You/presets, subject icons/colours, outline and privacy settings, dates/cycle/exception behaviour, tests for those behaviours and Android 8+ compatibility.
 
 ## Existing Tempo foundation (verified on main before planning)
 
@@ -57,7 +85,7 @@ Inspiration, not a component library copied wholesale: https://www.figma.com/com
 
 ## Visual/layout contract
 
-**Priority for all sizes:** (a) active or next event, (b) clearly labelled countdown, (c) additional context only when it fits. The first glance should communicate "Physics — 24m left" or "Computer Science — starts in 8m". A countdown is not a plain supporting footnote.
+**Priority for all sizes:** (a) active or next event, (b) clearly labelled countdown, (c) additional context only when it fits. The first glance should communicate "Physics — 24m left" or "Computer Science — starts in 8m". A countdown is not a plain supporting footnote. **These are separate canonical compositions built around one adaptive widget instance, not three fixed widget identities.**
 
 | Available footprint | Planned treatment | Information priority |
 | --- | --- | --- |
@@ -66,7 +94,7 @@ Inspiration, not a component library copied wholesale: https://www.figma.com/com
 | Wide (nominal 4×2) | Mirrored two-part hero (subject + dominant timer), optionally a separate symmetrical next-up strip | Current/next, countdown, then what follows |
 | Tall/wide expanded 4×3+ | Day-progress timeline or short ordered lesson blocks with current segment highlighted | Hero + upcoming lessons/free/breaks + optional finish time |
 
-Names like 2×1/4×2 are **picker labels**, not hard-coded pixel assumptions. Determine layout from available width and height in dp and font scale, with a small set of stable buckets and adaptive typography. On launchers with five, six or more columns, allow the same 4×2 widget to use horizontal space without awkward blank areas or clipping; keep the compact widget readable where physical cell sizes shrink. A user should be able to resize into a coherent neighbouring layout, not a stretched screenshot.
+Names like 2×1/4×2 describe reference grid footprints, **not separate widget types or hard-coded pixel assumptions**. Determine layout from available width and height in dp and font scale, with a small set of stable buckets and adaptive typography. On launchers with five, six or more columns, allow the same 4×2 widget to use horizontal space without awkward blank areas or clipping; keep the compact widget readable where physical cell sizes shrink. A user should be able to resize into a coherent neighbouring layout, not a stretched screenshot.
 
 Exploration should create accurate design mock-ups for **all four schedule states** and **all core sizes** before rewriting the renderer. Test non-square circles and vector scaling before choosing a silhouette for a live timer.
 
@@ -85,7 +113,7 @@ Exploration should create accurate design mock-ups for **all four schedule state
 
 **Shared presenter:** use the existing schedule resolver once to derive a small, renderer-agnostic WidgetPresentation state: event kind/title/icon/colour/location, previous/current/next boundaries, progress fraction, target timestamp, status labels, accessibility description and theme. Both renderers must consume equivalent snapshots. Do **not** fork schedule semantics into Remote Compose.
 
-**Stable renderer:** keep current RemoteViews/AppWidgetProvider, native Chronometer, size mapping and XML/vector drawable assets. Glance may be considered as a separate intermediate refactor only if it measurably reduces complexity; it is not a prerequisite for Expressive visuals.
+**Stable renderer:** retain current RemoteViews/AppWidgetProvider components for upgrade continuity, native Chronometer and XML/vector drawable assets; **replace their visual composition and sizing rules**, not just their colours. Create a single adaptive presentation entry point used by all legacy providers and, if feasible, one preferred new picker provider. Glance may be considered as a separate intermediate refactor only if it measurably reduces complexity; it is not a prerequisite for Expressive visuals.
 
 **Experimental renderer:** in an isolated feature/prototype, compile a Remote Compose document containing a mirrored surface, Material shape/path, styled live or time-dependent text, theme values, click action and a layout that adapts to two reported sizes. Test in a real home-screen widget host; document which APIs are available, runtime support, build cost and update behaviour. Add a renderer switch only after support detection is reliable. If there is no supported public host integration, limit the prototype to an in-app preview and **do not ship it as a launcher renderer**.
 
@@ -100,7 +128,10 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 
 ## Delivery phases and acceptance criteria
 
-### Phase A — audit and reference designs
+### Phase A — audit, canonical specification and reference designs
+- [ ] Audit the video/screenshot's single-entity canonical idea and Google's canonical widget layouts, sizing/breakpoint rules, official Figma Widget Canonical Builder and public platform code samples; compare with community Material 3 Expressive designs. Avoid claiming the screenshot is a working Tempo layout.
+- [ ] Define the one-adaptive-widget picker/legacy-provider transition and document how existing IDs/settings survive app upgrades and resizing.
+- [ ] Write the progressive-disclosure state matrix: compact -> square/visual -> wide/multi-entity -> expanded agenda, including tall-narrow and short-wide variants.
 - [ ] Audit screenshots and measurements from 4-column, 5-column and 6+ column launchers; capture min/max dp dimensions, padding, font scales, existing overflow issues and retained settings.
 - [ ] Document official Material 3 shape/corner tokens; create a small reusable geometry specification with unit tests for standalone, two-part, three-part and rotated group shapes.
 - [ ] Make comparison mock-ups of 2×1, 2×2, 4×2 and expanded formats in current, upcoming, free/break and finished states. Prioritise subject identification and glanceable timer; review against the Figma design references.
@@ -112,7 +143,11 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 - [ ] Record API gaps (including live countdown, dynamic colour, preview, accessibility and clocks), compatible Android/launcher versions, screen captures and measured update costs.
 - [ ] Apply the go/no-go gate above and explicitly record **adopt / defer / reject** with evidence and an incremental migration/fallback design.
 
-### Phase C — shared state, visuals and responsive layout
+### Phase C — ground-up widget presentation and responsive layout
+- [ ] Create one primary adaptive widget UX/renderer, rather than shipping three independent visual designs; preserve old provider receivers as compatibility adapters.
+- [ ] Choose small canonical layout buckets based on measured usable dp width/height and font scale; verify breakpoint switching in both resize directions and after launcher restart, orientation changes and app updates.
+- [ ] Reveal information progressively: event+timer -> visual progress/next -> additional next-up/agenda information. Preserve the hero's clear hierarchy at every size.
+- [ ] Evaluate replacing the three legacy picker entries with a single preferred new entry without removing existing users' placed widgets; document launcher-specific compromises.
 - [ ] Extract testable WidgetPresentation state without duplicating the core resolver.
 - [ ] Produce reusable material shape assets/geometry tokens and mirrored component backgrounds with no arbitrary corner differences.
 - [ ] Rebuild compact, square and wide compositions around large labelled timers, semantic icons and clear secondary information; expanded sizes can reveal a short timeline.
@@ -120,6 +155,8 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 - [ ] Ensure actual system widget clipping, gutters, tinting and outline widths are correct across supported OS versions.
 
 ### Phase D — settings, reliability, testing, rollout
+- [ ] Test Android's host resize event/size-list semantics, RemoteViews size-map switching, launcher padding and zero-extra-outer-inset alignment; verify the app does not need to wake for purely host-selected layout changes.
+- [ ] Test whether resize preserves the configured timetable, appearance and action mappings without removing/readding the widget.
 - [ ] Keep existing placements, per-widget preferences, theme/outline options, screenshots and configure/preview flows working; safely migrate any newly introduced style choice.
 - [ ] Keep time-zone, date/time, reboot, app update, holiday, A/B cycle, replacement day, overlap, break and week-completion behaviour identical to the schedule engine.
 - [ ] Add unit/screenshot/instrumentation checks for rendering states, corner-mirroring, resizing and accessibility; run debug/QA/release CI with R8/resource shrinking before release.
@@ -130,6 +167,7 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 ## Done means
 
 - In ordinary use, the 2×1 primary subject and time-to-next/current are readable without opening the app; it is not merely a tiny-text label in a huge card.
+- **The same configured widget** changes from a compact single-entity view into a more informative visual/multi-entity view when resized; it also gracefully removes supplementary content when shrunk, without resetting state or losing the countdown.
 - The 4×2 feels deliberately composed on 4-, 5- and 6-column home screens; size changes alter information density, not just stretch text.
 - Group corners are provably consistent with the mirrored rule; the widget outer corners obey launcher clipping.
 - Material You and all current widget theme/outline preferences remain functional, accessible and contrast-safe.
