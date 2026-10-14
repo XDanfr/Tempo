@@ -55,13 +55,12 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 
 ## 0.6 candidate — Widget 2.0: adaptive Material 3 Expressive widgets & Remote Compose
 
-**Ground-up widget redesign**, not a reskin of the three existing size-specific presentations. Follow Google's canonical widget layouts and progressive-disclosure resizing: a single primary Adaptive Tempo widget should feel more useful as users expand it, moving from one legible current/next event and countdown to visual progress, another event and eventually a mini-agenda. Preserve existing placed widgets and preferences through compatibility adapters for the current provider components; consolidating picker entries must not break upgrades. Remote Compose remains a **feasibility-first experiment**, not a release requirement. Full architecture, design constraints, development phases, breakpoints, device matrix and go/no-go criteria: [Widget 2.0](WIDGET_2_0.md).
+**Ground-up widget redesign**, not a reskin of the three existing size-specific presentations. Follow Google's canonical widget layouts and progressive-disclosure resizing: a single primary Adaptive Tempo widget should feel more useful as users expand it, moving from one legible current/next event and countdown to visual progress, another event and eventually a **non-scrollable mini-agenda**. **Scrolling is deliberately deferred until after the first batch is implemented and tested.** Preserve existing placed widgets and preferences through compatibility adapters for the current provider components; consolidating picker entries must not break upgrades. Remote Compose remains a **feasibility-first experiment**, not a release requirement. Full architecture, design constraints, development phases, breakpoints, device matrix and go/no-go criteria: [Widget 2.0](WIDGET_2_0.md).
 
 ### Design and compatibility
 
 - [ ] Develop one default adaptive widget experience with **distinct canonical compositions at measured size breakpoints**, not three fixed widget types or scaled-up text layouts; align with Google's [Canonical Widget Layouts](https://developer.android.com/design/ui/mobile/guides/widgets/layouts) and [sizing guidance](https://developer.android.com/design/ui/mobile/guides/widgets/sizing)
 - [ ] Make resize feel like useful progressive disclosure: **2×1 single entity** → **2×2 visual entity** → **4×2 multiple entities** → **larger agenda**, with tall/short variants based on actual dp dimensions and font scale
-- [ ] Explore **two expanded scrolling experiences**: snap-aligned, full-height **Daily Agenda** pages and **Week/Day Overview** pages, without making the compact 2×1 scrollable; add clear dates, semantics and normal-scroll/navigation fallback
 - [ ] Prototype brief **end-of-day particle celebrations** (optional subtle Material-shaped confetti) while keeping completion readable and static on unsupported hosts, honouring reduced motion and avoiding repeated effects on refresh
 - [ ] Preserve existing Android widget IDs, installed providers and per-widget settings during the ground-up renderer replacement; assess safely retiring duplicate picker entries separately
 - [ ] Design expressive compact, square, wide and expanded canonical compositions around one large, clearly labelled countdown, subject and relevant next activity
@@ -75,15 +74,14 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 
 - [ ] Prototype **Remote Compose** with isolated experimental dependencies; establish whether a public, compatible home-screen host pathway actually renders shapes, text, taps, size changes and countdowns (an in-app player alone is insufficient)
 - [ ] Test Remote Compose's **native path/shape drawing** for the mirrored component geometry, sharing the same radius tokens with XML/vector fallbacks; rendering support does not eliminate the design rule
-- [ ] Spike Glance 1.3 alpha `SnapScrollMatchHeight`: official requirements are **compileSdk 37 + Android 17+**, with `SizeMode.Exact` and full-container-height `LazyColumn` pages; older hosts use `VerticalScrollMode.Normal` or simple navigation
 - [ ] Inspect alpha21 `RemoteEnterTransition.Particle`/`RemoteExitTransition.Particle` on actual widget hosts; confirm whether the available enter/exit effect can reproduce a tiny falling-confetti celebration before making implementation promises
 - [ ] Check Glance/Glance Adaptive release maturity, host capability, Android/launcher coverage, build-tool compatibility and performance before choosing a renderer
 - [ ] Extract a shared widget presentation state while replacing the old layout templates and size handling; retain **RemoteViews/XML/vector shapes as the production fallback** for Android 8+ and unsupported launchers
 - [ ] Make an explicit **adopt / defer / reject** decision based on [Widget 2.0's acceptance gates](WIDGET_2_0.md); do not delay visual improvements if Remote Compose support is not ready
 - [ ] Validate real launcher behaviour, TalkBack, long subject names, large text, light/dark contrast, clock/time-zone transitions, battery efficiency, recovery updates and release/QA CI before rollout
-- [ ] Test scrolling and transition gestures on Android 17 and fallback hosts, scroll position across updates/resizes, replay-safe once-per-day celebration semantics, and reduced-motion settings
+- [ ] Test replay-safe once-per-day completion semantics, reduced motion, and resize/launcher-host behaviours without requiring the widget to scroll
 
-The Expressive widget redesign is the user-facing target for 0.6; adopting Remote Compose is conditional on successful device-level tests. This work can proceed independently of Feel & Flow.
+The Expressive widget redesign is the user-facing target for 0.6; adopting Remote Compose is conditional on successful device-level tests. **The first batch does not require scrolling or snap gestures.** This work can proceed independently of Feel & Flow.
 
 ## Towards 1.0 — Feel & Flow
 
@@ -115,6 +113,7 @@ I want Tempo to feel like a polished, expressive utility, not a productivity gam
 
 ## Later releases
 
+- [ ] **After Widget 2.0 ships and is tested:** revisit scrollable agendas for the largest layouts; consider ordinary Glance `LazyColumn` first and optional Android 17+ `SnapScrollMatchHeight` only if real launcher testing demonstrates a benefit. Do not treat either as an initial 0.6 deliverable; see [Widget 2.0 future investigation](WIDGET_2_0.md#future-investigation--scrollable-agendas-and-snap-scrolling-after-the-first-widget-20-release)
 - [ ] Restore bottom-sheet drag handles and swipe-down dismissal without coupling content flings to changing sheet anchors; include boundary-fling and keyboard regression checks
 - [ ] Landscape timetable image exports with a time-grid/map layout and dotted hour or period guides, matching preview and privacy controls
 - [ ] Tap a Library subject to quickly schedule it; retain an explicit pencil action for full subject editing
