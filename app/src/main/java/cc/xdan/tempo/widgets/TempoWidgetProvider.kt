@@ -86,7 +86,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                 val timetable = if (settings.timetableId == null) collection.active else collection.timetables.firstOrNull { it.id == settings.timetableId }?.timetable
                 val provider = manager.getAppWidgetInfo(id)?.provider?.className
                 val pill = provider == PillWidget::class.java.name
-                val wide = provider == WideWidget::class.java.name
+
                 val appearance = timetable?.appearance ?: Appearance()
                 val selected = settings.preset ?: appearance.selectedPreset
                 val mode = if (settings.preset == null) appearance.mode else settings.mode
@@ -95,18 +95,25 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
                     if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
                 } else presetColorScheme(selected, dark)
                 val options = manager.getAppWidgetOptions(id)
+                val presentation = widgetPresentation(timetable, settings, now)
+                presentation.boundaryEpochMillis?.let { nextRefresh = minOf(nextRefresh, it) }
                 fun render(size: SizeF): RemoteViews {
                     val sizing = WidgetSizing(size.width, size.height, context.resources.configuration.fontScale)
+                    if (sizing.composition == WidgetComposition.COMPACT) return compactWidgetViews(
+                        context, id, presentation, sizing, settings, scheme, dark,
+                        settings.showIcons ?: appearance.showIcons, now.toInstant().toEpochMilli())
+                    // Legacy receivers now share the same dp-based composition selection.
+                    val pill = false
+                    val wide = sizing.composition == WidgetComposition.WIDE || sizing.composition == WidgetComposition.EXPANDED
                     val height = sizing.height
                     val width = sizing.width
-                    val summary = timetable?.takeIf { it.onboarded }?.let { weekOverview(it, now.toLocalDateTime()) }
-                    summary?.boundary?.atZone(now.zone)?.let { nextRefresh = minOf(nextRefresh, it.toInstant().toEpochMilli()) }
-                    val dayComplete = timetable != null && summary != null && widgetDayComplete(timetable, now.toLocalDateTime(), summary)
+                    val summary = presentation.summary
+                    val dayComplete = presentation.dayComplete
                     val completion = !pill && dayComplete
                     val weekDone = summary?.status == WeekStatus.DONE
                     val pillDone = pill && (weekDone || dayComplete && settings.doneForDayMessage)
                     val messageOnly = completion && !wide && settings.doneForDayMessage
-                    val plan = if (wide && !completion && timetable != null && summary != null) widgetDayPlan(timetable, now.toLocalDateTime(), summary) else null
+                    val plan = if (wide && !completion && timetable != null && summary != null) presentation.plan else null
                     val agendaLayout = plan?.later?.isNotEmpty() == true && sizing.showAgenda
                     val stacked = sizing.stacked
                     val contentSizing = if (agendaLayout && stacked) sizing.copy(heightDp = (size.height - 24f) / 2f) else sizing

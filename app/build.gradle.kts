@@ -49,6 +49,7 @@ android {
             if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
         }
     }
+    testOptions.unitTests.isIncludeAndroidResources = true
     testBuildType = providers.gradleProperty("tempoTestBuildType").orElse("debug").get()
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
@@ -69,6 +70,7 @@ dependencies {
     implementation(libs.lifecycle.compose)
     implementation(libs.lifecycle.viewmodel)
     testImplementation(libs.junit)
+    testImplementation("org.robolectric:robolectric:4.17")
     testImplementation("org.json:json:20250517")
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
