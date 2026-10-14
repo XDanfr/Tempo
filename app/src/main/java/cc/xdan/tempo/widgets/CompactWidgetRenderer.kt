@@ -49,23 +49,35 @@ internal fun compactWidgetViews(context: Context, id: Int, presentation: WidgetP
     }
     views.setTextViewText(R.id.widget_title, presentation.title)
     views.setTextColor(R.id.widget_title, ink.toArgb())
-    views.setTextViewTextSize(R.id.widget_title, TypedValue.COMPLEX_UNIT_SP, sizing.compactTitleSp)
-    views.setInt(R.id.widget_title, "setMaxLines", if (sizing.height >= 80 && (split || !ticking)) 2 else 1)
+    val titleSize = when {
+        sizing.height < 48 -> sizing.compactTitleSp
+        presentation.state == WidgetState.WEEK_DONE -> 22f
+        presentation.state == WidgetState.DONE_TODAY -> 18f
+        else -> sizing.compactTitleSp
+    }
+    views.setTextViewTextSize(R.id.widget_title, TypedValue.COMPLEX_UNIT_SP, titleSize)
+    views.setInt(R.id.widget_title, "setMaxLines", if (!ticking && sizing.height >= 48 || split && sizing.height >= 80) 2 else 1)
     views.setTextColor(R.id.widget_timer, timerInk.toArgb())
     // A future lesson can produce a three-digit hour count. Measure the actual font,
     // including the label and system font scale, before choosing the timer size.
     val seconds = ((until ?: 0).coerceAtLeast(0) + 999) / 1000
     val clock = if (seconds >= 3600) "%d:%02d:%02d".format(seconds / 3600, seconds / 60 % 60, seconds % 60)
         else "%02d:%02d".format(seconds / 60, seconds % 60)
-    val sample = if (split) clock else if (presentation.current) "$clock left" else "In $clock"
+    val sample = clock
     val requested = if (split) 28f else sizing.compactTimerSp
+    val completion = presentation.state in listOf(WidgetState.WEEK_DONE, WidgetState.DONE_TODAY)
+    val visibleIcon = showIcons && sizing.compactIcon && !split &&
+        (completion || presentation.block == null || presentation.block?.symbol() != null)
+    val label = if (split) presentation.countdownLabel else if (presentation.current) "Left" else "In"
     val font = Paint().apply {
         typeface = context.resources.getFont(cc.xdan.tempo.core.designsystem.R.font.outfit_semibold)
         fontFeatureSettings = "tnum"
     }
     val availableDp = (if (split) (sizing.widthDp - WidgetShapeRules.GAP) / 2 else sizing.widthDp) - 24 -
-        if (!split && showIcons && sizing.compactIcon) 32 else 0
-    val availablePx = availableDp * context.resources.displayMetrics.density
+        if (visibleIcon) 32 else 0
+    font.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, context.resources.displayMetrics)
+    val labelWidth = if (split) 0f else font.measureText(label) + 6 * context.resources.displayMetrics.density
+    val availablePx = availableDp * context.resources.displayMetrics.density - labelWidth
     var minimum = 0f
     var maximum = requested
     repeat(12) {
@@ -76,12 +88,11 @@ internal fun compactWidgetViews(context: Context, id: Int, presentation: WidgetP
     views.setTextViewTextSize(R.id.widget_timer, TypedValue.COMPLEX_UNIT_SP, minimum)
     views.setViewVisibility(R.id.widget_timer, if (ticking) View.VISIBLE else View.GONE)
     views.setChronometerCountDown(R.id.widget_timer, true)
-    views.setChronometer(R.id.widget_timer, SystemClock.elapsedRealtime() + (until ?: 0),
-        if (split) "%s" else if (presentation.current) "%s left" else "In %s", ticking)
-    if (split) {
-        views.setTextViewText(R.id.widget_countdown_label, presentation.countdownLabel)
-        views.setTextColor(R.id.widget_countdown_label, timerInk.toArgb())
-    }
+    views.setChronometer(R.id.widget_timer, SystemClock.elapsedRealtime() + (until ?: 0), "%s", ticking)
+    views.setTextViewText(R.id.widget_countdown_label, label)
+    views.setTextColor(R.id.widget_countdown_label, timerInk.toArgb())
+    views.setViewVisibility(R.id.widget_countdown_label, if (ticking) View.VISIBLE else View.GONE)
+    if (!split) views.setViewVisibility(R.id.widget_countdown_row, if (ticking) View.VISIBLE else View.GONE)
     val detail = if (ticking) presentation.location else when (presentation.state) {
         WidgetState.MISSING -> "Configure in widget settings"
         WidgetState.SETUP -> "Open Tempo to finish setup"
@@ -94,7 +105,7 @@ internal fun compactWidgetViews(context: Context, id: Int, presentation: WidgetP
     views.setViewVisibility(R.id.widget_detail, if (detail != null && sizing.height >= if (split) 96 else 88) View.VISIBLE else View.GONE)
     val icon = if (presentation.state in listOf(WidgetState.WEEK_DONE, WidgetState.DONE_TODAY)) Icons.Outlined.CheckCircle
         else presentation.block?.symbol() ?: Icons.Outlined.CalendarMonth
-    views.setViewVisibility(R.id.widget_icon, if (showIcons && sizing.compactIcon && !split) View.VISIBLE else View.GONE)
+    views.setViewVisibility(R.id.widget_icon, if (visibleIcon) View.VISIBLE else View.GONE)
     views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, ink.toArgb()))
     val open = Intent(context, MainActivity::class.java).putExtra("widgetTimetableId", settings.timetableId)
     if (!preview) views.setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))

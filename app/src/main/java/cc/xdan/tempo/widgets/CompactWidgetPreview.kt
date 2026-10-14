@@ -27,7 +27,7 @@ internal fun CompactWidgetPreview(timetable: Timetable?, settings: WidgetSetting
         val width = maxWidth.value
         AndroidView(modifier = Modifier.fillMaxSize(), factory = { FrameLayout(it) }, update = { frame ->
             val views = compactWidgetViews(frame.context, 0, presentation, WidgetSizing(width, 88f, fontScale), settings,
-                scheme, dark, settings.showIcons ?: (timetable?.appearance?.showIcons ?: true), now.toInstant().toEpochMilli(), preview = true)
+                scheme, dark, settings.showIcons ?: (timetable?.appearance?.showIcons ?: true), System.currentTimeMillis(), preview = true)
             frame.removeAllViews()
             frame.addView(views.apply(frame.context, frame))
         })

@@ -24,7 +24,7 @@ class RemoteComposeLabActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 32, 16, 16) }
+        container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 32, 16, 16); setBackgroundColor(Color.WHITE) }
         setContentView(container)
         report = TextView(this).apply { text = "In-app Remote Compose player • NOT launcher verification" }
         container.addView(report)
@@ -39,7 +39,7 @@ class RemoteComposeLabActivity : Activity() {
         render()
     }
 
-    // alpha21's local player listener remains library-group restricted. This suppression
+    // alpha21's View player and listener remain library-group restricted. This suppression
     // is deliberately confined to this opt-in APK and is itself a production adoption gap.
     @SuppressLint("RestrictedApi")
     private fun render() {

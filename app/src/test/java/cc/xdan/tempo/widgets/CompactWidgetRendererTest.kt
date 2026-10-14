@@ -48,6 +48,14 @@ class CompactWidgetRendererTest {
                 assertEquals(presentation.title, root.findViewById<TextView>(R.id.widget_title).text.toString())
                 assertFalse(root.findViewById<TextView>(R.id.widget_detail).text.contains("Private room"))
                 assertEquals(if (state == "current") View.VISIBLE else View.GONE, root.findViewById<Chronometer>(R.id.widget_timer).visibility)
+                if (state == "current") {
+                    val timer = root.findViewById<Chronometer>(R.id.widget_timer)
+                    val label = root.findViewById<TextView>(R.id.widget_countdown_label)
+                    assertTrue(label.text.toString() in listOf("Left", "Time left"))
+                    assertEquals(View.VISIBLE, label.visibility)
+                    assertEquals(1, timer.lineCount)
+                    assertEquals(0, timer.layout.getEllipsisCount(0))
+                }
                 val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
                 root.draw(Canvas(bitmap))
                 val output = File("build/reports/widget-previews/${android.os.Build.VERSION.SDK_INT}-$state-$width-$height-$scale.png")
@@ -55,6 +63,25 @@ class CompactWidgetRendererTest {
                 output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
                 assertTrue(output.length() > 100)
             }
+        }
+    }
+
+    @Test fun upcomingBreakAndCompletionUseTruthfulLabels() {
+        val context = RuntimeEnvironment.getApplication()
+        val lunch = table.copy(sessions = table.sessions + Session("c", "s", 1, TimeSpan(720, 780)),
+            breaks = listOf(ScheduledBreak("lunch", "Lunch", listOf(1), TimeSpan(660, 690))))
+        val cases = listOf(
+            Triple(table, now.withHour(9), "In"),
+            Triple(lunch, now.withHour(11), "Left"),
+            Triple(table, now.withHour(12), ""))
+        for ((t, time, label) in cases) {
+            val settings = WidgetSettings(doneForDayMessage = true)
+            val presentation = widgetPresentation(t, settings, time)
+            val root = compactWidgetViews(context, 5, presentation, WidgetSizing(140f, 56f, 1f), settings,
+                presetColorScheme(ThemePreset.FOREST, true), true, true, time.toInstant().toEpochMilli(), preview = true).apply(context, FrameLayout(context))
+            val actual = root.findViewById<TextView>(R.id.widget_countdown_label)
+            if (label.isEmpty()) assertEquals(View.GONE, actual.visibility) else assertEquals(label, actual.text.toString())
+            assertEquals(presentation.title, root.findViewById<TextView>(R.id.widget_title).text.toString())
         }
     }
 
