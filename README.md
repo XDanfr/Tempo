@@ -91,7 +91,7 @@ Calendar `.ics` integration, overnight shifts, explicit time zones, free tags, s
 <details>
   <summary>For contributors</summary>
 
-Open the project in Android Studio with JDK 17 and Android SDK 36. The Gradle wrapper is included:
+Open the project in Android Studio with JDK 17 and Android SDK 37.0 (build-tools 36.0.0). The Widget 2.0 branch uses AGP 9.2.1 / Gradle 9.4.1 and Glance 1.3.0-alpha02; Android 8+ and target SDK 36 are retained. The Gradle wrapper is included:
 
 ```sh
 ./gradlew :core:model:test :core:schedule:test :core:data:testDebugUnitTest :app:testDebugUnitTest :app:lintDebug :app:assembleDebug

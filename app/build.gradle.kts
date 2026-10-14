@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -14,7 +13,7 @@ require(!hasReleaseSigning || releaseSigning.values.all { !it.isNullOrBlank() })
 
 android {
     namespace = "cc.xdan.tempo"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "cc.xdan.tempo"
         minSdk = 26
@@ -51,7 +50,7 @@ android {
     }
     testOptions.unitTests.isIncludeAndroidResources = true
     testBuildType = providers.gradleProperty("tempoTestBuildType").orElse("debug").get()
-    buildFeatures { compose = true; buildConfig = true }
+    buildFeatures { compose = true; buildConfig = true; resValues = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
 }
 kotlin { jvmToolchain(17) }
@@ -61,12 +60,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
     implementation(platform(libs.compose.bom))
-    // The latest alpha can be evaluated without upgrading the production toolchain.
-    val glanceVersion = if (providers.gradleProperty("tempoGlanceNext").orNull == "true") "1.3.0-alpha02" else "1.2.0"
-    implementation("androidx.glance:glance-appwidget:$glanceVersion")
-    if (providers.gradleProperty("tempoGlanceNext").orNull == "true") {
-        implementation("androidx.glance.adaptive:adaptive-appwidget:1.0.0-alpha03")
-    }
+    implementation("androidx.glance:glance-appwidget:1.3.0-alpha02")
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.compose.icons)
