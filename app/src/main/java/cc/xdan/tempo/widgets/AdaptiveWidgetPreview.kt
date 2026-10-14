@@ -13,6 +13,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import cc.xdan.tempo.model.Timetable
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 
 internal enum class WidgetPreviewSize(val label: String, val height: Int) {
@@ -27,7 +31,18 @@ internal fun AdaptiveWidgetPreview(timetable: Timetable?, settings: WidgetSettin
     val dark = scheme.background.luminance() < .5f
     val fontScale = LocalConfiguration.current.fontScale
     val context = LocalContext.current
-    val now = remember(timetable, settings) { ZonedDateTime.now() }
+    var now by remember(timetable, settings) { mutableStateOf(ZonedDateTime.now()) }
+    val previewScope = rememberCoroutineScope()
+    LifecycleResumeEffect(timetable, settings) {
+        val job = previewScope.launch {
+            while (isActive) {
+                now = ZonedDateTime.now()
+                val next = widgetPresentation(timetable, settings, now).nextRefreshMillis(now.toInstant().toEpochMilli())
+                delay((next?.minus(System.currentTimeMillis()) ?: 60_000).coerceAtLeast(1_000))
+            }
+        }
+        onPauseOrDispose { job.cancel() }
+    }
     val presentation = remember(timetable, settings, now) { widgetPresentation(timetable, settings, now) }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {

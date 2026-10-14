@@ -13,6 +13,11 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 class MainActivity : ComponentActivity() {
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) cc.xdan.tempo.widgets.WidgetRefresh.refreshNow(applicationContext)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
