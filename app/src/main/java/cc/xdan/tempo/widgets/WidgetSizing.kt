@@ -5,9 +5,22 @@ import android.os.Build
 import android.os.Bundle
 import android.util.SizeF
 
+internal enum class WidgetComposition { COMPACT, SQUARE, WIDE, EXPANDED }
+
 internal data class WidgetSizing(val widthDp: Float, val heightDp: Float, val fontScale: Float) {
     val width = (widthDp / fontScale.coerceAtLeast(1f)).toInt()
     val height = (heightDp / fontScale.coerceAtLeast(1f)).toInt()
+    // Content budgets, independent of provider and launcher cell count.
+    val composition: WidgetComposition get() = when {
+        height < 136 -> WidgetComposition.COMPACT
+        width >= 280 && height >= 230 || width < 280 && height >= 300 -> WidgetComposition.EXPANDED
+        width >= 280 -> WidgetComposition.WIDE
+        else -> WidgetComposition.SQUARE
+    }
+    val compactSplit get() = width >= 240 && height >= 64
+    val compactIcon get() = width >= 200 && height >= 64
+    val compactTitleSp get() = if (height < 64) 14f else 18f
+    val compactTimerSp get() = if (height < 64 || width < 160) 18f else 24f
     val stacked = width < 280
     val showAgenda = if (stacked) height >= 300 else height >= 150
     val agendaRows = if (height >= (if (stacked) 420 else 230)) 2 else 1

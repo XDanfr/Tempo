@@ -4,6 +4,21 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class WidgetSizingTest {
+    @Test fun canonicalCompositionUsesBothDimensionsAndFontScale() {
+        assertEquals(WidgetComposition.COMPACT, WidgetSizing(400f, 110f, 1f).composition)
+        assertEquals(WidgetComposition.SQUARE, WidgetSizing(180f, 180f, 1f).composition)
+        assertEquals(WidgetComposition.WIDE, WidgetSizing(320f, 180f, 1f).composition)
+        assertEquals(WidgetComposition.EXPANDED, WidgetSizing(180f, 320f, 1f).composition)
+        assertEquals(WidgetComposition.EXPANDED, WidgetSizing(360f, 240f, 1f).composition)
+        assertEquals(WidgetComposition.COMPACT, WidgetSizing(320f, 180f, 1.5f).composition)
+    }
+    @Test fun compactDisclosureShrinksWithLargeText() {
+        assertTrue(WidgetSizing(280f, 90f, 1f).compactSplit)
+        assertFalse(WidgetSizing(280f, 90f, 1.5f).compactSplit)
+        assertFalse(WidgetSizing(140f, 56f, 1f).compactIcon)
+        assertEquals(18f, WidgetSizing(140f, 56f, 1f).compactTimerSp)
+    }
+
     @Test fun narrowTallUsesStackedAgenda() {
         val size = WidgetSizing(160f, 360f, 1f)
         assertTrue(size.stacked)
