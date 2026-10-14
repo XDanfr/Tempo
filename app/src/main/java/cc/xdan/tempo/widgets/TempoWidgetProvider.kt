@@ -38,13 +38,41 @@ class PillWidget : TempoWidgetProvider()
 class SquareWidget : TempoWidgetProvider()
 class WideWidget : TempoWidgetProvider()
 class WidgetClockReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) { WidgetRefresh.start(context) }
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action !in setOf(null, Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_TIME_CHANGED,
+                Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_MY_PACKAGE_REPLACED,
+                Intent.ACTION_SCREEN_ON, Intent.ACTION_USER_PRESENT, Intent.ACTION_TIME_TICK,
+                AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED)) return
+        if (intent.action == Intent.ACTION_TIME_TICK && !WidgetClockObserver.isDue(System.currentTimeMillis())) return
+        val pending = goAsync()
+        WidgetRefresh.refreshNow(context.applicationContext) { pending.finish() }
+    }
 }
 
 object WidgetRefresh {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val resizeJobs = mutableMapOf<Int, Job>()
     private val renderLocks = ConcurrentHashMap<Int, Mutex>()
+    private var immediateJob: Job? = null
+
+    /** A delivered clock/unlock broadcast must not wait behind WorkManager jobs. */
+    @Synchronized
+    fun refreshNow(context: Context, finished: () -> Unit = {}) {
+        immediateJob?.cancel()
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val job = scope.launch(start = CoroutineStart.ATOMIC) {
+            try {
+                withTimeout(8_000) { refreshWidgets(context.applicationContext) }
+            } catch (_: TimeoutCancellationException) {
+                enqueue(context)
+            } catch (_: CancellationException) {
+                // A newer clock signal will resolve against the latest wall time.
+            } catch (_: Exception) {
+                enqueue(context)
+            } finally { finished() }
+        }
+        immediateJob = job
+    }
 
     /** Interactive resizing bypasses WorkManager and touches only this widget. */
     internal fun resize(context: Context, id: Int, finished: () -> Unit) {
@@ -99,6 +127,7 @@ class WidgetRefreshWorker(context: Context, params: WorkerParameters) : Coroutin
 internal suspend fun refreshWidgets(context: Context, requestedIds: IntArray? = null, schedule: Boolean = true) {
     val manager = AppWidgetManager.getInstance(context)
     val ids = requestedIds ?: WidgetRefresh.ids(context)
+    if (requestedIds == null) WidgetClockObserver.update(context, ids.isNotEmpty())
     val alarm = context.getSystemService(AlarmManager::class.java)
     val refresh = PendingIntent.getBroadcast(context, 0, Intent(context, WidgetClockReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     if (ids.isEmpty()) {
@@ -139,5 +168,8 @@ internal suspend fun refreshWidgets(context: Context, requestedIds: IntArray? = 
             manager.updateAppWidget(id, views)
         }
     }
-    if (schedule) alarm.setAndAllowWhileIdle(AlarmManager.RTC, nextRefresh.coerceAtLeast(System.currentTimeMillis() + 1000), refresh)
+    if (schedule) {
+        WidgetClockObserver.refreshedUntil(nextRefresh)
+        WidgetAlarmScheduler.schedule(context, nextRefresh.coerceAtLeast(System.currentTimeMillis() + 1000), refresh)
+    }
 }

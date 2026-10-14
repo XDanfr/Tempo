@@ -3,6 +3,10 @@ package cc.xdan.tempo.widgets
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
+import android.os.Build
+import android.net.Uri
+import android.provider.Settings
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
@@ -31,6 +35,7 @@ import kotlinx.coroutines.delay
 /** One configuration contract for every adaptive size and all compatibility providers. */
 class WidgetConfigureActivity : ComponentActivity() {
     private var saveForExit: (() -> Unit)? = null
+    private var openingTimingSettings = false
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -120,6 +125,24 @@ class WidgetConfigureActivity : ComponentActivity() {
                             OutlinedTextField(settings.emptyText, { settings = settings.copy(emptyText = it.take(120)) },
                                 label = { Text("Empty week message") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
                         }
+                        if (Build.VERSION.SDK_INT >= 31) {
+                            var accurate by remember { mutableStateOf(WidgetAlarmScheduler.hasAccurateTiming(applicationContext)) }
+                            LifecycleResumeEffect(Unit) {
+                                accurate = WidgetAlarmScheduler.hasAccurateTiming(applicationContext)
+                                openingTimingSettings = false
+                                WidgetRefresh.refreshNow(applicationContext)
+                                onPauseOrDispose { }
+                            }
+                            SettingsSection("Accurate widget timing", "Keep remaining time current for lessons, breaks and your next event. Applies to all Tempo widgets.") {
+                                Text(if (accurate) "Accurate timing is enabled. Updates do not wake your phone."
+                                    else "Android may delay time updates. Allow Alarms & reminders for timely minute changes while your phone is awake.")
+                                OutlinedButton(onClick = {
+                                    openingTimingSettings = true
+                                    startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                                        Uri.parse("package:$packageName")))
+                                }) { Text(if (accurate) "Manage timing access" else "Allow accurate timing") }
+                            }
+                        }
                         Text("Touch and hold your widget to return here. Android may delay changing activities in battery-saving modes.",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(8.dp))
@@ -134,7 +157,11 @@ class WidgetConfigureActivity : ComponentActivity() {
         super.onSaveInstanceState(outState)
     }
 
-    override fun onUserLeaveHint() { saveForExit?.invoke(); finish(); super.onUserLeaveHint() }
+    override fun onUserLeaveHint() {
+        saveForExit?.invoke()
+        if (!openingTimingSettings) finish()
+        super.onUserLeaveHint()
+    }
 }
 
 @Composable

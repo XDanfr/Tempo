@@ -40,8 +40,8 @@ published Gradle checksum. Android minimum **26** and target **36** are unchange
 No package, version identity, release signing or timetable engine was changed.
 
 Unlike the previous XML templates, composition, sizing, text, progress and icon
-placement are authored in Glance. XML interop is limited to the **native
-Chronometer**; Glance places reusable XML drawable surfaces directly. Each update
+placement are authored in Glance. XML interop is limited to a **fitted native
+TextView for duration text**; Glance places reusable XML drawable surfaces directly. Each update
 composes an immutable schedule snapshot once per reported size, with explicit
 activity PendingIntents; no live session or per-second app work is needed.
 
@@ -134,35 +134,59 @@ CI now builds an installable `Tempo-QA` artifact and a separate
 experimental Adaptive and RC probe, not production widget IDs or user data.
 Both are debug-signed testing APKs; release signing has not been changed.
 
-## Launcher feedback: duration and resize follow-up
+## Launcher feedback: duration, timing and resize
 
 A device screenshot exposed truncated hour-long clocks in the visual badge and
-wide hero. Upcoming events now show rounded-up durations (`1h 29m`, or `Starts in
-1h 29m` in a single compact surface), without seconds. Long waits use days and
-hours. Current lessons/breaks retain the host-owned Chronometer. Both leaves fit
-text using the **inflated platform TextView/Chronometer font**, rather than an
-assumed Outfit font, and reserve space for rounding and varying digits. Compact
-height budgets account for large text as well as the subject line.
+wide hero. Fitted text leaves now measure the actual inflated TextView font and
+reserve space for rounding. Compact height budgets account for large text as
+well as the subject line. Following the owner's subsequent request, **all timed
+states** use hours/minutes: `Starts in 1h 29m` before an event and `45m left` during
+lessons and breaks (separate panels retain the Time left label). Long waits use
+days/hours. The previous active-only Chronometer has been removed, so the format
+no longer changes depending on whether the timetable is free or occupied.
 
-Upcoming labels use the existing single inexact RTC alarm at their next minute
-transition (hour transitions for day-long waits). There is no per-second worker,
-exact-alarm permission, foreground service or additional per-widget alarm.
-Android can defer these updates in Doze/battery saving; this is a snapshot label,
-not a promise of exact minute delivery. Active timers continue ticking in the
-host without requiring app updates.
+A static duration cannot tick itself in an ordinary RemoteViews host. The public
+Chronometer API formats a running clock, not `xh ym`; Glance cannot supply an
+arbitrary host-side text updater. Previously an inexact alarm then queued
+WorkManager. [Android's alarm guidance](https://developer.android.com/develop/background-work/services/alarms/schedule)
+allows inexact delivery up to an hour late on Android 12+, even before additional
+battery-saving delays. This invalidates relying on that alarm for fresh minute
+labels after unlocking.
 
-Resize broadcasts now render only the affected widget directly with `goAsync`,
-coalescing superseded gestures, instead of appending an all-widget WorkManager
-refresh. Per-widget rendering locks and cancellation checks prevent an older
-resize from publishing after a newer one. The regular worker shares this renderer
-and remains the retry/recovery path. Resize rendering has an eight-second budget;
-a timeout or error falls back to that worker. It does not move the global alarm.
-Launchers still control when they deliver size changes and apply RemoteViews;
-actual touch-to-layout latency needs another device check.
+Delivered alarms, clock changes and screen-on/unlock signals now render directly
+with an eight-second budget; superseded requests are cancelled and failures use
+WorkManager recovery. A process-registered receiver observes minute ticks and
+user-present signals while the process survives; it skips ticks until a displayed
+label/schedule actually needs updating. It is unregistered when no widgets remain.
+Leaving Tempo also requests an immediate refresh. These signals are opportunistic:
+Android does not provide a reliable launcher-visibility callback and a dead/cached
+process cannot be assumed to receive every runtime broadcast promptly.
 
-Follow-up regression checks: all 49 app unit tests pass, including actual inflated
-hour-long clock bounds at 1×/1.5×/2× text, upcoming `1h 29m` fitting, duration
-rounding/refresh transitions, and a targeted resize refresh preserving the other
-widget, shared alarm and saved settings on API26/35. [Updated upcoming-duration
-capture](screenshots/widget-2.0-upcoming-duration.png) is from the production
-Glance snapshot in Robolectric, not a real launcher.
+The optional **Accurate widget timing** control in widget settings opens Android's
+Alarms & reminders special access page. Nothing requests this access automatically.
+When allowed, one `setExact(RTC, ...)` PendingIntent alarm covers the earliest
+minute/hour-label transition or schedule boundary across all placed widgets.
+RTC is non-wakeup: the app does not wake the device for each minute, use exact
+idle alarms, poll each second or run a keep-alive foreground service. Android 8–11
+supports this without special access. On Android 12+, denial/revocation uses the
+inexact path and the UI explains possible delayed labels. Grant broadcasts refresh
+and reschedule; periodic work recovers after process death/reboot or revocation.
+Doze recovery, OEM restrictions and visible unlock-to-refresh latency still need
+device testing. The app cannot promise instant refresh under all battery policies.
+
+Resize broadcasts render only the affected widget directly with `goAsync`,
+coalescing superseded gestures. Per-widget rendering locks and cancellation checks
+prevent an older resize from publishing after a newer one. The regular worker
+shares this renderer and remains the retry/recovery path. Resize rendering has an
+eight-second budget and does not move the global alarm. Launchers control when
+they deliver size changes and apply RemoteViews.
+
+Regression coverage includes current/upcoming/break duration rendering, fitted
+hour-long text at 1×/1.5×/2× text, rounding/refresh transitions for all timed states,
+clock receiver registration and due-time filtering, exact/inexact timing access
+and non-wakeup batching, and preserving other widgets/settings/alarms on resize.
+Captures are production Glance snapshots in Robolectric, not real launchers.
+
+Local follow-up validation: 55 app tests pass on simulated API26/35, debug lint
+passes, and the QA APK builds. The configuration preview refreshes at its next
+label/schedule boundary while resumed and refreshes immediately when reopened.

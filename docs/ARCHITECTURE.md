@@ -73,16 +73,27 @@ keys stay installed; no conversion of placed widgets or preferences is required.
 Reported dp sizes and font scale select distinct compact, visual square, wide
 hero/next-event and expanded static agenda compositions. A Glance composition
 snapshot runs per reported size, then Android 12+ size maps or pre-12 orientation
-pairs handle host selection. Only the native Chronometer uses XML interop; all
+pairs handle host selection. Only the fitted native duration TextView uses XML interop; all
 layout, text, image and progress placement is authored in Glance. Actions use
 explicit activity intents rather than session-bound lambda callbacks.
 
 A WorkManager refresh reads the same DataStore collection and shared resolver.
 Edits and active selection changes trigger refreshes while the app is visible.
-Reboot, clock changes and package replacement restore refresh work; a 15-minute
-periodic job provides recovery. Inexact boundary alarms change displayed activities
-without exact-alarm access. Android may delay these updates. Countdown bases use
-monotonic time; no per-second application work or bitmap countdown text is used.
+Reboot, clock changes and package replacement restore refreshes; a 15-minute
+periodic job provides recovery. Delivered clock/unlock broadcasts render directly,
+coalescing older requests rather than waiting for WorkManager. A process-lifetime
+receiver observes minute, screen-on and user-present signals; it does not keep the
+process alive. Leaving Tempo also requests a fresh snapshot.
+
+All timed states (next event, lesson and break) show rounded-up hours/minutes.
+One shared non-wakeup RTC alarm targets the earliest visible duration or schedule
+change. On Android 12+, the optional Accurate widget timing control opens system
+Alarms & reminders access. Granted access uses `setExact`; denied/revoked access
+falls back to inexact alarms. Android 8–11 needs no special access. No per-second
+work, foreground service or exact idle/wakeup alarm is used. Inexact delivery can
+lag substantially, and process-registered broadcasts cannot recover a killed
+process. Ordinary widgets have no reliable home-screen-visible callback. Timely
+refresh after sleep with timing access and OEM launcher behaviour need device QA.
 Per-widget settings are independent of portable snapshots; deleted fixed tables
 ask for reconfiguration rather than silently switching to the active timetable.
 
@@ -112,7 +123,7 @@ embedded player, a Glance alpha02 / Adaptive alpha03 registry probe and a separa
 experimental launcher placement. Adaptive registry and backend override APIs are
 library-group restricted; those suppressions remain isolated to the lab. No
 production library restriction is suppressed. Glance's Remote Compose translator
-does not translate `AndroidRemoteViews` / native Chronometer, so the production
+does not translate `AndroidRemoteViews` / native TextView interop, so the production
 composition intentionally uses the RemoteViews backend. A draw-instruction
 constructor in SDK 37 is evidence of an API path, not verified launcher support.
 
