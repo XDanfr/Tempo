@@ -1,5 +1,8 @@
 # Widget 2.0 implementation log
 
+**Historical first-pass log.** The compact-only renderer and transitional larger
+layouts described here have been replaced; see [the full redesign](WIDGET_2_0_REDESIGN.md).
+
 First pass: 14 October 2026. Base: latest `origin/main`; branch `feature/widget-2.0`.
 
 ## Audit
