@@ -59,6 +59,6 @@ internal fun widgetPresentation(timetable: Timetable?, settings: WidgetSettings,
         target?.takeUnless { terminal }?.atZone(now.zone)?.toInstant()?.toEpochMilli(),
         summary?.boundary?.atZone(now.zone)?.toInstant()?.toEpochMilli(),
         if (current && block != null && elapsed != null) (elapsed / block.time.minutes).coerceIn(0f, 1f) else null,
-        (block as? ScheduleBlock.Lesson)?.location?.takeIf { timetable != null && settings.showsLocations(timetable.appearance) && it.isNotBlank() },
+        (block as? ScheduleBlock.Lesson)?.location?.takeIf { settings.showsLocations(timetable.appearance) && it.isNotBlank() },
         if (!terminal && !complete && timetable != null && summary != null) widgetDayPlan(timetable, local, summary) else null)
 }

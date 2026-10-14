@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import androidx.compose.ui.graphics.toArgb
 import android.view.View
 import android.widget.Chronometer
 import android.widget.FrameLayout
@@ -83,6 +84,23 @@ class CompactWidgetRendererTest {
             if (label.isEmpty()) assertEquals(View.GONE, actual.visibility) else assertEquals(label, actual.text.toString())
             assertEquals(presentation.title, root.findViewById<TextView>(R.id.widget_title).text.toString())
         }
+    }
+
+    @Test fun compactResizeRetainsThemedLessonColourPreference() {
+        val context = RuntimeEnvironment.getApplication()
+        val redSubject = table.copy(subjects = listOf(table.subjects.single().copy(colour = 0xFFFF0000)))
+        val settings = WidgetSettings(themedLessons = true, showOutline = false)
+        val scheme = presetColorScheme(ThemePreset.FOREST, true)
+        val presentation = widgetPresentation(redSubject, settings, now)
+        val root = compactWidgetViews(context, 8, presentation, WidgetSizing(320f, 100f, 1f), settings,
+            scheme, true, false, now.toInstant().toEpochMilli(), preview = true).apply(context, FrameLayout(context))
+        root.measure(View.MeasureSpec.makeMeasureSpec(320, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.EXACTLY))
+        root.layout(0, 0, 320, 100)
+        val bitmap = Bitmap.createBitmap(320, 100, Bitmap.Config.ARGB_8888)
+        root.draw(Canvas(bitmap))
+        val expected = widgetLessonBackground(scheme, androidx.compose.ui.graphics.Color.Red, true, true, true).toArgb()
+        assertEquals(expected, bitmap.getPixel(220, 90))
+        assertNotEquals(android.graphics.Color.RED, bitmap.getPixel(220, 90))
     }
 
     @Test fun persistentSettingsSurviveRerenderAndCompletionHidesTimer() {

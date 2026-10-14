@@ -65,7 +65,7 @@ class WidgetConfigureActivity : ComponentActivity() {
                 setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
             }
             SideEffect { saveForExit = saveConfiguration }
-            val previewAppearance = collection?.let { c -> c.timetables.firstOrNull { it.id == table }?.timetable?.appearance ?: c.active.appearance } ?: Appearance()
+            val previewAppearance = collection?.let { c -> if (table.isBlank()) c.active.appearance else c.timetables.firstOrNull { it.id == table }?.timetable?.appearance ?: Appearance() } ?: Appearance()
             TempoTheme(if (theme.isBlank()) previewAppearance else Appearance(preset = ThemePreset.valueOf(theme), mode = mode)) {
                 val view = LocalView.current
                 val lightBars = MaterialTheme.colorScheme.background.luminance() > .5f
