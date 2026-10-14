@@ -1,0 +1,1 @@
+<TextView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" android:text="Experimental Remote Compose probe requires Android 16+ and a compatible host. See the lab for test results." android:textColor="#FF172116" android:background="#FFDAECCF" />
