@@ -1,6 +1,12 @@
 # Widget 2.0 — Adaptive, canonical Material 3 Expressive widgets
 
-Status: **implementation begun / feasibility-first**, proposed for **0.6** (not a blocker for Feel & Flow or 1.0). See [first-pass results and remaining work](WIDGET_2_0_IMPLEMENTATION.md). Last researched: **14 October 2026**. This is a planning document, not a claim that Remote Compose is already shipping in Tempo.
+Status: **implementation begun / feasibility-first**, proposed for **0.6** (not a blocker for Feel & Flow or 1.0). See [the canonical composition and configuration rewrite](WIDGET_2_0_REDESIGN.md) and the [historical first pass](WIDGET_2_0_IMPLEMENTATION.md). Last researched: **14 October 2026**. This is a planning document, not a claim that Remote Compose is already shipping in Tempo.
+
+Implementation decision, 14 October 2026: the owner subsequently approved the
+SDK/AGP upgrade required for latest Glance alpha adoption. The feature branch now
+uses compile SDK 37.0 / AGP 9.2.1 / Glance 1.3.0-alpha02. The original SDK36
+constraint below records the starting baseline; min SDK26 and target36 remain.
+Adaptive / Remote Compose host acceptance gates still apply.
 
 ## Why
 

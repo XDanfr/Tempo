@@ -66,37 +66,58 @@ preview on receipt and a way for the publisher to remove a shared snapshot.
 
 Comparison splits all resolved schedules on their combined boundaries and retains every occupied block. An interval is shared free time only when every timetable has a calculated Free block there; outside-day time is not implicitly available.
 
-Home-screen widgets use RemoteViews and the native Chronometer countdown instead of per-second app work. Three compatibility providers request initial 2×1, 2×2 and 4×2 launcher footprints and allow horizontal/vertical resizing. Actual dp size lists (Android 12+) or portrait/landscape options determine presentation; cell counts are only picker hints. Each uses its own initial/preview layout. Reconfiguration uses the launcher’s hold-to-configure action; the layouts have no menu button. A compact layout serves the pill; larger widgets expose more detail. Per-widget preferences are independent of portable timetable snapshots. Fixed timetable IDs never fall back to another timetable when deleted: the widget asks to be configured again.
+Home-screen widgets are authored in Glance 1.3.0-alpha02 and translated to RemoteViews.
+One Adaptive Tempo picker entry and the three retained compatibility receivers use
+the same snapshot renderer. The legacy provider identities and per-ID preference
+keys stay installed; no conversion of placed widgets or preferences is required.
+Reported dp sizes and font scale select distinct compact, visual square, wide
+hero/next-event and expanded static agenda compositions. A Glance composition
+snapshot runs per reported size, then Android 12+ size maps or pre-12 orientation
+pairs handle host selection. Only the native Chronometer uses XML interop; all
+layout, text, image and progress placement is authored in Glance. Actions use
+explicit activity intents rather than session-bound lambda callbacks.
 
-A WorkManager refresh reads the same DataStore collection and shared resolver. Edits and active selection changes trigger refreshes while the app is visible. Reboot, clock changes and package replacement restore refresh work; a 15-minute periodic job provides recovery. Inexact boundary alarms change displayed activities without requesting exact-alarm access. Android may delay these updates. Countdown bases use monotonic time; dated starts use the device’s current zone.
+A WorkManager refresh reads the same DataStore collection and shared resolver.
+Edits and active selection changes trigger refreshes while the app is visible.
+Reboot, clock changes and package replacement restore refresh work; a 15-minute
+periodic job provides recovery. Inexact boundary alarms change displayed activities
+without exact-alarm access. Android may delay these updates. Countdown bases use
+monotonic time; no per-second application work or bitmap countdown text is used.
+Per-widget settings are independent of portable snapshots; deleted fixed tables
+ask for reconfiguration rather than silently switching to the active timetable.
 
 The updater uses stable GitHub releases only. Metadata carries a format version, version name/code, APK filename and SHA-256. Downloads are confined to official tagged release assets. Before opening the installer, Tempo checks the checksum, package ID, increasing version code and exact signing-certificate set. It does not silently install, access repository secrets, or send timetable contents. Signing-key rotation would require explicit lineage support in a later version. Automatic work uses an unmetered network; APK downloads use DownloadManager. Installation is through a narrow FileProvider URI and Android’s per-app installation permission.
 
 
 Comparison is opened from the timetable manager as a full-screen view. Side-by-side columns share one vertical time axis and horizontal scroll position; overlapping occupied blocks use stable greedy interval lanes. Together mode lists each timetable’s activities with subject colours/icons and owner labels alongside shared gaps.
 
-Widgets use a week-bounded overview: Sunday is the last day of the current weekly template, and Monday restores upcoming activities. After the final lesson, the widget shows All done instead of pulling in next week. A timetable with no lessons retains its custom empty text. The general app overview still looks ahead across week boundaries. RemoteViews contain coloured activity surfaces, vector icons rasterised from the app’s icon catalogue and native drawable fills/outlines with fixed dp radii, native countdowns, and a wide layout with a day agenda alongside the current/next activity. `widgetDayPlan` anchors this agenda to the hero’s date, includes live overlaps and breaks before the last lesson, excludes completed activities and free gaps, and supplies the remaining lesson count and finish time. The available height/font scale determines whether one or two larger agenda rows fit, with an overflow count on the last row. Completed/empty weeks and single-period days use the single-surface layout, so the root fill occupies the full widget without a nested frame. The agenda has no day heading or synthetic Last period card. Per-widget icon visibility can inherit the timetable; lesson cards use exact subject fills regardless of timetable block style.
+Widgets retain the week-bounded `weekOverview`, `widgetDayComplete` and
+`widgetDayPlan` semantics. `WidgetPresentation` resolves schedule state, targets,
+boundaries, progress, locations and ordered later activities before rendering.
+`WidgetSizing` and `WidgetLayoutPlan` own the content budgets, independently of
+provider identity or launcher column count. The agenda stays on the hero's date,
+includes overlapping lessons/breaks, and has no scrolling or invented free periods.
 
-The pill and square default to a brighter tint of the selected theme’s primary fixed colour; its independent lesson-background preference is persisted alongside the existing theme, icon and block-style overrides. No timetable-name banner consumes widget space.
+Rectangular geometry uses shared Material 28dp outer and 4dp inner tokens. Horizontal
+pairs mirror under RTL; vertical agendas have matching ends and identical middle
+segments. The square's timer uses the pinned Material3 `Cookie9Sided` silhouette,
+rasterised at its actual square size; text and countdown remain native accessible
+views. Subject colours, theme shades, Material You, presets, location/icon
+inheritance and outlines are retained. Progress is a boundary-refresh snapshot,
+not a per-second animation. All configuration sizes preview the actual Glance
+renderer. One settings screen applies to every current and future size.
 
-`widgetDayComplete` is distinct from weekly completion: it requires a next lesson on a later date within this week and no unfinished lessons today. Square widgets can choose a message-only end-of-day state. `tempo_widget_done_today` centres completion above a subject-coloured next-lesson card; `tempo_widget_done_today_wide` puts the completion heading/badge on the left and next lesson/icon/countdown on the right; the future-day agenda is hidden during this completion state. Weekly All done overrides both. Widget outline visibility is independent of filled/outlined block style. Text/icon foregrounds are selected for contrast against the actual fill.
+The opt-in `experiments/remote-compose` APK contains Remote Compose alpha21's
+embedded player, a Glance alpha02 / Adaptive alpha03 registry probe and a separate
+experimental launcher placement. Adaptive registry and backend override APIs are
+library-group restricted; those suppressions remain isolated to the lab. No
+production library restriction is suppressed. Glance's Remote Compose translator
+does not translate `AndroidRemoteViews` / native Chronometer, so the production
+composition intentionally uses the RemoteViews backend. A draw-instruction
+constructor in SDK 37 is evidence of an API path, not verified launcher support.
 
-Pill/square background selection is independent of timetable block style: selecting Lesson colour always uses the subject fill. Their outline switch controls the border; the wide layout independently supports subject fills or darker theme shades and a border switch. Borders use the same primary role and 2dp width as the preview. In wide completion states, the theme-matching completion content/root has no outline; the next-lesson panel still honours the border switch.
-
-Square/wide primary content is centred, with a native expressive badge and a room pill. Secondary period titles use 18sp and details 13sp, with at most two rows (one in shorter cells). Layout thresholds account for system font scale. All three widget sizes use the established pill theme palette, with .70 dark/.82 light primary-fixed tint. Lesson fills use the app’s exact subject colour in both modes unless a wide widget selects themedLessons; its current/upcoming fills are separate darker theme shades. Single-lesson wide widgets also have an inset lesson panel. Completion badges use the widget theme’s primary-fixed roles, independent of the next lesson. `tempo_widget_pill_done` centres an expressive badge beside a larger All done title. Normal pill geometry is retained. The pill can opt into a message-only Done for today state through doneForDayMessage; weekly All done always overrides it. The horizontal completion badge uses center_vertical layout gravity to align with the title. Weekly completion titles are 28–36sp on square/wide and 22sp on the pill. Background, border, wide lesson colours and daily-completion choices use selectable preview cards; timetable/theme/icon selectors keep multi-option dropdowns.
-
-## Widget 2.0 first pass
-
-`WidgetPresentation` now derives one week-bounded snapshot per widget update,
-including target/boundary instants, progress, location privacy and the existing day
-plan. All installed providers choose a composition from actual dp bounds and font
-scale. Compact sizes use `CompactWidgetRenderer` with a labelled native
-Chronometer and shared 28dp/4dp mirrored shape rules. Larger sizes temporarily use
-the layouts described above; their replacement is the next design pass.
-Configuration inflates the production compact XML for its schedule preview.
-
-The opt-in `experiments/remote-compose` APK is excluded from normal builds. It
-uses alpha21 document creation and a restricted embedded View player, with no
-production dependency or launcher integration. The production rendering decision,
-local raster evidence, migration constraints and device gates are recorded in
-[Widget 2.0 implementation](WIDGET_2_0_IMPLEMENTATION.md).
+Following explicit approval to prioritise the latest Glance alpha, the branch uses
+compile SDK 37.0, AGP 9.2.1, Gradle 9.4.1 and AGP's built-in Kotlin support (the
+existing Kotlin 2.2.21 compiler plugins remain). Target SDK 36, min SDK 26, package
+names and signing configuration are unchanged. See [redesign results](WIDGET_2_0_REDESIGN.md)
+and the historical [first-pass log](WIDGET_2_0_IMPLEMENTATION.md).
