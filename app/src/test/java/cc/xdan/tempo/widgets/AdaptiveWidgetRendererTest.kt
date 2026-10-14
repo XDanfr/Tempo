@@ -33,7 +33,7 @@ import java.time.ZonedDateTime
 class AdaptiveWidgetRendererTest {
     private val now = ZonedDateTime.parse("2026-10-12T10:15:00Z")
     private val table = Timetable(onboarded = true, subjects = listOf(
-        Subject("physics", "Physics", colour = 0xFFE5E9A8, location = "Private room"),
+        Subject("physics", "Physics", icon = SubjectIcon.PHYSICS, colour = 0xFFE5E9A8, location = "Private room"),
         Subject("art", "Art & Design", colour = 0xFFF2C4B2)), sessions = listOf(
         Session("a", "physics", 1, TimeSpan(600, 660)), Session("b", "art", 1, TimeSpan(675, 735)),
         Session("c", "physics", 1, TimeSpan(750, 810)), Session("d", "art", 2, TimeSpan(600, 660))))
@@ -67,6 +67,44 @@ class AdaptiveWidgetRendererTest {
             val file = File("build/reports/widget-redesign/${android.os.Build.VERSION.SDK_INT}-current-$w-$h.png")
             file.parentFile!!.mkdirs()
             file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+    }
+
+    @Test fun responsiveStatesStayReadableWithLargeFontsAndLongSubjectNames() = runBlocking {
+        val settings = WidgetSettings(showLocation = false, showOutline = false, doneForDayMessage = true)
+        val long = table.copy(subjects = table.subjects.map { if (it.id == "physics") it.copy(name = "Computer Science & Engineering") else it },
+            breaks = listOf(ScheduledBreak("pause", "Short break", listOf(1), TimeSpan(660, 675))))
+        val cases = listOf("upcoming" to now.withHour(9), "break" to now.withHour(11).withMinute(5),
+            "done" to now.withHour(18), "week-done" to now.plusDays(5))
+        for ((state, time) in cases) for ((w, h) in listOf(140 to 56, 200 to 220, 360 to 190, 360 to 350)) {
+            val context = RuntimeEnvironment.getApplication().createConfigurationContext(Configuration().apply { densityDpi = 160; fontScale = 1.5f })
+            val p = widgetPresentation(long, settings, time)
+            val root = adaptiveWidgetViews(context, p, WidgetSizing(w.toFloat(), h.toFloat(), 1.5f), settings,
+                presetColorScheme(ThemePreset.ROSE, true), true, true, time.toInstant().toEpochMilli(), preview = true)
+                .apply(context, FrameLayout(context))
+            val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+            activity.setContentView(root)
+            root.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+            root.layout(0, 0, w, h)
+            val views = children(root)
+            assertTrue(views.filterIsInstance<TextView>().any { it.text.toString() == p.title })
+            val timer = views.filterIsInstance<Chronometer>().singleOrNull()
+            if (state in listOf("upcoming", "break")) {
+                assertNotNull(timer)
+                assertTrue(timer!!.text.isNotBlank())
+                assertEquals(0, timer.layout.getEllipsisCount(0))
+                val position = IntArray(2); val origin = IntArray(2)
+                timer.getLocationInWindow(position); root.getLocationInWindow(origin)
+                val bounds = android.graphics.Rect(position[0] - origin[0], position[1] - origin[1],
+                    position[0] - origin[0] + timer.width, position[1] - origin[1] + timer.height)
+                assertTrue("$state $w × $h timer outside $bounds", bounds.top >= 0 && bounds.bottom <= h && bounds.left >= 0 && bounds.right <= w)
+            } else assertNull(timer)
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            root.draw(Canvas(bitmap))
+            val file = File("build/reports/widget-redesign/${android.os.Build.VERSION.SDK_INT}-$state-$w-$h-large.png")
+            file.parentFile!!.mkdirs()
+            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            activity.finish()
         }
     }
 

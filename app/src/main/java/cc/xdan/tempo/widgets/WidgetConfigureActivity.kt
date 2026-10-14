@@ -129,6 +129,11 @@ class WidgetConfigureActivity : ComponentActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        saveForExit?.invoke()
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onUserLeaveHint() { saveForExit?.invoke(); finish(); super.onUserLeaveHint() }
 }
 
