@@ -7,66 +7,61 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.graphics.luminance
-import androidx.core.view.WindowCompat
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import cc.xdan.tempo.data.TimetableRepository
 import cc.xdan.tempo.design.TempoTheme
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.ui.PillChoiceField
+import kotlinx.coroutines.delay
 
+/** One configuration contract for every adaptive size and all compatibility providers. */
 class WidgetConfigureActivity : ComponentActivity() {
     private var saveForExit: (() -> Unit)? = null
 
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setResult(RESULT_CANCELED)
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                saveForExit?.invoke()
-                finish()
-            }
-        })
         val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
         if (id == AppWidgetManager.INVALID_APPWIDGET_ID) { finish(); return }
-        val provider = AppWidgetManager.getInstance(this).getAppWidgetInfo(id)?.provider?.className
-        val pill = provider == PillWidget::class.java.name
-        val square = provider == SquareWidget::class.java.name
         enableEdgeToEdge()
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() { saveForExit?.invoke(); finish() }
+        })
         setContent {
             val repository = remember { TimetableRepository(applicationContext) }
             val collection by repository.collection.collectAsState(initial = null)
-            val initial = remember { WidgetSettings.read(applicationContext, id) }
-            var table by rememberSaveable { mutableStateOf(initial.timetableId ?: "") }
-            var theme by rememberSaveable { mutableStateOf(initial.preset?.name ?: "") }
-            var mode by rememberSaveable { mutableStateOf(initial.mode) }
-            var location by rememberSaveable { mutableStateOf(if (initial.followLocations) "Follow timetable" else if (initial.showLocation) "Show" else "Hide") }
-            var icons by rememberSaveable { mutableStateOf(if (initial.showIcons == null) "Follow timetable" else if (initial.showIcons == true) "Show icons" else "Hide icons") }
-            var lessonBackground by rememberSaveable { mutableStateOf(initial.lessonBackground) }
-            var themedLessons by rememberSaveable { mutableStateOf(initial.themedLessons) }
-            var showOutline by rememberSaveable { mutableStateOf(initial.showOutline) }
-            var outerOutline by rememberSaveable { mutableStateOf(initial.outerOutline) }
-            var doneForDay by rememberSaveable { mutableStateOf(initial.doneForDayMessage) }
-            var empty by rememberSaveable { mutableStateOf(initial.emptyText) }
-            val configuredSettings = WidgetSettings(table.ifBlank { null }, theme.takeIf { it.isNotBlank() }?.let(ThemePreset::valueOf), mode, location != "Hide", empty.ifBlank { "Nothing scheduled this week" },
-                    when (icons) { "Show icons" -> true; "Hide icons" -> false; else -> null },
-                    initial.outlined, lessonBackground, showOutline, doneForDay, themedLessons, outerOutline, followLocations = location == "Follow timetable")
-            val saveConfiguration = {
-                configuredSettings.save(applicationContext, id)
-                WidgetRefresh.start(applicationContext)
-                setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
+            var settings by remember { mutableStateOf(WidgetSettings.read(applicationContext, id)) }
+            val selected = collection?.let { c ->
+                if (settings.timetableId == null) c.active else c.timetables.firstOrNull { it.id == settings.timetableId }?.timetable
             }
-            SideEffect { saveForExit = saveConfiguration }
-            val previewAppearance = collection?.let { c -> if (table.isBlank()) c.active.appearance else c.timetables.firstOrNull { it.id == table }?.timetable?.appearance ?: Appearance() } ?: Appearance()
-            TempoTheme(if (theme.isBlank()) previewAppearance else Appearance(preset = ThemePreset.valueOf(theme), mode = mode)) {
+            val appearance = selected?.appearance ?: Appearance()
+            val valid = collection != null && (settings.timetableId == null || selected != null)
+            val save = {
+                if (valid) {
+                    settings.save(applicationContext, id)
+                    WidgetRefresh.start(applicationContext)
+                    setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
+                }
+            }
+            SideEffect { saveForExit = save }
+            // Retain immediate application and Home/back persistence from the existing configuration.
+            LaunchedEffect(settings, valid) { if (valid) { delay(250); save() } }
+            TempoTheme(if (settings.preset == null) appearance else Appearance(preset = settings.preset!!, mode = settings.mode)) {
                 val view = LocalView.current
                 val lightBars = MaterialTheme.colorScheme.background.luminance() > .5f
                 SideEffect {
@@ -75,47 +70,85 @@ class WidgetConfigureActivity : ComponentActivity() {
                         isAppearanceLightNavigationBars = lightBars
                     }
                 }
-                Surface(Modifier.fillMaxSize()) {
-                    Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text("Your Tempo widget", style = MaterialTheme.typography.headlineMedium)
-                        Text("Now or next, with a live countdown.")
-                        val selectedTimetable = collection?.let { c ->
-                            if (table.isBlank()) c.active else c.timetables.firstOrNull { it.id == table }?.timetable
+                Scaffold(
+                    topBar = {
+                        TopAppBar(title = { Text("Your Tempo widget") }, navigationIcon = {
+                            IconButton(onClick = { save(); finish() }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Save and close") }
+                        })
+                    },
+                    bottomBar = {
+                        Surface(tonalElevation = 3.dp) {
+                            Button(onClick = { save(); finish() }, enabled = valid,
+                                modifier = Modifier.navigationBarsPadding().fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp).heightIn(min = 52.dp)) {
+                                Text("Done")
+                            }
                         }
-                        CompactWidgetPreview(selectedTimetable, configuredSettings)
-                        collection?.let { c ->
-                            PillChoiceField("Timetable", table, listOf("") + c.timetables.map { it.id },
-                                { key -> c.timetables.firstOrNull { it.id == key }?.timetable?.name ?: if (key.isBlank()) "Follow current timetable" else "Removed timetable" }, { table = it })
+                    }
+                ) { padding ->
+                    Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("A little more you.", style = MaterialTheme.typography.headlineLarge)
+                            Text("One widget. More of your day as it grows.", style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        WidgetThemeControl(theme.takeIf { it.isNotBlank() }?.let(ThemePreset::valueOf), mode, previewAppearance) { preset, chosenMode ->
-                            theme = preset?.name ?: ""
-                            mode = chosenMode
+                        AdaptiveWidgetPreview(selected, settings)
+                        SettingsSection("Your timetable", "Follow your selection in Tempo, or keep this widget on one timetable.") {
+                            collection?.let { c ->
+                                PillChoiceField("Timetable", settings.timetableId ?: "", listOf("") + c.timetables.map { it.id },
+                                    { key -> c.timetables.firstOrNull { it.id == key }?.timetable?.name ?: if (key.isBlank()) "Follow current timetable" else "Removed timetable" },
+                                    { settings = settings.copy(timetableId = it.ifBlank { null }) })
+                            } ?: Text("Loading timetables…")
+                            if (collection != null && !valid) Text("This timetable was removed. Choose another to continue.", color = MaterialTheme.colorScheme.error)
                         }
-                        if (pill || square) WidgetOptionCards("Background", lessonBackground, "Theme colour", "Lesson colour", WidgetPreview.THEME, WidgetPreview.LESSON, pill) { lessonBackground = it }
-                        PillChoiceField("Icons", icons, listOf("Follow timetable", "Show icons", "Hide icons"), { it }, { icons = it })
-                        PillChoiceField("Show locations", location, listOf("Follow timetable", "Show", "Hide"), { it }, { location = it })
-                        WidgetOptionCards(if (!pill && !square) "Subject outlines" else "Crisp outlines", showOutline, "Filled", "Outlined", WidgetPreview.NO_OUTLINE, WidgetPreview.OUTLINE, pill, wide = !pill && !square, themedLessons = themedLessons) { showOutline = it }
-                        if (!pill && !square) Row { Text("Outer outline", Modifier.weight(1f)); Switch(outerOutline, { outerOutline = it }) }
-                        if (!pill && !square) WidgetOptionCards("Lesson colours", themedLessons, "Subject colours", "Theme shades", WidgetPreview.LESSON, WidgetPreview.THEME_LESSONS, false, wide = true) { themedLessons = it }
-                        if (pill) WidgetOptionCards("After today’s lessons", doneForDay, "Next lesson", "Done for today", WidgetPreview.NEXT, WidgetPreview.DONE, true) { doneForDay = it }
-                        if (square) WidgetOptionCards("After today’s lessons", doneForDay, "Done + next lesson", "Done message only", WidgetPreview.NEXT, WidgetPreview.DONE, false) { doneForDay = it }
-                        OutlinedTextField(empty, { empty = it.take(120) }, label = { Text("When nothing is scheduled") }, modifier = Modifier.fillMaxWidth())
-                        Text("Touch and hold the widget on your home screen to change these settings. Drag its edges to resize. More space reveals later periods and your day’s finish time when there is room.", style = MaterialTheme.typography.bodySmall)
-                        Text("Countdowns tick on your home screen. Android may delay changing activities in battery-saving modes.", style = MaterialTheme.typography.bodySmall)
-                        Button(onClick = {
-                            saveConfiguration()
-                            finish()
-                        }, enabled = collection != null && (table.isBlank() || collection!!.timetables.any { it.id == table }), modifier = Modifier.fillMaxWidth()) { Text("Save widget") }
-                        TextButton(onClick = { finish() }) { Text("Cancel") }
+                        SettingsSection("Colour & shape", "Material colour, expressive shapes and one clear countdown.") {
+                            WidgetThemeControl(settings.preset, settings.mode, appearance) { preset, mode -> settings = settings.copy(preset = preset, mode = mode) }
+                            SettingToggle("Subject-colour hero", "Use the subject colour for the main event surface", settings.lessonBackground) { settings = settings.copy(lessonBackground = it) }
+                            SettingToggle("Theme shades", "Use your theme in place of subject colours", settings.themedLessons) { settings = settings.copy(themedLessons = it) }
+                            SettingToggle("Segment outlines", "Outline the connected event and countdown shapes", settings.showOutline) { settings = settings.copy(showOutline = it) }
+                            SettingToggle("Outer outline", "Outline the full square, wide or agenda surface", settings.outerOutline) { settings = settings.copy(outerOutline = it) }
+                        }
+                        SettingsSection("At a glance", "Choose the details that belong on your home screen.") {
+                            PillChoiceField("Subject icons", settings.showIcons, listOf(null, true, false),
+                                { when (it) { null -> "Follow timetable"; true -> "Show"; false -> "Hide" } },
+                                { settings = settings.copy(showIcons = it) })
+                            val location = if (settings.followLocations) 0 else if (settings.showLocation) 1 else 2
+                            PillChoiceField("Locations", location, listOf(0, 1, 2),
+                                { when (it) { 0 -> "Follow timetable"; 1 -> "Show"; else -> "Hide" } },
+                                { settings = settings.copy(followLocations = it == 0, showLocation = it != 2) })
+                            SettingToggle("Pause at the end of the day", "Show Done for today instead of counting down to the next day", settings.doneForDayMessage) { settings = settings.copy(doneForDayMessage = it) }
+                            OutlinedTextField(settings.emptyText, { settings = settings.copy(emptyText = it.take(120)) },
+                                label = { Text("Empty week message") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+                        }
+                        Text("Touch and hold your widget to return here. Android may delay changing activities in battery-saving modes.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(8.dp))
                     }
                 }
             }
         }
     }
 
-    override fun onUserLeaveHint() {
-        saveForExit?.invoke()
-        finish()
-        super.onUserLeaveHint()
+    override fun onUserLeaveHint() { saveForExit?.invoke(); finish(); super.onUserLeaveHint() }
+}
+
+@Composable
+private fun SettingsSection(title: String, description: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(title, style = MaterialTheme.typography.titleLarge)
+        Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(28.dp)).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
+    }
+}
+
+@Composable
+private fun SettingToggle(title: String, description: String, checked: Boolean, change: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked, change)
     }
 }

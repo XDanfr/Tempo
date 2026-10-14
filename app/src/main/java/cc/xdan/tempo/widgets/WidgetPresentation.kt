@@ -47,11 +47,11 @@ internal fun widgetPresentation(timetable: Timetable?, settings: WidgetSettings,
         WidgetState.SETUP -> "Finish setup"
         WidgetState.WEEK_DONE -> "All done"
         WidgetState.DONE_TODAY -> "Done for today"
-        WidgetState.EMPTY -> settings.emptyText
+        WidgetState.EMPTY -> settings.emptyText.ifBlank { "Nothing scheduled this week" }
         else -> when (block) {
             is ScheduleBlock.Lesson -> block.subject.name
             is ScheduleBlock.Break -> block.scheduled.name
-            else -> settings.emptyText
+            else -> settings.emptyText.ifBlank { "Nothing scheduled this week" }
         }
     }
     val elapsed = block?.let { local.hour * 60 + local.minute + local.second / 60f - it.time.start }

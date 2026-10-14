@@ -17,24 +17,8 @@ internal data class WidgetSizing(val widthDp: Float, val heightDp: Float, val fo
         width >= 280 -> WidgetComposition.WIDE
         else -> WidgetComposition.SQUARE
     }
-    val compactSplit get() = width >= 240 && height >= 64
-    val compactIcon get() = width >= 200 && height >= 64
-    val compactTitleSp get() = if (height < 48) 12f else if (height < 64) 14f else 18f
-    val compactTimerSp get() = if (height < 48) 14f else if (height < 64 || width < 160) 18f else 24f
     val stacked = width < 280
-    val showAgenda = if (stacked) height >= 300 else height >= 150
-    val agendaRows = if (height >= (if (stacked) 420 else 230)) 2 else 1
 
-    fun textSize(requested: Float, pill: Boolean, split: Boolean): Float {
-        val available = if (split) (width - 24) / 2 else width - 24
-        val cap = when {
-            pill -> if (width < 180) 14f else 18f
-            available < 130 || height < 150 -> 16f
-            available < 190 || height < 220 -> 20f
-            else -> 28f
-        }
-        return requested.coerceAtMost(cap)
-    }
 }
 
 internal fun widgetSizes(options: Bundle, pill: Boolean): List<SizeF> {

@@ -27,7 +27,7 @@ data class WidgetSettings(val timetableId: String? = null, val preset: ThemePres
         context.getSharedPreferences("widgets", Context.MODE_PRIVATE).edit()
             .putString("$id.table", timetableId).putString("$id.theme", preset?.name).putString("$id.mode", mode.name)
             .putBoolean("$id.followLocations", followLocations).putBoolean("$id.outerOutline", outerOutline).putBoolean("$id.themedLessons", themedLessons).putBoolean("$id.outline", showOutline).putBoolean("$id.doneForDay", doneForDayMessage)
-            .putBoolean("$id.lessonBackground", lessonBackground).putBoolean("$id.location", showLocation).putString("$id.empty", emptyText.trim().take(120)).apply {
+            .putBoolean("$id.lessonBackground", lessonBackground).putBoolean("$id.location", showLocation).putString("$id.empty", emptyText.trim().take(120).ifBlank { "Nothing scheduled this week" }).apply {
                 if (showIcons == null) remove("$id.icons") else putBoolean("$id.icons", showIcons)
                 if (outlined == null) remove("$id.outlined") else putBoolean("$id.outlined", outlined)
             }.apply()

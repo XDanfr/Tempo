@@ -61,6 +61,12 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
     implementation(platform(libs.compose.bom))
+    // The latest alpha can be evaluated without upgrading the production toolchain.
+    val glanceVersion = if (providers.gradleProperty("tempoGlanceNext").orNull == "true") "1.3.0-alpha02" else "1.2.0"
+    implementation("androidx.glance:glance-appwidget:$glanceVersion")
+    if (providers.gradleProperty("tempoGlanceNext").orNull == "true") {
+        implementation("androidx.glance.adaptive:adaptive-appwidget:1.0.0-alpha03")
+    }
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.compose.icons)

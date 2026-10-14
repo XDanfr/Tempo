@@ -1,0 +1,11 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal">
+ <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/widget_compact_start" android:gravity="center_vertical" android:orientation="vertical" android:padding="12dp" android:backgroundTint="#FFD7E8CD">
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Now" android:textSize="11sp" android:textColor="#FF172116" />
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Physics" android:textSize="20sp" android:fontFamily="@font/outfit_semibold" android:textColor="#FF172116" />
+ </LinearLayout>
+ <Space android:layout_width="4dp" android:layout_height="1dp" />
+ <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="@drawable/widget_compact_end" android:gravity="center" android:orientation="vertical" android:padding="12dp" android:backgroundTint="#FFE3E8A6">
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="24:00" android:textSize="28sp" android:fontFamily="@font/outfit_semibold" android:textColor="#FF172116" />
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Time left" android:textSize="11sp" android:textColor="#FF172116" />
+ </LinearLayout>
+</LinearLayout>
