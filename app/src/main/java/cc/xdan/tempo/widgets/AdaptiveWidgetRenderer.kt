@@ -97,9 +97,7 @@ private class AdaptiveWidgetSnapshot(
 
     @Composable private fun Timer(context: Context, ink: Color, width: Float, height: Float, sp: Float) {
         if (!ticking) return
-        val views = if (p.current) nativeWidgetCountdown(context, p.targetEpochMillis!!, now, ink,
-            width * unit, height * unit, sp)
-        else fittedWidgetText(context, R.layout.widget_duration, R.id.widget_duration,
+        val views = fittedWidgetText(context, R.layout.widget_duration, R.id.widget_duration,
             widgetDuration(p.targetEpochMillis!!, now), ink, width * unit, height * unit, sp)
         AndroidRemoteViews(views, GlanceModifier.width((width * unit).dp).height((height * unit).dp))
     }

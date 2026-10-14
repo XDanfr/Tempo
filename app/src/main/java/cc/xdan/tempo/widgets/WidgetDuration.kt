@@ -15,7 +15,7 @@ internal fun widgetDuration(target: Long, now: Long): String {
 /** Use the existing single inexact alarm; Android may defer it in idle/battery saving. */
 internal fun WidgetPresentation.nextRefreshMillis(now: Long): Long? {
     val target = targetEpochMillis
-    val labelChange = if (state == WidgetState.UPCOMING && target != null && target > now) {
+    val labelChange = if (target != null && target > now) {
         val minutes = (target - now + 59_999) / 60_000
         val nextMinutes = if (minutes >= 1440) (minutes / 60) * 60 - 1 else minutes - 1
         target - nextMinutes * 60_000
