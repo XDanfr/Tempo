@@ -15,9 +15,11 @@ class WidgetDurationTest {
     private fun presentation(state: WidgetState, target: Long?) = WidgetPresentation(
         state, null, false, "Tutor", "Starts in", target, target, null, null, null)
 
-    @Test fun onlyUpcomingLabelsRequestMinuteRefreshesAndBoundariesWin() {
+    @Test fun everyTimedStateRequestsMinuteRefreshesAndBoundariesWin() {
         assertEquals(40_000L, presentation(WidgetState.UPCOMING, 100_000).nextRefreshMillis(0))
-        assertEquals(100_000L, presentation(WidgetState.CURRENT, 100_000).nextRefreshMillis(0))
+        for (state in listOf(WidgetState.CURRENT, WidgetState.BREAK, WidgetState.UPCOMING)) {
+            assertEquals(40_000L, presentation(state, 100_000).nextRefreshMillis(0))
+        }
         assertEquals(40_000L, presentation(WidgetState.UPCOMING, 100_000).nextRefreshMillis(40_000 - 1))
         assertEquals(100_000L, presentation(WidgetState.UPCOMING, 100_000).nextRefreshMillis(40_000))
         assertEquals(20_000L, presentation(WidgetState.UPCOMING, 100_000).copy(boundaryEpochMillis = 20_000).nextRefreshMillis(0))
