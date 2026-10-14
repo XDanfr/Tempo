@@ -112,7 +112,7 @@ private class AdaptiveWidgetSnapshot(
             Image(ImageProvider(if (root) R.drawable.widget_outer_surface else fills[side]), null,
                 GlanceModifier.fillMaxSize(), contentScale = ContentScale.FillBounds,
                 colorFilter = ColorFilter.tint(ColorProvider(colour)))
-            if (outline) Image(ImageProvider(borders[side]), null, GlanceModifier.fillMaxSize(),
+            if (outline) Image(ImageProvider(if (root) R.drawable.widget_outer_outline else borders[side]), null, GlanceModifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds, colorFilter = ColorFilter.tint(ColorProvider(scheme.primary)))
             content()
         }
@@ -161,7 +161,12 @@ private class AdaptiveWidgetSnapshot(
         Surface(context, scheme.surfaceContainer, modifier, outline = settings.outerOutline, root = true) {
             Column(GlanceModifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
                 verticalAlignment = Alignment.Vertical.CenterVertically) {
-                Label(status, scheme.primary, 11, true)
+                Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+                    if (icons && size.height >= 185 && p.block?.symbol() != null) {
+                        Icon(scheme.primary, 16); Spacer(GlanceModifier.width(4.dp))
+                    }
+                    Label(status, scheme.primary, 11, true)
+                }
                 Spacer(GlanceModifier.height(4.dp))
                 Label(p.title, ink, if (size.height < 185) 18 else 22, true, if (size.height >= 185) 2 else 1)
                 Spacer(GlanceModifier.height(8.dp))
@@ -172,8 +177,12 @@ private class AdaptiveWidgetSnapshot(
                             null, GlanceModifier.fillMaxSize())
                         Column(horizontalAlignment = Alignment.Horizontal.CenterHorizontally) {
                             Timer(context, widgetForeground(timerColour), badge * .76f, badge * .34f, 36f)
-                            Label(p.countdownLabel, widgetForeground(timerColour), 11)
+                            if (badge >= 88) Label(p.countdownLabel, widgetForeground(timerColour), 11)
                         }
+                    }
+                    if (badge < 88) {
+                        Spacer(GlanceModifier.height(4.dp))
+                        Label(p.countdownLabel, ink, 11)
                     }
                     if (plan.squareContext) {
                         Spacer(GlanceModifier.height(8.dp))
