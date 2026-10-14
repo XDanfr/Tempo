@@ -53,10 +53,11 @@ Pointers: app/src/main/java/cc/xdan/tempo/widgets/TempoWidgetProvider.kt, Widget
 
 - **RemoteViews/XML today:** production-compatible baseline, already works in Tempo. Supports layered views, shape/VectorDrawables, drawable tinting, varying text size, touch actions and native ticking Chronometer.
 - **Glance 1.2.0 stable / 1.3.0-alpha02:** a Compose-style widget authoring API with RemoteViews interoperability; it does **not** mean arbitrary Compose UI runs in a home-screen launcher. The 1.3 line has Remote Compose-related changes, but upgrading Glance does not automatically give every launcher new rendering features.
-- **Remote Compose 1.0.0-alpha21 (7 October 2026):** remote UI document creation and rendering with growing path, layout, text, colour, state and animation APIs. Public library APIs do not by themselves establish a usable launcher-host pipeline on all phones.
+- **Remote Compose 1.0.0-alpha21 (7 October 2026):** remote UI document creation and rendering with growing path, layout, text, colour, state and animation APIs, including public `RemoteEnterTransition.Particle`/`RemoteExitTransition.Particle` and `RemoteModifier.animateEnterExit`. The Particle transition is documented as an **element entrance/exit effect**, not as a configurable falling-confetti emitter; prototype the intended appearance instead of promising it. Public library APIs do not by themselves establish a usable launcher-host pipeline on all phones.
 - **Glance Adaptive 1.0.0-alpha03 (23 September 2026):** Google describes it as template-first Remote Compose widgets for multiple surfaces; its release notes explicitly state that further public APIs are still to come. Do not assume it is production-ready for generic Android home screens.
 - Check device/host renderer support empirically. Android version alone does **not** prove support; test the exact supported integration and fallback. A self-hosted RemoteComposeView demonstration inside Tempo is useful for shape tests but **does not count** as proof of a working launcher widget.
-- Keep alpha dependencies isolated to a prototype branch or module. Check SDK/toolchain compatibility and build implications first (Glance 1.3 alpha notes mention compile SDK 37 / AGP 9.2 requirements). Do not destabilise app builds merely to try the renderer.
+- **Snap scrolling has a narrower verified availability than Remote Compose generally.** Google's Glance documentation requires `androidx.glance:glance-appwidget:1.3.0-alpha02+`, **`compileSdk >= 37` and Android 17+ at runtime** for `VerticalScrollMode.SnapScrollMatchHeight`. Use `VerticalScrollMode.Normal` on older OS versions and unsupported hosts. The Google product announcement's broader Android 16+ messaging must not override the specific published API requirements.
+- Keep alpha dependencies isolated to a prototype branch or module. Check SDK/toolchain compatibility and build implications first (Glance 1.3 alpha notes mention compile SDK 37 / AGP 9.2 requirements). Tempo currently compiles with SDK 36, so a snap-scrolling proof of concept needs isolated toolchain validation first. Do not destabilise app builds merely to try the renderer.
 
 Sources (official, revisit when implementing):
 - Remote Compose releases: https://developer.android.com/jetpack/androidx/releases/compose-remote
@@ -65,6 +66,9 @@ Sources (official, revisit when implementing):
 - Responsive RemoteViews and size options: https://developer.android.com/develop/ui/views/appwidgets/layouts
 - Glance/RemoteViews interoperability: https://developer.android.com/develop/ui/compose/glance/interoperability
 - Launcher radius and backgrounds: https://developer.android.com/develop/ui/compose/glance/create-app-widget
+- Glance snap-scroll requirements, `LazyColumn`, `SizeMode.Exact`, and fallback: https://developer.android.com/develop/ui/compose/glance/build-ui#snap-scrolling
+- Remote Compose particle entry/exit API: https://developer.android.com/reference/kotlin/androidx/compose/remote/creation/compose/modifier/RemoteEnterTransition
+- Remote Compose transition modifiers: https://developer.android.com/reference/kotlin/androidx/compose/remote/creation/compose/modifier/package-summary
 
 ## Design system: strict, intentional geometry
 
@@ -79,7 +83,7 @@ Use documented Material 3 corner-radius sizes as the initial token scale: 4, 8, 
 6. Special silhouettes (official MaterialShapes-style cookies/clovers/flowers) are **independent objects** or meaningful status/countdown badges, not permission to vary an ordinary rectangle's corners arbitrarily.
 7. Accessible reading order, contrast and information hierarchy are more important than making every element a shape.
 
-Implementation options: shared semantic geometry/tokens; XML shape backgrounds for ordinary rectangles; vector paths or pre-rendered raster only for intentionally irregular silhouettes where necessary; Remote Compose path drawing if supported by the proven host integration. Evaluate image scaling/tinting and avoid blurred or stretched vector designs. Prefer named tokens and tested assets over runtime-generated decorative backgrounds.
+Implementation options: **favour Remote Compose's native shapes, paths, clipping and layout expressions for mirrored corners when a real compatible widget renderer is proven**; the library handles the actual geometry/rendering, not the **design rule** (which we must still implement using shared shape tokens and test). Remote Compose does not automatically choose matched radii for neighbouring components. Keep matching XML/VectorDrawable assets and/or pre-rendered fallback for the standard RemoteViews path. Evaluate scaling/tinting and avoid blurred/stretched assets or two independent geometry systems that gradually diverge. Prefer named tokens and tested assets over runtime-generated decoration.
 
 Inspiration, not a component library copied wholesale: https://www.figma.com/community/file/1504472410356443638/material-3-ui-widgets ; Google's expressive toolbar widget sample in https://github.com/android/platform-samples ; contemporary Google widgets and open-source expressive widget implementations. Avoid indiscriminate gradients, extra containers and meaningless icons.
 
@@ -108,6 +112,36 @@ Exploration should create accurate design mock-ups for **all four schedule state
 - Offer **Expressive (default for new configuration)** and **Minimal (optional)** when justified by prototypes. Both use the same geometric rules; do not offer endless style variants or force a redesign onto an existing user's widget without migration review.
 - Actions: tap hero to open the relevant timetable/day; additional tappable regions only where reasonably sized and predictably mapped. Do not expose inert chevrons or fake controls.
 - Widget preview/configuration must reflect actual display style, theme, light/dark mode, countdown typography, outlined/fill options and supported sizes.
+
+## Optional advanced interaction: snap-scrolling information pages
+
+Build **two scrollable experiences for eligible, sufficiently large widget layouts**, not a scrollable control forced into the compact 2×1 hero. A single adaptive widget can expose these as expanded compositions; if an independently selectable "Agenda" or "Week" picker entry proves useful, it should still reuse the same renderer and model rather than a separate timetable engine.
+
+**1. Daily agenda pages (priority):** swipe vertically between full-height, snap-aligned pages: **Now/Next**, **Later today**, and optionally **End of day**. Use one glanceable summary per page rather than one page per tiny lesson. Maintain readable subject colours, durations and scheduled free/break blocks. If no later activities exist, do not manufacture empty pages. Keep the current lesson/next event as the initial page on new placement or after the relevant day changes; prevent unexpected resets while someone is scrolling.
+
+**2. Week / day overview pages (secondary):** for tall or large widgets, each page represents a **real resolved date** (not a hard-coded weekday) with today's timetable, tomorrow's preview and subsequent days if relevant. Make the visible date unmistakable. Holiday ranges, A/B cycles, replacement days, timetable-specific configured days, free periods and weekends must use the existing resolver. Respect Tempo's week-bounded widget behaviour and document whether navigation stops at Sunday. Do not make date swiping imply editing the user's selected timetable/date in the main app.
+
+**API and shape of scrollable items:** Google's public `SnapScrollMatchHeight` is **vertical**, and is specifically designed for `LazyColumn` children matching the **widget container's height**, not snapping an arbitrary variable-height agenda row or a horizontally paged carousel. Prototype whole-container-height pages using `SizeMode.Exact` and `LocalSize.current.height`, as Google's sample recommends. Use the normal Glance `LazyColumn` scroll mode where snap is not supported; if the new dependency/toolchain or launcher pathway is unavailable, provide a simple **non-snapping readable list or visible next/previous actions** that perform real navigation. Do not present inert swipe hints or decorative page dots.
+
+**Gesture and refresh rules:** the launcher owns widget touch dispatch; test scroll-versus-launcher vertical gesture conflicts, nested tap actions, overscroll, scroll persistence after `AppWidget` refresh, resize from snap-enabled to compact, RTL/read order and TalkBack. Supply stable item IDs and visible labels (for example, "Today · Page 1 of 3") so navigation is discoverable. Avoid scrolling everything; full-bleed page snap may be delightful for the two experiences above but is counterproductive for the compact live countdown.
+
+**Acceptance gate:** on at least one real Android 17+ launcher, snap occurs cleanly between appropriately sized pages without ghost taps or cut-off content. On Android 8–16/unsupported hosts, the same schedule information remains readable and navigable via ordinary scrolling or buttons. No update storm, lost current-day context or inaccessible page content.
+
+## Optional micro-celebration: finished scheduled day
+
+A new **scheduled-day-complete state** may trigger a *very small* one-shot flourish, **only if actual Remote Compose host animation is supported and reliable**. Google's Remote Compose API exposes `RemoteEnterTransition.Particle` and `RemoteExitTransition.Particle` (1.0.0-alpha21) for state-layout visibility transitions via `RemoteModifier.animateEnterExit`. These are **not documented as a general-purpose custom-colour falling-confetti particle emitter**, so investigate the actual effect before committing to the desired falling-cookie/clover/diamond appearance.
+
+Design intent: when the last scheduled lesson ends, retain the existing truthful **"Done for today"** state with a calm static icon/title, possibly a few Material expressive shapes falling briefly over otherwise legible content. Use the selected widget theme/subject colour accents and keep animation **short (target under ~1 second), sparse, local to the widget, silent and non-blocking**. Nothing should animate indefinitely or on every app/widget refresh.
+
+- [ ] Prototype `RemoteEnterTransition.Particle` on state change and inspect whether it creates a suitable *falling* celebration or a different entrance/exit visual. If unsuitable, don't claim it delivers custom confetti; investigate a documented host-supported alternative separately.
+- [ ] Gate the effect on **actual rendered state transition**, not a scheduled lesson completion timestamp alone. Android may delay or suppress background widget updates, and Tempo cannot guarantee the widget was visible when the state changed.
+- [ ] Avoid replays on ordinary Chronometer updates, theme changes, app/launcher restarts, rebindings, resize, next-day rollover or scrolling back to a completed page. Aim for at-most-once per **widget ID + resolved local date**, and verify lifecycle behaviour; if reliable single-play cannot be achieved, prefer the static celebration.
+- [ ] Respect system reduced-motion/animation-disabled settings, user expectations and power saver, and provide a simple widget option to disable celebrations where justified. Avoid sudden flashing and keep accessibility text and tap targets steady.
+- [ ] **No celebration of inferred attendance/productivity:** finishing the scheduled day means the clock has passed its last scheduled event; Tempo cannot assert the person attended or completed work. Do not introduce rewards, streaks or noisy completion prompts.
+- [ ] On RemoteViews or older unsupported hosts, render the same **static expressive completion shape** without fake animated-GIF loops, high-frequency redraws or mandatory effects.
+- [ ] Test multiple timetable cycles, changes to the final lesson, empty days, time-zone changes, DST, fast-forward clock, long periods off-screen, TalkBack, font scale and dark/light/Material You.
+
+**Release gate:** snap pages and particles are opt-in enhancement tracks, not release blockers. If the APIs cannot ship safely yet, ship the ground-up canonical redesign and revisit scrolling/celebration support in a later minor release.
 
 ## Architecture and proof-of-concept workstream
 
@@ -140,6 +174,8 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 ### Phase B — Remote Compose feasibility spike (before a renderer migration)
 - [ ] Build a separately gated alpha21 Remote Compose prototype; check SDK/AGP dependencies and do not upgrade production dependencies solely for the experiment.
 - [ ] Prove official host integration and launcher display (not just a RemoteComposeView inside the app) with more than one size, shape, text, colours and taps.
+- [ ] In a separate compileSdk 37/Glance 1.3 alpha experiment, build full-height vertical `LazyColumn` snap pages for a real Android 17+ launcher, with `VerticalScrollMode.Normal` fallback; validate `SizeMode.Exact` and scroll persistence.
+- [ ] Test alpha21 particle *enter/exit* transitions against the intended end-of-day confetti; capture video and decide whether the effect actually resembles falling expressive shapes without unsupported assumptions.
 - [ ] Record API gaps (including live countdown, dynamic colour, preview, accessibility and clocks), compatible Android/launcher versions, screen captures and measured update costs.
 - [ ] Apply the go/no-go gate above and explicitly record **adopt / defer / reject** with evidence and an incremental migration/fallback design.
 
@@ -149,7 +185,7 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 - [ ] Reveal information progressively: event+timer -> visual progress/next -> additional next-up/agenda information. Preserve the hero's clear hierarchy at every size.
 - [ ] Evaluate replacing the three legacy picker entries with a single preferred new entry without removing existing users' placed widgets; document launcher-specific compromises.
 - [ ] Extract testable WidgetPresentation state without duplicating the core resolver.
-- [ ] Produce reusable material shape assets/geometry tokens and mirrored component backgrounds with no arbitrary corner differences.
+- [ ] Use Remote Compose path/shape/clip drawing for mirrored groups wherever the real widget host supports it, backed by a single shared geometry/token contract and equivalent XML/vector fallback; test paired and 3+-member groups across themes.
 - [ ] Rebuild compact, square and wide compositions around large labelled timers, semantic icons and clear secondary information; expanded sizes can reveal a short timeline.
 - [ ] Implement dp/font-scale responsive buckets and resize transitions; preserve native Chronometer if the chosen host rendering cannot match its efficient behaviour.
 - [ ] Ensure actual system widget clipping, gutters, tinting and outline widths are correct across supported OS versions.
@@ -160,7 +196,7 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 - [ ] Keep existing placements, per-widget preferences, theme/outline options, screenshots and configure/preview flows working; safely migrate any newly introduced style choice.
 - [ ] Keep time-zone, date/time, reboot, app update, holiday, A/B cycle, replacement day, overlap, break and week-completion behaviour identical to the schedule engine.
 - [ ] Add unit/screenshot/instrumentation checks for rendering states, corner-mirroring, resizing and accessibility; run debug/QA/release CI with R8/resource shrinking before release.
-- [ ] Test Android 8/11/12/14/16 where devices or emulators are available; 4/5/6+ columns, landscape, foldable/tablet, different launchers, system font sizes 1.0/1.3/1.5+, TalkBack, light/dark, Material You (12+), theme overrides, power saver and Doze.
+- [ ] Test Android 8/11/12/14/16/**17** where devices or emulators are available; 4/5/6+ columns, landscape, foldable/tablet, different launchers, system font sizes 1.0/1.3/1.5+, TalkBack, light/dark, Material You (12+), theme overrides, power saver and Doze. Also compare Android 17 snap-scrolling to older-OS normal scrolling, with reduced-motion animations disabled and enabled.
 - [ ] Verify widget refreshes at lesson boundaries without exact-alarm permission, no repeated per-second app wakeups, no excessive binder payloads, no stale/corrupt displays after host recreation and no accidental private timetable data exposure.
 - [ ] Document known launcher-specific limitations and only roll out the Remote Compose renderer behind verified compatibility; keep a rollback path.
 
@@ -170,6 +206,8 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 - **The same configured widget** changes from a compact single-entity view into a more informative visual/multi-entity view when resized; it also gracefully removes supplementary content when shrunk, without resetting state or losing the countdown.
 - The 4×2 feels deliberately composed on 4-, 5- and 6-column home screens; size changes alter information density, not just stretch text.
 - Group corners are provably consistent with the mirrored rule; the widget outer corners obey launcher clipping.
+- Expanded Daily Agenda/Week layouts can navigate additional information without crowding the compact widget; snap scrolling only runs where its published Android 17+ prerequisites and host support are met; graceful normal scrolling remains available elsewhere.
+- Day-complete state has a clear static expressive outcome everywhere, with a brief optional particle flourish only on demonstrably supported hosts and without excessive replay.
 - Material You and all current widget theme/outline preferences remain functional, accessible and contrast-safe.
 - Current/next, breaks/free periods, completion and missing timetable states are accurate; countdown remains efficient and correctly labelled.
 - Production support remains at Android 8+ regardless of Remote Compose feasibility.
