@@ -74,7 +74,7 @@ class AdaptiveWidgetRendererTest {
         val settings = WidgetSettings(showLocation = false, showOutline = false, doneForDayMessage = true)
         val long = table.copy(subjects = table.subjects.map { if (it.id == "physics") it.copy(name = "Computer Science & Engineering") else it },
             breaks = listOf(ScheduledBreak("pause", "Short break", listOf(1), TimeSpan(660, 675))))
-        val cases = listOf("upcoming" to now.withHour(9), "break" to now.withHour(11).withMinute(5),
+        val cases = listOf("upcoming" to now.withHour(8).withMinute(31), "break" to now.withHour(11).withMinute(5),
             "done" to now.withHour(18), "week-done" to now.plusDays(5))
         for ((state, time) in cases) for ((w, h) in listOf(140 to 56, 200 to 220, 360 to 190, 360 to 350)) {
             val context = RuntimeEnvironment.getApplication().createConfigurationContext(Configuration().apply { densityDpi = 160; fontScale = 1.5f })
@@ -89,7 +89,12 @@ class AdaptiveWidgetRendererTest {
             val views = children(root)
             assertTrue(views.filterIsInstance<TextView>().any { it.text.toString() == p.title })
             val timer = views.filterIsInstance<Chronometer>().singleOrNull()
-            if (state in listOf("upcoming", "break")) {
+            if (state == "upcoming") {
+                assertNull(timer)
+                val duration = views.filterIsInstance<TextView>().single { it.id == R.id.widget_duration }
+                assertTrue(duration.text.toString().contains("1h 29m"))
+                assertTrue("Clipped duration at $w × $h", duration.paint.measureText(duration.text.toString()) <= duration.width)
+            } else if (state == "break") {
                 assertNotNull(timer)
                 assertTrue(timer!!.text.isNotBlank())
                 assertEquals(0, timer.layout.getEllipsisCount(0))
@@ -122,6 +127,23 @@ class AdaptiveWidgetRendererTest {
         assertTrue(timer.text.isNotBlank())
         // The single-entity badge has a useful timer width even at the narrow expanded breakpoint.
         assertTrue(timer.width >= 90)
+    }
+
+    @Test fun hourLongTimersFitTheActualPlatformFontAtEverySize() = runBlocking {
+        for (scale in listOf(1f, 1.5f, 2f)) for ((w, h) in listOf(140 to 56, 200 to 220, 360 to 190, 360 to 350)) {
+            val context = RuntimeEnvironment.getApplication().createConfigurationContext(Configuration().apply { densityDpi = 160; fontScale = scale })
+            val settings = WidgetSettings(showOutline = false)
+            val p = widgetPresentation(table.copy(sessions = listOf(Session("long", "physics", 1, TimeSpan(600, 900)))), settings, now)
+            val root = adaptiveWidgetViews(context, p, WidgetSizing(w.toFloat(), h.toFloat(), scale), settings,
+                presetColorScheme(ThemePreset.FOREST, false), false, true, now.toInstant().toEpochMilli(), preview = true)
+                .apply(context, FrameLayout(context))
+            Robolectric.buildActivity(Activity::class.java).setup().get().setContentView(root)
+            root.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
+            root.layout(0, 0, w, h)
+            val timer = children(root).filterIsInstance<Chronometer>().single()
+            assertTrue("$w × $h scale $scale clipped ${timer.text}", timer.paint.measureText(timer.text.toString()) <= timer.width)
+            assertTrue("$w × $h scale $scale timer height ${timer.height}, font ${timer.paint.fontMetrics.run { descent - ascent }}", timer.paint.fontMetrics.run { descent - ascent } <= timer.height)
+        }
     }
 
     @Test fun terminalStatesHaveNoLiveClockAndDoNotResetSavedSettings() = runBlocking {

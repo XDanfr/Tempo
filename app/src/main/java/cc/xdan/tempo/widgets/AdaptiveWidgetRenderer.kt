@@ -96,8 +96,12 @@ private class AdaptiveWidgetSnapshot(
     }
 
     @Composable private fun Timer(context: Context, ink: Color, width: Float, height: Float, sp: Float) {
-        if (ticking) AndroidRemoteViews(nativeWidgetCountdown(context, p.targetEpochMillis!!, now, ink,
-            width * unit, height * unit, sp), GlanceModifier.width((width * unit).dp).height((height * unit).dp))
+        if (!ticking) return
+        val views = if (p.current) nativeWidgetCountdown(context, p.targetEpochMillis!!, now, ink,
+            width * unit, height * unit, sp)
+        else fittedWidgetText(context, R.layout.widget_duration, R.id.widget_duration,
+            widgetDuration(p.targetEpochMillis!!, now), ink, width * unit, height * unit, sp)
+        AndroidRemoteViews(views, GlanceModifier.width((width * unit).dp).height((height * unit).dp))
     }
 
     @Composable private fun Surface(context: Context, colour: Color, modifier: GlanceModifier,
@@ -122,6 +126,8 @@ private class AdaptiveWidgetSnapshot(
         val ink = widgetForeground(heroColour)
         val height = size.height.toFloat()
         val inset = if (height < 56) 8 else 12
+        val compactTimerHeight = (height - (if (height < 48) 16 else if (height >= 68) 24 else 22)
+            - 8 / unit).coerceIn(4f, 36f)
         if (plan.compactSplit && ticking) {
             Row(modifier) {
                 Surface(context, heroColour, GlanceModifier.defaultWeight().fillMaxHeight(), edge = 1) {
@@ -146,11 +152,18 @@ private class AdaptiveWidgetSnapshot(
                 verticalAlignment = Alignment.Vertical.CenterVertically) {
                 Label(p.title, ink, if (height < 48) 12 else if (height >= 68) 18 else 16, true, if (!ticking && height >= 68) 2 else 1)
                 if (ticking) Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
-                    if (!p.current) { Label("In", ink, 11); Spacer(GlanceModifier.width(4.dp)) }
-                    Timer(context, ink, (size.width - inset * 2 - 32).toFloat().coerceAtLeast(50f),
-                        (height - 30).coerceIn(14f, 36f), if (height >= 68) 28f else 20f)
-                    Spacer(GlanceModifier.width(4.dp))
-                    if (p.current) Label("left", ink, 11)
+                    if (!p.current) {
+                        AndroidRemoteViews(fittedWidgetText(context, R.layout.widget_duration, R.id.widget_duration,
+                            "Starts in ${widgetDuration(p.targetEpochMillis!!, now)}", ink,
+                            (size.width - inset * 2).toFloat() * unit, compactTimerHeight * unit,
+                            if (height >= 68) 18f else 14f),
+                            GlanceModifier.fillMaxWidth().height((compactTimerHeight * unit).dp))
+                    } else Timer(context, ink, (size.width - inset * 2 - 32).toFloat().coerceAtLeast(12f),
+                        compactTimerHeight, if (height >= 68) 28f else 20f)
+                    if (p.current) {
+                        Spacer(GlanceModifier.width(4.dp))
+                        Label("left", ink, 11)
+                    }
                 } else if (height >= 90) Label(detail, ink, 11)
             }
         }
