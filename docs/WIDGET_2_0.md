@@ -1,6 +1,6 @@
 # Widget 2.0 — Adaptive, canonical Material 3 Expressive widgets
 
-Status: **planned / feasibility-first**, proposed for **0.6** (not a blocker for Feel & Flow or 1.0). Last researched: **14 October 2026**. This is a planning document, not a claim that Remote Compose is already shipping in Tempo.
+Status: **implementation begun / feasibility-first**, proposed for **0.6** (not a blocker for Feel & Flow or 1.0). See [first-pass results and remaining work](WIDGET_2_0_IMPLEMENTATION.md). Last researched: **14 October 2026**. This is a planning document, not a claim that Remote Compose is already shipping in Tempo.
 
 ## Why
 

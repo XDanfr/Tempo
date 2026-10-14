@@ -84,3 +84,19 @@ The pill and square default to a brighter tint of the selected theme’s primary
 Pill/square background selection is independent of timetable block style: selecting Lesson colour always uses the subject fill. Their outline switch controls the border; the wide layout independently supports subject fills or darker theme shades and a border switch. Borders use the same primary role and 2dp width as the preview. In wide completion states, the theme-matching completion content/root has no outline; the next-lesson panel still honours the border switch.
 
 Square/wide primary content is centred, with a native expressive badge and a room pill. Secondary period titles use 18sp and details 13sp, with at most two rows (one in shorter cells). Layout thresholds account for system font scale. All three widget sizes use the established pill theme palette, with .70 dark/.82 light primary-fixed tint. Lesson fills use the app’s exact subject colour in both modes unless a wide widget selects themedLessons; its current/upcoming fills are separate darker theme shades. Single-lesson wide widgets also have an inset lesson panel. Completion badges use the widget theme’s primary-fixed roles, independent of the next lesson. `tempo_widget_pill_done` centres an expressive badge beside a larger All done title. Normal pill geometry is retained. The pill can opt into a message-only Done for today state through doneForDayMessage; weekly All done always overrides it. The horizontal completion badge uses center_vertical layout gravity to align with the title. Weekly completion titles are 28–36sp on square/wide and 22sp on the pill. Background, border, wide lesson colours and daily-completion choices use selectable preview cards; timetable/theme/icon selectors keep multi-option dropdowns.
+
+## Widget 2.0 first pass
+
+`WidgetPresentation` now derives one week-bounded snapshot per widget update,
+including target/boundary instants, progress, location privacy and the existing day
+plan. All installed providers choose a composition from actual dp bounds and font
+scale. Compact sizes use `CompactWidgetRenderer` with a labelled native
+Chronometer and shared 28dp/4dp mirrored shape rules. Larger sizes temporarily use
+the layouts described above; their replacement is the next design pass.
+Configuration inflates the production compact XML for its schedule preview.
+
+The opt-in `experiments/remote-compose` APK is excluded from normal builds. It
+uses alpha21 document creation and a restricted embedded View player, with no
+production dependency or launcher integration. The production rendering decision,
+local raster evidence, migration constraints and device gates are recorded in
+[Widget 2.0 implementation](WIDGET_2_0_IMPLEMENTATION.md).
