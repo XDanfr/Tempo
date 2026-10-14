@@ -16,7 +16,7 @@ switch state. Time is **static**, not a proven Remote Compose countdown. The
 profile is explicitly the **embedded AndroidX player** profile. It is not a
 launcher profile. No private framework APIs or widget receivers are used.
 
-The alpha21 player action listener is library-group restricted; the suppression
+The alpha21 `RemoteComposePlayer` View class and its action listener are library-group restricted; the suppression
 is explicit and confined to this experiment. Even a successful local-player test
 cannot satisfy the public-API production gate. Material shape tokens are ordinary
 path geometry here, not a claim of a native Material widget component library.
