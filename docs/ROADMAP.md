@@ -111,6 +111,28 @@ I want Tempo to feel like a polished, expressive utility, not a productivity gam
 - [ ] Define safe publication defaults, sensitive-field redaction, abuse handling, retention, authentication and account deletion before launching profiles
 - [ ] Consider profiles a later phase if backend and privacy work would otherwise delay the main 1.0 experience
 
+## After Widget 2.0 — connected experiences (proposals)
+
+These are **future experiments, not part of the first 0.6 widget batch**. They must reuse Tempo's existing timetable resolver and preserve offline, private, account-free usage. Research scope, feasibility gates and API references live in [Connected Experiences](CONNECTED_EXPERIENCES.md).
+
+### Wear OS companion — high priority after widgets
+
+- [ ] Prototype a **Wear OS Tile** for the current/next subject, shift or appointment, with a prominent time, meaningful colour/icon and optional room/location; use documented Tiles/ProtoLayout components for compatibility.
+- [ ] Resolve breaks, frees, exceptions, holiday days, alternating weeks and end-of-day states consistently with Tempo on the phone.
+- [ ] Explore a small, versioned **phone-to-watch schedule snapshot** over Wear OS Data Layer, retaining useful offline behaviour and showing when displayed data is stale or disconnected.
+- [ ] Independently investigate newer **Glance Wear Widgets and Remote Compose** on supported watch renderers; do not assume ordinary phone widgets, Tiles and watch-face complications are interchangeable.
+- [ ] Test watch shapes/insets, glanceable typography, low-power behaviour, accessibility, sync freshness and pairing on real devices; consider a **watch-face complication** only after the Tile is reliable.
+
+### Beam my Schedule — later research-stage feature
+
+- [ ] Prototype a **temporary, read-only, nearby timetable preview** between two consenting Tempo devices: choose date/week and fields to share, confirm recipient, render and dismiss without automatically importing into the receiver's collection.
+- [ ] Research authenticated Bluetooth/local-Wi-Fi transport (such as Nearby Connections), discovery/permissions, payload sizes, connection recovery and Android-device compatibility; do not assume every device has the same services.
+- [ ] Test serialising a **sanitised Remote Compose display document** and rendering it in a compatible local player; validate document size, profiles, resource limits and safe local interactions. A binary preview must still be parsed and validated, and is not guaranteed tiny.
+- [ ] Keep **notes/locations hidden by default**, block arbitrary transferred actions, and never merge/store another person's timetable without a separate explicit import.
+- [ ] Compare the experience with existing `.tempo.json` sharing and simpler QR/link or compact DTO previews. Advance only if nearby previewing is faster and sufficiently private; structured compare-free-time data would require separate permission.
+
+**Android Auto:** low-priority research only. Current car app category and safety rules should be verified before any car-specific UI work. Calendar/`.ics` interoperability with supported apps is a more realistic near-term option.
+
 ## Later releases
 
 - [ ] **After Widget 2.0 ships and is tested:** revisit scrollable agendas for the largest layouts; consider ordinary Glance `LazyColumn` first and optional Android 17+ `SnapScrollMatchHeight` only if real launcher testing demonstrates a benefit. Do not treat either as an initial 0.6 deliverable; see [Widget 2.0 future investigation](WIDGET_2_0.md#future-investigation--scrollable-agendas-and-snap-scrolling-after-the-first-widget-20-release)
