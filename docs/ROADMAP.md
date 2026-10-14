@@ -61,6 +61,8 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 
 - [ ] Develop one default adaptive widget experience with **distinct canonical compositions at measured size breakpoints**, not three fixed widget types or scaled-up text layouts; align with Google's [Canonical Widget Layouts](https://developer.android.com/design/ui/mobile/guides/widgets/layouts) and [sizing guidance](https://developer.android.com/design/ui/mobile/guides/widgets/sizing)
 - [ ] Make resize feel like useful progressive disclosure: **2×1 single entity** → **2×2 visual entity** → **4×2 multiple entities** → **larger agenda**, with tall/short variants based on actual dp dimensions and font scale
+- [ ] Explore **two expanded scrolling experiences**: snap-aligned, full-height **Daily Agenda** pages and **Week/Day Overview** pages, without making the compact 2×1 scrollable; add clear dates, semantics and normal-scroll/navigation fallback
+- [ ] Prototype brief **end-of-day particle celebrations** (optional subtle Material-shaped confetti) while keeping completion readable and static on unsupported hosts, honouring reduced motion and avoiding repeated effects on refresh
 - [ ] Preserve existing Android widget IDs, installed providers and per-widget settings during the ground-up renderer replacement; assess safely retiring duplicate picker entries separately
 - [ ] Design expressive compact, square, wide and expanded canonical compositions around one large, clearly labelled countdown, subject and relevant next activity
 - [ ] Use official Material 3 shape/corner values and a **strict consistent-corner rule**: standalone corners match; connected pairs mirror their inner/outer radii; middle segments of three-part groups have consistent inner radii
@@ -72,10 +74,14 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 ### Remote Compose feasibility and delivery
 
 - [ ] Prototype **Remote Compose** with isolated experimental dependencies; establish whether a public, compatible home-screen host pathway actually renders shapes, text, taps, size changes and countdowns (an in-app player alone is insufficient)
+- [ ] Test Remote Compose's **native path/shape drawing** for the mirrored component geometry, sharing the same radius tokens with XML/vector fallbacks; rendering support does not eliminate the design rule
+- [ ] Spike Glance 1.3 alpha `SnapScrollMatchHeight`: official requirements are **compileSdk 37 + Android 17+**, with `SizeMode.Exact` and full-container-height `LazyColumn` pages; older hosts use `VerticalScrollMode.Normal` or simple navigation
+- [ ] Inspect alpha21 `RemoteEnterTransition.Particle`/`RemoteExitTransition.Particle` on actual widget hosts; confirm whether the available enter/exit effect can reproduce a tiny falling-confetti celebration before making implementation promises
 - [ ] Check Glance/Glance Adaptive release maturity, host capability, Android/launcher coverage, build-tool compatibility and performance before choosing a renderer
 - [ ] Extract a shared widget presentation state while replacing the old layout templates and size handling; retain **RemoteViews/XML/vector shapes as the production fallback** for Android 8+ and unsupported launchers
 - [ ] Make an explicit **adopt / defer / reject** decision based on [Widget 2.0's acceptance gates](WIDGET_2_0.md); do not delay visual improvements if Remote Compose support is not ready
 - [ ] Validate real launcher behaviour, TalkBack, long subject names, large text, light/dark contrast, clock/time-zone transitions, battery efficiency, recovery updates and release/QA CI before rollout
+- [ ] Test scrolling and transition gestures on Android 17 and fallback hosts, scroll position across updates/resizes, replay-safe once-per-day celebration semantics, and reduced-motion settings
 
 The Expressive widget redesign is the user-facing target for 0.6; adopting Remote Compose is conditional on successful device-level tests. This work can proceed independently of Feel & Flow.
 
