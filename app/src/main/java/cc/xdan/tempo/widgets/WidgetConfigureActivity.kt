@@ -56,10 +56,11 @@ class WidgetConfigureActivity : ComponentActivity() {
             var outerOutline by rememberSaveable { mutableStateOf(initial.outerOutline) }
             var doneForDay by rememberSaveable { mutableStateOf(initial.doneForDayMessage) }
             var empty by rememberSaveable { mutableStateOf(initial.emptyText) }
-            val saveConfiguration = {
-                WidgetSettings(table.ifBlank { null }, theme.takeIf { it.isNotBlank() }?.let(ThemePreset::valueOf), mode, location != "Hide", empty.ifBlank { "Nothing scheduled this week" },
+            val configuredSettings = WidgetSettings(table.ifBlank { null }, theme.takeIf { it.isNotBlank() }?.let(ThemePreset::valueOf), mode, location != "Hide", empty.ifBlank { "Nothing scheduled this week" },
                     when (icons) { "Show icons" -> true; "Hide icons" -> false; else -> null },
-                    initial.outlined, lessonBackground, showOutline, doneForDay, themedLessons, outerOutline, followLocations = location == "Follow timetable").save(applicationContext, id)
+                    initial.outlined, lessonBackground, showOutline, doneForDay, themedLessons, outerOutline, followLocations = location == "Follow timetable")
+            val saveConfiguration = {
+                configuredSettings.save(applicationContext, id)
                 WidgetRefresh.start(applicationContext)
                 setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
             }
@@ -78,6 +79,10 @@ class WidgetConfigureActivity : ComponentActivity() {
                     Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Text("Your Tempo widget", style = MaterialTheme.typography.headlineMedium)
                         Text("Now or next, with a live countdown.")
+                        val selectedTimetable = collection?.let { c ->
+                            if (table.isBlank()) c.active else c.timetables.firstOrNull { it.id == table }?.timetable
+                        }
+                        CompactWidgetPreview(selectedTimetable, configuredSettings)
                         collection?.let { c ->
                             PillChoiceField("Timetable", table, listOf("") + c.timetables.map { it.id },
                                 { key -> c.timetables.firstOrNull { it.id == key }?.timetable?.name ?: if (key.isBlank()) "Follow current timetable" else "Removed timetable" }, { table = it })
@@ -95,7 +100,7 @@ class WidgetConfigureActivity : ComponentActivity() {
                         if (pill) WidgetOptionCards("After today’s lessons", doneForDay, "Next lesson", "Done for today", WidgetPreview.NEXT, WidgetPreview.DONE, true) { doneForDay = it }
                         if (square) WidgetOptionCards("After today’s lessons", doneForDay, "Done + next lesson", "Done message only", WidgetPreview.NEXT, WidgetPreview.DONE, false) { doneForDay = it }
                         OutlinedTextField(empty, { empty = it.take(120) }, label = { Text("When nothing is scheduled") }, modifier = Modifier.fillMaxWidth())
-                        Text("Touch and hold the widget on your home screen to change these settings. Drag its edges to resize. The 4×2 shows later periods and your day’s finish time when there is room.", style = MaterialTheme.typography.bodySmall)
+                        Text("Touch and hold the widget on your home screen to change these settings. Drag its edges to resize. More space reveals later periods and your day’s finish time when there is room.", style = MaterialTheme.typography.bodySmall)
                         Text("Countdowns tick on your home screen. Android may delay changing activities in battery-saving modes.", style = MaterialTheme.typography.bodySmall)
                         Button(onClick = {
                             saveConfiguration()

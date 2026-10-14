@@ -1,0 +1,5 @@
+<resources>
+    <dimen name="widget_corner_outer">28dp</dimen>
+    <dimen name="widget_corner_inner">4dp</dimen>
+    <dimen name="widget_segment_gap">4dp</dimen>
+</resources>
