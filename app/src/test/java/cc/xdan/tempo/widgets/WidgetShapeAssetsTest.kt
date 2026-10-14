@@ -20,6 +20,14 @@ class WidgetShapeAssetsTest {
         for (outline in listOf("", "_outline")) {
             val single = root("drawable/widget_compact_single$outline.xml").getElementsByTagName("corners").item(0)
             assertEquals("@dimen/widget_corner_outer", single.attributes.getNamedItem("android:radius").nodeValue)
+            for ((index, side) in listOf("top", "middle", "bottom").withIndex()) {
+                val corners = root("drawable/widget_group_$side$outline.xml").getElementsByTagName("corners").item(0)
+                val rule = WidgetShapeRules.member(index, 3, vertical = true)
+                for ((name, radius) in listOf("topLeft" to rule.topLeft, "topRight" to rule.topRight, "bottomRight" to rule.bottomRight, "bottomLeft" to rule.bottomLeft)) {
+                    val token = corners.attributes.getNamedItem("android:${name}Radius").nodeValue.substringAfter("@dimen/")
+                    assertEquals(radius, values[token])
+                }
+            }
             for ((index, side) in listOf("start", "end").withIndex()) {
                 val corners = root("drawable/widget_compact_$side$outline.xml").getElementsByTagName("corners").item(0)
                 val rule = WidgetShapeRules.member(index, 2)
