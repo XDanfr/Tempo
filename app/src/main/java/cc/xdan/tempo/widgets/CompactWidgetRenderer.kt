@@ -27,8 +27,9 @@ internal fun compactWidgetViews(context: Context, id: Int, presentation: WidgetP
     val split = sizing.compactSplit && ticking
     val views = RemoteViews(context.packageName, if (split) R.layout.tempo_widget_compact_split else R.layout.tempo_widget_compact)
     val accent = presentation.block?.accent(scheme.primaryFixed) ?: widgetCompletionBadge(scheme, dark)
-    val fill = if (settings.lessonBackground && presentation.block != null && ticking) accent else widgetThemeBackground(scheme, dark)
-    val timerFill = if (settings.lessonBackground) widgetThemeBackground(scheme, dark) else accent
+    val eventFill = widgetLessonBackground(scheme, accent, dark, settings.themedLessons, true)
+    val fill = if (settings.lessonBackground && presentation.block != null && ticking) eventFill else widgetThemeBackground(scheme, dark)
+    val timerFill = if (settings.lessonBackground) widgetThemeBackground(scheme, dark) else eventFill
     val ink = widgetForeground(fill)
     val timerInk = widgetForeground(if (split) timerFill else fill)
     fun surface(fillId: Int, outlineId: Int, colour: Int, side: Int) {
@@ -56,7 +57,7 @@ internal fun compactWidgetViews(context: Context, id: Int, presentation: WidgetP
         else -> sizing.compactTitleSp
     }
     views.setTextViewTextSize(R.id.widget_title, TypedValue.COMPLEX_UNIT_SP, titleSize)
-    views.setInt(R.id.widget_title, "setMaxLines", if (!ticking && sizing.height >= 48 || split && sizing.height >= 80) 2 else 1)
+    views.setInt(R.id.widget_title, "setMaxLines", if (!ticking && sizing.height >= 48 || split && sizing.height >= 72) 2 else 1)
     views.setTextColor(R.id.widget_timer, timerInk.toArgb())
     // A future lesson can produce a three-digit hour count. Measure the actual font,
     // including the label and system font scale, before choosing the timer size.
@@ -106,7 +107,7 @@ internal fun compactWidgetViews(context: Context, id: Int, presentation: WidgetP
     val icon = if (presentation.state in listOf(WidgetState.WEEK_DONE, WidgetState.DONE_TODAY)) Icons.Outlined.CheckCircle
         else presentation.block?.symbol() ?: Icons.Outlined.CalendarMonth
     views.setViewVisibility(R.id.widget_icon, if (visibleIcon) View.VISIBLE else View.GONE)
-    views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, ink.toArgb()))
+    if (visibleIcon) views.setImageViewBitmap(R.id.widget_icon, widgetIcon(icon, ink.toArgb()))
     val open = Intent(context, MainActivity::class.java).putExtra("widgetTimetableId", settings.timetableId)
     if (!preview) views.setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
     return views
