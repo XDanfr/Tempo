@@ -133,3 +133,36 @@ CI now builds an installable `Tempo-QA` artifact and a separate
 `Tempo-Remote-Compose-Lab` artifact on the feature branch. The latter contains the
 experimental Adaptive and RC probe, not production widget IDs or user data.
 Both are debug-signed testing APKs; release signing has not been changed.
+
+## Launcher feedback: duration and resize follow-up
+
+A device screenshot exposed truncated hour-long clocks in the visual badge and
+wide hero. Upcoming events now show rounded-up durations (`1h 29m`, or `Starts in
+1h 29m` in a single compact surface), without seconds. Long waits use days and
+hours. Current lessons/breaks retain the host-owned Chronometer. Both leaves fit
+text using the **inflated platform TextView/Chronometer font**, rather than an
+assumed Outfit font, and reserve space for rounding and varying digits. Compact
+height budgets account for large text as well as the subject line.
+
+Upcoming labels use the existing single inexact RTC alarm at their next minute
+transition (hour transitions for day-long waits). There is no per-second worker,
+exact-alarm permission, foreground service or additional per-widget alarm.
+Android can defer these updates in Doze/battery saving; this is a snapshot label,
+not a promise of exact minute delivery. Active timers continue ticking in the
+host without requiring app updates.
+
+Resize broadcasts now render only the affected widget directly with `goAsync`,
+coalescing superseded gestures, instead of appending an all-widget WorkManager
+refresh. Per-widget rendering locks and cancellation checks prevent an older
+resize from publishing after a newer one. The regular worker shares this renderer
+and remains the retry/recovery path. Resize rendering has an eight-second budget;
+a timeout or error falls back to that worker. It does not move the global alarm.
+Launchers still control when they deliver size changes and apply RemoteViews;
+actual touch-to-layout latency needs another device check.
+
+Follow-up regression checks: all 49 app unit tests pass, including actual inflated
+hour-long clock bounds at 1×/1.5×/2× text, upcoming `1h 29m` fitting, duration
+rounding/refresh transitions, and a targeted resize refresh preserving the other
+widget, shared alarm and saved settings on API26/35. [Updated upcoming-duration
+capture](screenshots/widget-2.0-upcoming-duration.png) is from the production
+Glance snapshot in Robolectric, not a real launcher.
