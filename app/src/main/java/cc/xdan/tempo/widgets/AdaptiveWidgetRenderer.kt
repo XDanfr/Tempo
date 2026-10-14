@@ -246,9 +246,9 @@ private class AdaptiveWidgetSnapshot(
                 if (plan.wideContext) {
                     val next = p.plan?.later?.firstOrNull()
                     Row(GlanceModifier.fillMaxWidth().height(44.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
-                        Label(if (next != null) "Next" else if (p.plan != null) "Finish" else "Tempo", scheme.primary, 11, true)
+                        Label(next?.let { minuteLabel(it.time.start) } ?: if (p.plan != null) "Finish" else "Tempo", scheme.primary, 11, true)
                         Spacer(GlanceModifier.width(8.dp))
-                        Label(next?.let { "${minuteLabel(it.time.start)} · ${it.title()}" } ?: p.plan?.let { minuteLabel(it.finish) } ?: detail,
+                        Label(next?.title() ?: p.plan?.let { minuteLabel(it.finish) } ?: detail,
                             scheme.onSurface, 12, modifier = GlanceModifier.defaultWeight())
                     }
                 }
