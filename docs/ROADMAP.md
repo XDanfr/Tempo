@@ -53,13 +53,16 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Suggest icons for recognised new subject names, while preserving saved and manually selected icons, including None
 - [x] Subject and cycle fields expose keyboard Done actions; colour/icon choices dismiss text keyboards, with retained focus for hardware-keyboard colour selection
 
-## 0.6 candidate — Widget 2.0: Material 3 Expressive & Remote Compose
+## 0.6 candidate — Widget 2.0: adaptive Material 3 Expressive widgets & Remote Compose
 
-The 2×1 widget needs a more legible subject/countdown balance, and larger widgets should use their space for useful visual structure rather than just additional text. This is a **proposed follow-on milestone**, not a guarantee that experimental Android APIs will be production-ready. The full research, design constraints, phased development plan, device matrix and go/no-go criteria live in [Widget 2.0](WIDGET_2_0.md).
+**Ground-up widget redesign**, not a reskin of the three existing size-specific presentations. Follow Google's canonical widget layouts and progressive-disclosure resizing: a single primary Adaptive Tempo widget should feel more useful as users expand it, moving from one legible current/next event and countdown to visual progress, another event and eventually a mini-agenda. Preserve existing placed widgets and preferences through compatibility adapters for the current provider components; consolidating picker entries must not break upgrades. Remote Compose remains a **feasibility-first experiment**, not a release requirement. Full architecture, design constraints, development phases, breakpoints, device matrix and go/no-go criteria: [Widget 2.0](WIDGET_2_0.md).
 
 ### Design and compatibility
 
-- [ ] Design expressive 2×1, 2×2, 4×2 and expanded widget layouts around a large, clearly labelled countdown, subject and next activity
+- [ ] Develop one default adaptive widget experience with **distinct canonical compositions at measured size breakpoints**, not three fixed widget types or scaled-up text layouts; align with Google's [Canonical Widget Layouts](https://developer.android.com/design/ui/mobile/guides/widgets/layouts) and [sizing guidance](https://developer.android.com/design/ui/mobile/guides/widgets/sizing)
+- [ ] Make resize feel like useful progressive disclosure: **2×1 single entity** → **2×2 visual entity** → **4×2 multiple entities** → **larger agenda**, with tall/short variants based on actual dp dimensions and font scale
+- [ ] Preserve existing Android widget IDs, installed providers and per-widget settings during the ground-up renderer replacement; assess safely retiring duplicate picker entries separately
+- [ ] Design expressive compact, square, wide and expanded canonical compositions around one large, clearly labelled countdown, subject and relevant next activity
 - [ ] Use official Material 3 shape/corner values and a **strict consistent-corner rule**: standalone corners match; connected pairs mirror their inner/outer radii; middle segments of three-part groups have consistent inner radii
 - [ ] Use semantic icons, restrained coloured segments and an optional compact timeline to organise available space; take visual inspiration from [Material 3 UI Widgets on Figma](https://www.figma.com/community/file/1504472410356443638/material-3-ui-widgets) and Google's widget examples
 - [ ] Fix density/readability on compact widgets and adaptive behaviour on 4-, 5- and 6+-column launchers, including resizing, font scaling, landscape and accessible layout alternatives
@@ -70,7 +73,7 @@ The 2×1 widget needs a more legible subject/countdown balance, and larger widge
 
 - [ ] Prototype **Remote Compose** with isolated experimental dependencies; establish whether a public, compatible home-screen host pathway actually renders shapes, text, taps, size changes and countdowns (an in-app player alone is insufficient)
 - [ ] Check Glance/Glance Adaptive release maturity, host capability, Android/launcher coverage, build-tool compatibility and performance before choosing a renderer
-- [ ] Share the schedule presentation model between renderers; retain **RemoteViews/XML/vector shapes as the production fallback** for Android 8+ and unsupported launchers
+- [ ] Extract a shared widget presentation state while replacing the old layout templates and size handling; retain **RemoteViews/XML/vector shapes as the production fallback** for Android 8+ and unsupported launchers
 - [ ] Make an explicit **adopt / defer / reject** decision based on [Widget 2.0's acceptance gates](WIDGET_2_0.md); do not delay visual improvements if Remote Compose support is not ready
 - [ ] Validate real launcher behaviour, TalkBack, long subject names, large text, light/dark contrast, clock/time-zone transitions, battery efficiency, recovery updates and release/QA CI before rollout
 
