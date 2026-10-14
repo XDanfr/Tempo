@@ -56,8 +56,7 @@ Pointers: app/src/main/java/cc/xdan/tempo/widgets/TempoWidgetProvider.kt, Widget
 - **Remote Compose 1.0.0-alpha21 (7 October 2026):** remote UI document creation and rendering with growing path, layout, text, colour, state and animation APIs, including public `RemoteEnterTransition.Particle`/`RemoteExitTransition.Particle` and `RemoteModifier.animateEnterExit`. The Particle transition is documented as an **element entrance/exit effect**, not as a configurable falling-confetti emitter; prototype the intended appearance instead of promising it. Public library APIs do not by themselves establish a usable launcher-host pipeline on all phones.
 - **Glance Adaptive 1.0.0-alpha03 (23 September 2026):** Google describes it as template-first Remote Compose widgets for multiple surfaces; its release notes explicitly state that further public APIs are still to come. Do not assume it is production-ready for generic Android home screens.
 - Check device/host renderer support empirically. Android version alone does **not** prove support; test the exact supported integration and fallback. A self-hosted RemoteComposeView demonstration inside Tempo is useful for shape tests but **does not count** as proof of a working launcher widget.
-- **Snap scrolling has a narrower verified availability than Remote Compose generally.** Google's Glance documentation requires `androidx.glance:glance-appwidget:1.3.0-alpha02+`, **`compileSdk >= 37` and Android 17+ at runtime** for `VerticalScrollMode.SnapScrollMatchHeight`. Use `VerticalScrollMode.Normal` on older OS versions and unsupported hosts. The Google product announcement's broader Android 16+ messaging must not override the specific published API requirements.
-- Keep alpha dependencies isolated to a prototype branch or module. Check SDK/toolchain compatibility and build implications first (Glance 1.3 alpha notes mention compile SDK 37 / AGP 9.2 requirements). Tempo currently compiles with SDK 36, so a snap-scrolling proof of concept needs isolated toolchain validation first. Do not destabilise app builds merely to try the renderer.
+- Keep alpha dependencies isolated to a prototype branch or module. Check SDK/toolchain compatibility and build implications first (Glance 1.3 alpha notes mention compile SDK 37 / AGP 9.2 requirements). Tempo currently compiles with SDK 36; do not upgrade it merely for features deferred beyond the first Widget 2.0 release. Do not destabilise app builds merely to try the renderer.
 
 Sources (official, revisit when implementing):
 - Remote Compose releases: https://developer.android.com/jetpack/androidx/releases/compose-remote
@@ -113,20 +112,6 @@ Exploration should create accurate design mock-ups for **all four schedule state
 - Actions: tap hero to open the relevant timetable/day; additional tappable regions only where reasonably sized and predictably mapped. Do not expose inert chevrons or fake controls.
 - Widget preview/configuration must reflect actual display style, theme, light/dark mode, countdown typography, outlined/fill options and supported sizes.
 
-## Optional advanced interaction: snap-scrolling information pages
-
-Build **two scrollable experiences for eligible, sufficiently large widget layouts**, not a scrollable control forced into the compact 2×1 hero. A single adaptive widget can expose these as expanded compositions; if an independently selectable "Agenda" or "Week" picker entry proves useful, it should still reuse the same renderer and model rather than a separate timetable engine.
-
-**1. Daily agenda pages (priority):** swipe vertically between full-height, snap-aligned pages: **Now/Next**, **Later today**, and optionally **End of day**. Use one glanceable summary per page rather than one page per tiny lesson. Maintain readable subject colours, durations and scheduled free/break blocks. If no later activities exist, do not manufacture empty pages. Keep the current lesson/next event as the initial page on new placement or after the relevant day changes; prevent unexpected resets while someone is scrolling.
-
-**2. Week / day overview pages (secondary):** for tall or large widgets, each page represents a **real resolved date** (not a hard-coded weekday) with today's timetable, tomorrow's preview and subsequent days if relevant. Make the visible date unmistakable. Holiday ranges, A/B cycles, replacement days, timetable-specific configured days, free periods and weekends must use the existing resolver. Respect Tempo's week-bounded widget behaviour and document whether navigation stops at Sunday. Do not make date swiping imply editing the user's selected timetable/date in the main app.
-
-**API and shape of scrollable items:** Google's public `SnapScrollMatchHeight` is **vertical**, and is specifically designed for `LazyColumn` children matching the **widget container's height**, not snapping an arbitrary variable-height agenda row or a horizontally paged carousel. Prototype whole-container-height pages using `SizeMode.Exact` and `LocalSize.current.height`, as Google's sample recommends. Use the normal Glance `LazyColumn` scroll mode where snap is not supported; if the new dependency/toolchain or launcher pathway is unavailable, provide a simple **non-snapping readable list or visible next/previous actions** that perform real navigation. Do not present inert swipe hints or decorative page dots.
-
-**Gesture and refresh rules:** the launcher owns widget touch dispatch; test scroll-versus-launcher vertical gesture conflicts, nested tap actions, overscroll, scroll persistence after `AppWidget` refresh, resize from snap-enabled to compact, RTL/read order and TalkBack. Supply stable item IDs and visible labels (for example, "Today · Page 1 of 3") so navigation is discoverable. Avoid scrolling everything; full-bleed page snap may be delightful for the two experiences above but is counterproductive for the compact live countdown.
-
-**Acceptance gate:** on at least one real Android 17+ launcher, snap occurs cleanly between appropriately sized pages without ghost taps or cut-off content. On Android 8–16/unsupported hosts, the same schedule information remains readable and navigable via ordinary scrolling or buttons. No update storm, lost current-day context or inaccessible page content.
-
 ## Optional micro-celebration: finished scheduled day
 
 A new **scheduled-day-complete state** may trigger a *very small* one-shot flourish, **only if actual Remote Compose host animation is supported and reliable**. Google's Remote Compose API exposes `RemoteEnterTransition.Particle` and `RemoteExitTransition.Particle` (1.0.0-alpha21) for state-layout visibility transitions via `RemoteModifier.animateEnterExit`. These are **not documented as a general-purpose custom-colour falling-confetti particle emitter**, so investigate the actual effect before committing to the desired falling-cookie/clover/diamond appearance.
@@ -141,7 +126,7 @@ Design intent: when the last scheduled lesson ends, retain the existing truthful
 - [ ] On RemoteViews or older unsupported hosts, render the same **static expressive completion shape** without fake animated-GIF loops, high-frequency redraws or mandatory effects.
 - [ ] Test multiple timetable cycles, changes to the final lesson, empty days, time-zone changes, DST, fast-forward clock, long periods off-screen, TalkBack, font scale and dark/light/Material You.
 
-**Release gate:** snap pages and particles are opt-in enhancement tracks, not release blockers. If the APIs cannot ship safely yet, ship the ground-up canonical redesign and revisit scrolling/celebration support in a later minor release.
+**Release gate:** the particle flourish is an optional enhancement, not a release blocker; the first batch stays non-scrollable. If a suitable animation cannot ship safely, keep the ground-up redesign and a static completion shape. Review scrolling only **after** the first widget batch has been implemented and tested.
 
 ## Architecture and proof-of-concept workstream
 
@@ -174,7 +159,6 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 ### Phase B — Remote Compose feasibility spike (before a renderer migration)
 - [ ] Build a separately gated alpha21 Remote Compose prototype; check SDK/AGP dependencies and do not upgrade production dependencies solely for the experiment.
 - [ ] Prove official host integration and launcher display (not just a RemoteComposeView inside the app) with more than one size, shape, text, colours and taps.
-- [ ] In a separate compileSdk 37/Glance 1.3 alpha experiment, build full-height vertical `LazyColumn` snap pages for a real Android 17+ launcher, with `VerticalScrollMode.Normal` fallback; validate `SizeMode.Exact` and scroll persistence.
 - [ ] Test alpha21 particle *enter/exit* transitions against the intended end-of-day confetti; capture video and decide whether the effect actually resembles falling expressive shapes without unsupported assumptions.
 - [ ] Record API gaps (including live countdown, dynamic colour, preview, accessibility and clocks), compatible Android/launcher versions, screen captures and measured update costs.
 - [ ] Apply the go/no-go gate above and explicitly record **adopt / defer / reject** with evidence and an incremental migration/fallback design.
@@ -196,7 +180,7 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 - [ ] Keep existing placements, per-widget preferences, theme/outline options, screenshots and configure/preview flows working; safely migrate any newly introduced style choice.
 - [ ] Keep time-zone, date/time, reboot, app update, holiday, A/B cycle, replacement day, overlap, break and week-completion behaviour identical to the schedule engine.
 - [ ] Add unit/screenshot/instrumentation checks for rendering states, corner-mirroring, resizing and accessibility; run debug/QA/release CI with R8/resource shrinking before release.
-- [ ] Test Android 8/11/12/14/16/**17** where devices or emulators are available; 4/5/6+ columns, landscape, foldable/tablet, different launchers, system font sizes 1.0/1.3/1.5+, TalkBack, light/dark, Material You (12+), theme overrides, power saver and Doze. Also compare Android 17 snap-scrolling to older-OS normal scrolling, with reduced-motion animations disabled and enabled.
+- [ ] Test Android 8/11/12/14/16 where devices or emulators are available; 4/5/6+ columns, landscape, foldable/tablet, different launchers, system font sizes 1.0/1.3/1.5+, TalkBack, light/dark, Material You (12+), theme overrides, power saver and Doze; test with reduced-motion animations disabled and enabled.
 - [ ] Verify widget refreshes at lesson boundaries without exact-alarm permission, no repeated per-second app wakeups, no excessive binder payloads, no stale/corrupt displays after host recreation and no accidental private timetable data exposure.
 - [ ] Document known launcher-specific limitations and only roll out the Remote Compose renderer behind verified compatibility; keep a rollback path.
 
@@ -206,7 +190,7 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 - **The same configured widget** changes from a compact single-entity view into a more informative visual/multi-entity view when resized; it also gracefully removes supplementary content when shrunk, without resetting state or losing the countdown.
 - The 4×2 feels deliberately composed on 4-, 5- and 6-column home screens; size changes alter information density, not just stretch text.
 - Group corners are provably consistent with the mirrored rule; the widget outer corners obey launcher clipping.
-- Expanded Daily Agenda/Week layouts can navigate additional information without crowding the compact widget; snap scrolling only runs where its published Android 17+ prerequisites and host support are met; graceful normal scrolling remains available elsewhere.
+- The initial expanded layout reveals a useful, readable **non-scrollable** mini-agenda as space allows; it offers no inert pagination or swipe hints. Scroll feasibility remains a post-release research topic.
 - Day-complete state has a clear static expressive outcome everywhere, with a brief optional particle flourish only on demonstrably supported hosts and without excessive replay.
 - Material You and all current widget theme/outline preferences remain functional, accessible and contrast-safe.
 - Current/next, breaks/free periods, completion and missing timetable states are accurate; countdown remains efficient and correctly labelled.
@@ -215,4 +199,18 @@ If the gate fails, **ship the Expressive redesign on RemoteViews/XML/vector asse
 
 ## Release decision
 
-**Candidate 0.6:** visual design, responsive layout and user-feedback fixes, backed by the stable renderer. Include Remote Compose only if Phase B passes all gates. If not, keep the proof of concept and schedule another evaluation when Glance Adaptive/launcher integration provides suitable public APIs. This milestone is independent of the wider Feel & Flow design direction and does not require accounts or other unrelated features.
+**Candidate 0.6:** deliver the first batch of **non-scrollable** canonical widgets, visual design, responsive layouts and user-feedback fixes, backed by the stable renderer. Include Remote Compose only if Phase B passes its widget-host gates. If not, keep the proof of concept and schedule another evaluation when Glance Adaptive/launcher integration provides suitable public APIs. **Only after the widgets ship and are tested should we revisit normal scrolling and optional snap paging.** This milestone is independent of the wider Feel & Flow design direction and does not require accounts or other unrelated features.
+
+## Future investigation — scrollable agendas and snap scrolling (after the first Widget 2.0 release)
+
+**Deferred by design decision, 14 October 2026.** Do not implement, prototype, or add scroll gestures as an initial Widget 2.0 acceptance requirement. Deliver the first batch of compact, square, wide and expanded **non-scrollable canonical layouts**, test them on real launchers, collect feedback and only then decide whether any expanded widget actually needs scrolling. A static mini-agenda may show a few useful next activities, but it must never advertise unsupported swipe actions.
+
+If real-world testing shows the largest formats run out of useful visible room, consider two optional directions: a **Daily Agenda** that scrolls through today's remaining sessions, and a **Week/Day Overview** that can move among resolved dates. Both must reuse Tempo's schedule engine, display clear time/date/context, and preserve the compact widget's quick-glance purpose. **Do not assume either is necessary or that both should ship.** Prefer testing an ordinary vertical Glance `LazyColumn` first, then snap paging only when a genuinely page-based composition benefits.
+
+Technical notes to revisit **later**, not during the first batch:
+- Glance `VerticalScrollMode.SnapScrollMatchHeight` currently requires **Glance 1.3.0-alpha02+, compileSdk 37, Android 17+ runtime**, `SizeMode.Exact`, and a `LazyColumn` whose pages match the **widget container height**; it is not generic per-row snapping or a horizontal carousel. Check the [official snap-scroll guide](https://developer.android.com/develop/ui/compose/glance/build-ui#snap-scrolling) again when revisiting; APIs and support may change.
+- `VerticalScrollMode.Normal` can provide useful non-snapping scrolling on older compatible systems; the fallback should be readable and usable rather than a broken gesture hint. Whether to keep a completely static layout may prove better on smaller formats.
+- Validate launcher scroll gesture interception, tap handling, TalkBack, stable item IDs, position after periodic widget updates, resize, restarts, font scale, RTL, and power/battery cost. On supported newer hosts, test actual snap-to-full-page behaviour. Keep a route back to the primary current/next lesson.
+- Make a **new go/no-go decision after the initial widget release and user testing**. Defer any additional SDK/toolchain upgrade or code spike justified *only* by scrolling until that decision.
+
+
