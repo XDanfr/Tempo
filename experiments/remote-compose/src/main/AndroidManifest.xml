@@ -3,5 +3,12 @@
         <activity android:name=".RemoteComposeLabActivity" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
         </activity>
+        <activity android:name=".AdaptiveProbeActivity" android:label="Tempo Glance &amp; Adaptive Lab" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+        </activity>
+        <receiver android:name=".RemoteComposeProbeWidget" android:label="EXPERIMENT · Remote Compose probe" android:exported="false">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/remote_probe"/>
+        </receiver>
     </application>
 </manifest>
