@@ -8,3 +8,8 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Tempo"
 include(":app", ":core:model", ":core:schedule", ":core:data", ":core:designsystem")
+
+// The alpha document/player spike is excluded from normal builds and production APKs.
+if (providers.gradleProperty("tempoRemoteCompose").orNull == "true") {
+    include(":experiments:remote-compose")
+}
