@@ -108,6 +108,22 @@ class AdaptiveWidgetRendererTest {
         }
     }
 
+    @Test fun aSingleEventInATallNarrowWidgetKeepsAVisualEntityInsteadOfSqueezingHorizontalPanels() = runBlocking {
+        val settings = WidgetSettings(showOutline = false)
+        val context = RuntimeEnvironment.getApplication()
+        val p = widgetPresentation(table.copy(sessions = table.sessions.take(1)), settings, now)
+        val root = adaptiveWidgetViews(context, p, WidgetSizing(180f, 420f, 1f), settings,
+            presetColorScheme(ThemePreset.FOREST, false), false, true, now.toInstant().toEpochMilli(), preview = true)
+            .apply(context, FrameLayout(context))
+        Robolectric.buildActivity(Activity::class.java).setup().get().setContentView(root)
+        root.measure(View.MeasureSpec.makeMeasureSpec(180, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(420, View.MeasureSpec.EXACTLY))
+        root.layout(0, 0, 180, 420)
+        val timer = children(root).filterIsInstance<Chronometer>().single()
+        assertTrue(timer.text.isNotBlank())
+        // The single-entity badge has a useful timer width even at the narrow expanded breakpoint.
+        assertTrue(timer.width >= 90)
+    }
+
     @Test fun terminalStatesHaveNoLiveClockAndDoNotResetSavedSettings() = runBlocking {
         val settings = WidgetSettings(timetableId = "fixed", preset = ThemePreset.ROSE, showLocation = false,
             showIcons = false, themedLessons = true, lessonBackground = true, outerOutline = true, doneForDayMessage = true)

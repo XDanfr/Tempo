@@ -144,7 +144,7 @@ private class AdaptiveWidgetSnapshot(
         } else Surface(context, heroColour, modifier, root = true) {
             Column(GlanceModifier.fillMaxSize().padding(horizontal = inset.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.Vertical.CenterVertically) {
-                Label(p.title, ink, if (height < 48) 12 else if (height >= 68) 18 else 14, true, if (!ticking && height >= 68) 2 else 1)
+                Label(p.title, ink, if (height < 48) 12 else if (height >= 68) 18 else 16, true, if (!ticking && height >= 68) 2 else 1)
                 if (ticking) Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
                     if (!p.current) { Label("In", ink, 11); Spacer(GlanceModifier.width(4.dp)) }
                     Timer(context, ink, (size.width - inset * 2 - 32).toFloat().coerceAtLeast(50f),
@@ -258,7 +258,10 @@ private class AdaptiveWidgetSnapshot(
 
     @Composable private fun Expanded(context: Context, modifier: GlanceModifier) {
         val later = p.plan?.later.orEmpty()
-        if (later.isEmpty()) { Wide(context, modifier); return }
+        if (later.isEmpty()) {
+            if (size.stacked) Square(context, modifier) else Wide(context, modifier)
+            return
+        }
         val heroHeight = plan.heroHeight + (plan.agendaRows - later.size).coerceAtLeast(0) * 56
         Surface(context, scheme.surfaceContainer, modifier, outline = settings.outerOutline, root = true) {
             Column(GlanceModifier.fillMaxSize().padding(8.dp)) {
