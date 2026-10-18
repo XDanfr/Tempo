@@ -53,6 +53,17 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Suggest icons for recognised new subject names, while preserving saved and manually selected icons, including None
 - [x] Subject and cycle fields expose keyboard Done actions; colour/icon choices dismiss text keyboards, with retained focus for hardware-keyboard colour selection
 
+## 0.5.2 candidate — interaction feedback and safe recovery
+
+A tightly scoped usability pass before or alongside 0.6; it should not block the Widget 2.0 release if widget work is ready first. Detailed behaviour, copy, interaction rules and test matrix: [Experience Integrity](EXPERIENCE_INTEGRITY.md).
+
+- [ ] Replace prominent toolbar-first Undo/Redo with contextual **bottom snackbars** after *committed* edits (e.g. “Added subject”): **Undo** plus close/dismiss, and a corresponding **Redo** action after undo
+- [ ] Keep bounded undo history available after snackbar dismissal through a secondary accessible action; ensure rapid edits, bulk actions, timetable switches, keyboard users and TalkBack never undo the wrong thing
+- [ ] Centralise typed success/error feedback; trigger it at completed action boundaries rather than per keystroke, cancelled file picks, recomposition or optimistic saves
+- [ ] Improve errors for malformed/unsupported imports, interrupted/failed exports, failed saves and unavailable updates with an explanation, accurate data-safety status and relevant retry/review action
+- [ ] Audit setup → create → edit → undo/redo → export/import → switch timetable end-to-end, including cancellation, navigation/back, offline, rotation and accessibility cases
+- [ ] Add regression tests for feedback actions, data preservation on failure, repeated Undo/Redo and lifecycle interruption
+
 ## 0.6 candidate — Widget 2.0: adaptive Material 3 Expressive widgets & Remote Compose
 
 **Ground-up widget redesign**, not a reskin of the three existing size-specific presentations. Follow Google's canonical widget layouts and progressive-disclosure resizing: a single primary Adaptive Tempo widget should feel more useful as users expand it, moving from one legible current/next event and countdown to visual progress, another event and eventually a **non-scrollable mini-agenda**. **Scrolling is deliberately deferred until after the first batch is implemented and tested.** Preserve existing placed widgets and preferences through compatibility adapters for the current provider components; consolidating picker entries must not break upgrades. Remote Compose remains a **feasibility-first experiment**, not a release requirement. Full architecture, design constraints, development phases, breakpoints, device matrix and go/no-go criteria: [Widget 2.0](WIDGET_2_0.md).
@@ -68,6 +79,8 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [ ] Use semantic icons, restrained coloured segments and an optional compact timeline to organise available space; take visual inspiration from [Material 3 UI Widgets on Figma](https://www.figma.com/community/file/1504472410356443638/material-3-ui-widgets) and Google's widget examples
 - [ ] Fix density/readability on compact widgets and adaptive behaviour on 4-, 5- and 6+-column launchers, including resizing, font scaling, landscape and accessible layout alternatives
 - [ ] Preserve accurate current/next, break/free, done-today, week-done and empty states; keep the existing native countdown's efficient update behaviour unless an alternative is proven
+- [ ] Design honest recovery states for missing/deleted selected timetables, widget setup not finished and known unavailable/stale data, with reconfigure/refresh affordances where supported; do not silently show another timetable (see [Experience Integrity](EXPERIENCE_INTEGRITY.md))
+- [ ] Verify app/widget parity after edits, Undo/Redo, cycle/exception changes, clock/time-zone changes and delayed refresh; retain battery-friendly recovery
 - [ ] Preserve per-widget timetable selection, Material You/custom themes, subject colours, icons, location privacy, fills, outlines and configuration previews
 
 ### Remote Compose feasibility and delivery
@@ -98,6 +111,8 @@ I want Tempo to feel like a polished, expressive utility, not a productivity gam
 ### Feel and feedback
 
 - [ ] Shared Material 3 Expressive motion and feedback conventions: spring navigation, selection and editing transitions, restrained haptics and predictable state changes
+- [ ] Apply one documented cross-screen interaction contract for success/error/loading, navigation/back, confirmations and empty states; carry forward [Experience Integrity](EXPERIENCE_INTEGRITY.md) rather than creating new per-screen rules
+- [ ] Audit connected user flows across Schedule, Overview, Library, editing, comparison and settings; preserve date/week/timetable context and verify recovery paths
 - [ ] Living timetable states for past/current/next activities, clear elapsed/remaining progress and calm end-of-day/week transitions
 - [ ] Small, optional celebrations and **permanent discovery achievements** with rounded top-of-screen notices; no login streaks, XP, leaderboards or gated essentials
 - [ ] Dismissible contextual post-onboarding hints, replayable from Help, introducing gestures and relevant customisation when needed
