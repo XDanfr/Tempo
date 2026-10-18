@@ -1,6 +1,6 @@
 # Feel & Flow — the Tempo 1.0 experience direction
 
-Status: **design proposal**, not implemented or a fixed release promise. Features may arrive in smaller releases before 1.0. This supplements [the roadmap](ROADMAP.md) and must not imply that 0.5 is unfinished.
+Status: **design proposal**, not implemented or a fixed release promise. Features may arrive in smaller releases before 1.0. This supplements [the roadmap](ROADMAP.md) and must not imply that 0.5 is unfinished. The earlier, testable feedback/recovery slice and shared QA contract are specified in [Experience Integrity](EXPERIENCE_INTEGRITY.md); do not reimplement those independently in 1.0.
 
 ## Product principles
 
@@ -38,7 +38,7 @@ Tempo is an expressive, accessible timetable utility for school, college, work a
 Establish a small, documented motion vocabulary in `core:designsystem` (tokens/behaviours, not one-size-fits-all timing).
 
 - Spring-based day paging, date selection, block placement, theme changes and selection states, preserving perceived continuity.
-- Clear pressed, saved, undo/redo, imported, exported, completed and error feedback; never animate merely for decoration.
+- Clear pressed, saved, undo/redo, imported, exported, completed and error feedback; never animate merely for decoration. Continue the contextual bottom snackbar with Undo → Redo and dismiss for committed edits, with an accessible history fallback; do not show confirmation per keystroke.
 - Use shared-element or positional continuity selectively, without motion glitches on rapid gestures or configuration changes.
 - Haptics when meaningful and user-configurable; optional sound is off by default.
 - Prefer subtle, predictable feedback to confetti during normal use.
@@ -133,6 +133,8 @@ The following principles are informed by the two linked videos' **publicly avail
 - A reduced-motion user and a screen-reader user receive equivalent meaning, navigation and success confirmation.
 
 ## Research and design references
+
+- [Tim Gabe — The Psychology of Premium Apps](https://youtu.be/8EAYZe6y3I8) (October 2026, full transcript provided by the app developer): audit real state transitions, cross-screen consistency and deliberate failure recovery rather than judging standalone polished screens; translated into [Experience Integrity](EXPERIENCE_INTEGRITY.md).
 
 - [Tim Gabe — How to Design Gamification That Actually Works](https://youtu.be/LXX_qOA5D8E) (11 May 2026): useful caution against substituting XP, badges and leaderboards for intrinsically valuable behaviour; favour genuine competence feedback, completion clarity and feature restraint. Interpreted from a secondary transcript summary.
 - [uxpeak — The UX Psychology Behind Apps People Can't Stop Using](https://youtu.be/2TlIg3VokY8) (2 July 2026): smart defaults, choice overload, early value before sign-up, ownership through customisation and visible progress. Some examples emphasise conversion/loss aversion; Tempo should **not** adopt manipulative pressure framing. Interpreted from a secondary transcript summary.
