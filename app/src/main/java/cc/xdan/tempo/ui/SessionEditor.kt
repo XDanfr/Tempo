@@ -41,7 +41,7 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
     EditorSheet(if (existing == null) "Add session" else "Edit session", onDismiss,
         confirm = { candidate?.let(onSave) }, enabled = candidate != null) {
         scopeControls?.invoke()
-        ChoiceField("Subject / activity", subject, timetable.subjects.map { it.id }, { key -> timetable.subjects.first { it.id == key }.name }, { subject = it })
+        SubjectPickerField("Subject / activity", subject, timetable.subjects) { subject = it }
         if (dated) {
             if (scopeControls == null) Text("Only this date. Recurring weeks stay unchanged.")
         } else {
