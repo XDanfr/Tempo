@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.2
+
+- Widget 2.0 styles: a new adaptive Tempo widget plus redesigned 2×1, square and wide widgets with connected event and countdown shapes, optional segment and outer outlines, subject-colour or theme-shade heroes, and a refreshed configuration screen with a live preview.
+- Widgets show hours and minutes during lessons and breaks, fit countdowns to their space, show readable start durations, label overlapping events truthfully, keep large-text labels readable, and refresh straight after resizing, clock changes or leaving the app. Exact-alarm timing is offered where Android allows it.
+- Dropdowns now open in signed release builds. Every choice field opens a bottom sheet styled like the rest of Tempo, and subject choices show each subject's colour and icon.
+
+### Compatibility
+
+Version code 10. Timetable schema remains 3. Existing widgets keep their configuration.
+
 ## 0.5.1
 
 - Twelve named subject colours, adding Red, Orange, Lemon, Teal, Blue and Magenta to the original six. Colour choices wrap and expose their names and selection state as a radio group to accessibility services. Choosing a colour, opening the icon picker or using the subject fields' Done key dismisses the text keyboard to keep the controls visible. Hardware-keyboard colour selection keeps focus on the chosen control.
