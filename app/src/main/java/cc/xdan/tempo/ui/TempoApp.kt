@@ -7,6 +7,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ViewWeek
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,7 +34,7 @@ import cc.xdan.tempo.schedule.*
 import kotlinx.coroutines.delay
 
 /** Bottom-bar destinations. Today and Timetable were merged into the single day-first Schedule. */
-enum class Destination(val label: String) { SCHEDULE("Schedule"), LIBRARY("Library"), SETTINGS("Settings") }
+enum class Destination(val label: String) { SCHEDULE("Schedule"), WEEK("Week"), LIBRARY("Library"), SETTINGS("Settings") }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,6 +118,7 @@ fun TempoApp(model: TempoViewModel) {
                             NavigationBarItem(selected = selected, onClick = { if (!selected) { navHaptics.tick(); destination = item } },
                                 icon = { Icon(when (item) {
                                     Destination.SCHEDULE -> if (selected) Icons.Filled.CalendarToday else Icons.Outlined.CalendarToday
+                                    Destination.WEEK -> if (selected) Icons.Filled.ViewWeek else Icons.Outlined.ViewWeek
                                     Destination.LIBRARY -> if (selected) Icons.Filled.CollectionsBookmark else Icons.Outlined.CollectionsBookmark
                                     Destination.SETTINGS -> if (selected) Icons.Filled.Settings else Icons.Outlined.Settings
                                 }, null) }, label = { Text(item.label, maxLines = 1) })
@@ -135,6 +137,8 @@ fun TempoApp(model: TempoViewModel) {
                             Destination.SCHEDULE -> ScheduleScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
                                 { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true },
                                 { d, time -> editFree(d.dayOfWeek.value, time) }, editPause, onTopChanged = { fabExpanded = it })
+                            Destination.WEEK -> WeekScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
+                                { day -> selectedDate = day.toString(); destination = Destination.SCHEDULE })
                             Destination.LIBRARY -> LibraryScreen(timetable) { label, change -> model.update(label, change) }
                             Destination.SETTINGS -> SettingsScreen(timetable, model::update)
                         }
