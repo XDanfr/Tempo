@@ -326,10 +326,11 @@ private fun TimelineRow(block: ScheduleBlock, appearance: Appearance, past: Bool
     Row(modifier.fillMaxWidth().drawWithContent {
         drawContent()
         if (current) {
+            // The marker stays on the rail; inside the block, the elapsed fill meets it at the same height.
             val y = size.height * animatedProgress
             val railEnd = RailWidth.toPx() - 6.dp.toPx()
+            drawLine(lineColour, Offset(railEnd, y), Offset(RailWidth.toPx() + 2.dp.toPx(), y), 2.dp.toPx())
             drawCircle(lineColour, 4.dp.toPx(), Offset(railEnd, y))
-            drawLine(lineColour, Offset(railEnd, y), Offset(size.width, y), 2.dp.toPx())
         }
     }, verticalAlignment = Alignment.Top) {
         Text(minuteLabel(block.time.start), Modifier.width(RailWidth).padding(top = if (block is ScheduleBlock.Free) 14.dp else 12.dp).alpha(fade),
@@ -338,7 +339,7 @@ private fun TimelineRow(block: ScheduleBlock, appearance: Appearance, past: Bool
         Box(Modifier.weight(1f).alpha(fade)) {
             when (block) {
                 is ScheduleBlock.Free -> FreeGap(block, appearance) { editFree(block.time) }
-                else -> BlockCard(block, appearance, current, progress) {
+                else -> BlockCard(block, appearance, current, animatedProgress) {
                     when (block) { is ScheduleBlock.Lesson -> edit(block.session); is ScheduleBlock.Break -> editBreak(block.scheduled); else -> Unit }
                 }
             }
@@ -389,11 +390,13 @@ private fun BlockCard(block: ScheduleBlock, appearance: Appearance, current: Boo
         shape = RoundedCornerShape(if (compact) 18.dp else 24.dp), border = if (outlined) BorderStroke(if (current) 2.dp else 1.5.dp, accent) else null,
         modifier = Modifier.fillMaxWidth().heightIn(min = height).semantics {
             contentDescription = "$name, ${minuteLabel(block.time.start)} to ${minuteLabel(block.time.end)}" + (if (current) ", happening now" else "") + ". Edit"
-        }.drawWithContent {
-            // Elapsed part of the current block, behind the text.
-            if (current) drawRect(elapsed, size = Size(size.width * progress.coerceIn(0f, 1f), size.height))
-            drawContent()
         }) {
+        Box {
+        // Elapsed part of the current block fills from the top, following the vertical time axis,
+        // and is clipped by the block's shape.
+        if (current) Box(Modifier.matchParentSize()) {
+            Box(Modifier.fillMaxWidth().fillMaxHeight(progress.coerceIn(0f, 1f)).background(elapsed))
+        }
         Row(Modifier.heightIn(min = height).padding(horizontal = if (compact) 14.dp else 18.dp, vertical = if (compact) 8.dp else 14.dp),
             verticalAlignment = if (compact) Alignment.CenterVertically else Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             val icon = when (block) { is ScheduleBlock.Lesson -> block.subject.icon; is ScheduleBlock.Break -> block.scheduled.kind.icon(); else -> SubjectIcon.NONE }
@@ -411,6 +414,7 @@ private fun BlockCard(block: ScheduleBlock, appearance: Appearance, current: Boo
             if (current) Surface(shape = CircleShape, color = foreground.copy(alpha = .14f), contentColor = foreground) {
                 Text("Now", Modifier.padding(horizontal = 10.dp, vertical = 3.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
             }
+        }
         }
     }
 }
