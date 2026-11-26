@@ -90,7 +90,7 @@ class Release05UiTest {
         compose.waitUntil(10_000) { selected == date.plusDays(1) }
         compose.runOnIdle { selected = date.plusWeeks(1) }
         compose.onNodeWithText("Week 2 of 2").assertExists()
-        compose.onNodeWithText("Nothing scheduled").assertExists()
+        compose.onNodeWithText("Maths").assertDoesNotExist()
         compose.runOnIdle { selected = date }
         compose.onNodeWithText("Week 1 of 2").assertExists()
         compose.onNodeWithText("Maths").assertExists()

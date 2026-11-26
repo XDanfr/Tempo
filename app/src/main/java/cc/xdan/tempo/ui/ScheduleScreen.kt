@@ -262,8 +262,10 @@ private fun DaySummary(timetable: Timetable, date: LocalDate, lessons: List<Sche
     val holiday = if (exception == null) timetable.holidays.firstOrNull {
         !date.isBefore(LocalDate.parse(it.startDate)) && !date.isAfter(LocalDate.parse(it.endDate))
     } else null
+    if (lessons.isEmpty() && timetable.cycle.weeks <= 1 && exception == null && holiday == null) return
     Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(if (lessons.isEmpty()) "Nothing scheduled" else "${countLabel(lessons.size, "session")} · ${durationLabel(minutes)} scheduled",
+        // Empty days say so once, in the empty state below; the summary only counts real sessions.
+        Text(if (lessons.isEmpty()) "" else "${countLabel(lessons.size, "session")} · ${durationLabel(minutes)} scheduled",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
         // Cycle weeks only matter when the timetable actually alternates.
         if (timetable.cycle.weeks > 1) InfoPill("Week ${ScheduleResolver.cycleWeek(timetable, date)} of ${timetable.cycle.weeks}")
@@ -297,7 +299,7 @@ private fun EmptyDay(timetable: Timetable, date: LocalDate) {
             Box(contentAlignment = Alignment.Center) { Icon(Icons.Outlined.EventAvailable, null, Modifier.size(32.dp)) }
         }
         Text(if (closed) "A day off" else "A little breathing room", style = MaterialTheme.typography.titleLarge)
-        Text(if (closed) "Nothing is scheduled for this date." else "Nothing is scheduled. Tap Add session to plan something.",
+        Text(if (closed) "Enjoy the time off." else "Tap Add session to plan something.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
@@ -422,8 +424,9 @@ private fun BlockCard(block: ScheduleBlock, appearance: Appearance, current: Boo
 private sealed interface NowState {
     data class During(val block: ScheduleBlock, val next: ScheduleBlock.Lesson?) : NowState
     data class Upcoming(val next: ScheduleBlock.Lesson) : NowState
-    data class Done(val lessons: Int, val minutes: Int, val nextDay: Pair<LocalDate, ScheduleBlock.Lesson>?) : NowState
-    data class Nothing(val nextDay: Pair<LocalDate, ScheduleBlock.Lesson>?) : NowState
+    data class Done(val date: LocalDate, val finishedAt: Int, val nextDay: Pair<LocalDate, ScheduleBlock.Lesson>?) : NowState
+    /** Nothing today: the card only appears to point at the next session on a later day. */
+    data class Nothing(val date: LocalDate, val nextDay: Pair<LocalDate, ScheduleBlock.Lesson>) : NowState
 }
 
 /** First lesson on a later date within the next fortnight, for "what's next" after today. */
@@ -448,15 +451,19 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
     val lessons = blocks.filterIsInstance<ScheduleBlock.Lesson>()
     val currentBlock = ScheduleResolver.current(blocks, minute)
     val next = ScheduleResolver.nextLesson(blocks, minute)
+    val nextDay = remember(timetable, date) { firstLessonAfter(timetable, date) }
     val state: NowState = when {
-        currentBlock != null -> NowState.During(currentBlock, next)
+        // No sessions at all: point at the next one instead of describing an empty day as "free time".
+        lessons.isEmpty() -> NowState.Nothing(date, nextDay ?: return)
+        // Free time or a break after the last session means the day is done, not "free".
+        currentBlock is ScheduleBlock.Lesson || (currentBlock != null && next != null) -> NowState.During(currentBlock, next)
         next != null -> NowState.Upcoming(next)
-        lessons.isNotEmpty() -> NowState.Done(lessons.size, lessons.sumOf { it.time.minutes }, remember(timetable, date) { firstLessonAfter(timetable, date) })
-        else -> NowState.Nothing(remember(timetable, date) { firstLessonAfter(timetable, date) })
+        else -> NowState.Done(date, lessons.maxOf { it.time.end }, nextDay)
     }
     val colour = when (state) {
         is NowState.During -> when (val b = state.block) { is ScheduleBlock.Lesson -> Color(b.subject.colour); is ScheduleBlock.Break -> breakColour(b.scheduled.kind); else -> null }
         is NowState.Upcoming -> Color(state.next.subject.colour)
+        is NowState.Nothing -> Color(state.nextDay.second.subject.colour)
         else -> null
     }
     val container = colour?.compositeOver(MaterialTheme.colorScheme.surface) ?: MaterialTheme.colorScheme.primaryContainer
@@ -468,7 +475,7 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
         }
         is NowState.Upcoming -> ({ edit(state.next.session) })
         is NowState.Done -> state.nextDay?.let { (day, _) -> { selectDate(day) } }
-        is NowState.Nothing -> state.nextDay?.let { (day, _) -> { selectDate(day) } }
+        is NowState.Nothing -> ({ selectDate(state.nextDay.first) })
     }
     val body: @Composable () -> Unit = {
         Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -477,7 +484,7 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
                     (fadeIn(TempoMotion.effects()) + scaleIn(TempoMotion.spatial(), initialScale = .96f)) togetherWith fadeOut(TempoMotion.exit())
                 }) { (_, title) ->
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(nowEyebrow(state), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = content.copy(alpha = .8f))
+                        nowEyebrow(state)?.let { Text(it, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = content.copy(alpha = .8f)) }
                         Text(title, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
@@ -495,19 +502,27 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
     else Surface(color = animatedContainer, contentColor = content, shape = RoundedCornerShape(28.dp), modifier = modifier) { body() }
 }
 
-private fun nowEyebrow(state: NowState) = when (state) {
-    is NowState.During -> when (state.block) { is ScheduleBlock.Lesson -> "NOW"; is ScheduleBlock.Break -> "ON A BREAK"; else -> "FREE TIME" }
+/**
+ * The eyebrow names the moment and the title names the thing, so they never repeat each other.
+ * "Done for today" needs no eyebrow at all.
+ */
+private fun nowEyebrow(state: NowState): String? = when (state) {
+    is NowState.During -> "NOW"
     is NowState.Upcoming -> "UP NEXT"
-    is NowState.Done -> "DAY COMPLETE"
-    is NowState.Nothing -> "TODAY"
+    is NowState.Nothing -> "NEXT SESSION"
+    is NowState.Done -> null
 }
 
 private fun nowTitle(state: NowState) = when (state) {
-    is NowState.During -> when (val b = state.block) { is ScheduleBlock.Lesson -> b.subject.name; is ScheduleBlock.Break -> b.scheduled.name; else -> "Time for yourself" }
+    is NowState.During -> when (val b = state.block) { is ScheduleBlock.Lesson -> b.subject.name; is ScheduleBlock.Break -> b.scheduled.name; else -> "Free time" }
     is NowState.Upcoming -> state.next.subject.name
     is NowState.Done -> "Done for today"
-    is NowState.Nothing -> "Nothing scheduled"
+    is NowState.Nothing -> state.nextDay.second.subject.name
 }
+
+/** "tomorrow at 09:00" or "Friday at 09:00". */
+private fun whenLabel(from: LocalDate, day: LocalDate, minute: Int) =
+    (if (day == from.plusDays(1)) "tomorrow" else weekdayNames[day.dayOfWeek.value - 1]) + " at ${minuteLabel(minute)}"
 
 private fun nowDetail(state: NowState, showLocations: Boolean, minute: Int) = when (state) {
     is NowState.During -> {
@@ -519,16 +534,18 @@ private fun nowDetail(state: NowState, showLocations: Boolean, minute: Int) = wh
         val place = if (showLocations && state.next.location.isNotBlank()) " · ${state.next.location}" else ""
         "Starts at ${minuteLabel(state.next.time.start)}$place"
     }
-    is NowState.Done -> "${countLabel(state.lessons, "session")} · ${durationLabel(state.minutes)} today"
-    is NowState.Nothing -> "Enjoy the space."
+    is NowState.Done -> "Finished at ${minuteLabel(state.finishedAt)}"
+    is NowState.Nothing -> {
+        val (day, lesson) = state.nextDay
+        val place = if (showLocations && lesson.location.isNotBlank()) " · ${lesson.location}" else ""
+        whenLabel(state.date, day, lesson.time.start).replaceFirstChar { it.titlecase() } + place
+    }
 }
 
 private fun nowFollowing(state: NowState): String? = when (state) {
-    is NowState.During -> if (state.block !is ScheduleBlock.Lesson) state.next?.let { "Then ${it.subject.name} at ${minuteLabel(it.time.start)}" } ?: "No more sessions today"
-        else state.next?.let { "Then ${it.subject.name} at ${minuteLabel(it.time.start)}" }
-    is NowState.Done -> state.nextDay?.let { (day, lesson) -> "Next: ${lesson.subject.name}, ${weekdayNames[day.dayOfWeek.value - 1]} at ${minuteLabel(lesson.time.start)}" }
-    is NowState.Nothing -> state.nextDay?.let { (day, lesson) -> "Next: ${lesson.subject.name}, ${weekdayNames[day.dayOfWeek.value - 1]} at ${minuteLabel(lesson.time.start)}" }
-    is NowState.Upcoming -> null
+    is NowState.During -> state.next?.let { "Then ${it.subject.name} at ${minuteLabel(it.time.start)}" }
+    is NowState.Done -> state.nextDay?.let { (day, lesson) -> "Next: ${lesson.subject.name}, ${whenLabel(state.date, day, lesson.time.start)}" }
+    is NowState.Nothing, is NowState.Upcoming -> null
 }
 
 /** Countdown ring for the current block, a countdown for what's next, or a check when done. */
@@ -549,7 +566,7 @@ private fun NowDial(state: NowState, seconds: Int, content: Color) {
                 CountdownText((state.next.time.start * 60 - seconds).coerceAtLeast(0), "to go", content)
             }
             is NowState.Done -> DoneBadge(content)
-            is NowState.Nothing -> Icon(Icons.Outlined.WbSunny, null, Modifier.size(40.dp), tint = content)
+            is NowState.Nothing -> Icon(Icons.Outlined.EventNote, null, Modifier.size(40.dp), tint = content)
         }
     }
 }
@@ -559,7 +576,7 @@ private fun CountdownText(secondsLeft: Int, suffix: String, content: Color) {
     val minutes = secondsLeft / 60
     val headline = when {
         secondsLeft < 60 -> "${secondsLeft}s"
-        minutes >= 60 -> "${minutes / 60}h ${"%02d".format(minutes % 60)}"
+        minutes >= 60 -> "${minutes / 60}h ${"%02d".format(minutes % 60)}m"
         else -> "${minutes + 1}m"
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
