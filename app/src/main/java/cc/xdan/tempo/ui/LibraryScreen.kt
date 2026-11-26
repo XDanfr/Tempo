@@ -39,7 +39,7 @@ import cc.xdan.tempo.schedule.removeSubject
 import java.util.UUID
 
 @Composable
-fun LibraryScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit) {
+fun LibraryScreen(timetable: Timetable, update: (label: String?, (Timetable) -> Timetable) -> Unit) {
     var editor by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Subject?>(null) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -63,8 +63,8 @@ fun LibraryScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Un
         }
     }
     if (editor) SubjectEditor(selected, (timetable.sessions + timetable.exceptions.flatMap { it.sessions }).count { it.subjectId == selected?.id }, { editor = false },
-        { subject -> update { it.copy(subjects = it.subjects.filterNot { s -> s.id == subject.id } + subject) }; editor = false },
-        { id -> update { it.removeSubject(id) }; editor = false })
+        { subject -> update("${if (timetable.subjects.any { it.id == subject.id }) "Updated" else "Added"} ${subject.name}") { it.copy(subjects = it.subjects.filterNot { s -> s.id == subject.id } + subject) }; editor = false },
+        { id -> update("Deleted ${timetable.subjects.firstOrNull { it.id == id }?.name ?: "subject"}") { it.removeSubject(id) }; editor = false })
 }
 
 @Composable

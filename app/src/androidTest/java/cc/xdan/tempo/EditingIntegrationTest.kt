@@ -59,15 +59,45 @@ class EditingIntegrationTest {
             compose.waitUntil(10_000) { model.state.value.timetable != null }
             model.update { it.copy(name = "Changed") }
             compose.waitUntil(10_000) { model.state.value.timetable?.name == "Changed" && model.state.value.canUndo }
-            compose.onNodeWithContentDescription("Undo edit").performClick()
+            compose.onNodeWithContentDescription("More options").performClick()
+            compose.onNodeWithText("Undo").performClick()
             compose.waitUntil(10_000) { model.state.value.timetable?.name == fixture.name && model.state.value.canRedo }
             model.update { it.copy(name = "") }
             compose.waitUntil(10_000) { model.state.value.error != null }
             model.dismissError()
-            compose.onNodeWithContentDescription("Redo edit").performClick()
+            compose.onNodeWithContentDescription("More options").performClick()
+            compose.onNodeWithText("Redo").performClick()
             compose.waitUntil(10_000) { model.state.value.timetable?.name == "Changed" && !model.state.value.canRedo }
             assertFalse(model.state.value.canRedo)
             runBlocking { repository.updateCollection { current -> assertEquals("Changed", current.active.name); current } }
+        } finally { compose.runOnIdle { store.clear() } }
+    }
+
+    @Test fun snackbarUndoRedoNamesTheChangeAndNeverReversesALaterOne() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val repository = TimetableRepository(context)
+        runBlocking { repository.updateCollection { TimetableCollection(timetables = listOf(SavedTimetable("local", table))) } }
+        val model = TempoViewModel(repository)
+        val store = ViewModelStore().also { it.put("qa", model) }
+        try {
+            compose.setContent { TempoApp(model) }
+            compose.waitUntil(10_000) { model.state.value.timetable != null }
+            model.update("Renamed to First") { it.copy(name = "First") }
+            compose.waitUntil(10_000) { model.state.value.feedback is Feedback.Changed }
+            val stale = (model.state.value.feedback as Feedback.Changed).revision
+            compose.onNodeWithText("Renamed to First").assertIsDisplayed()
+            compose.onNodeWithText("Undo").performClick()
+            compose.waitUntil(10_000) { model.state.value.timetable?.name == table.name }
+            compose.onNodeWithText("Undone: Renamed to First").assertIsDisplayed()
+            compose.onNodeWithText("Redo").performClick()
+            compose.waitUntil(10_000) { model.state.value.timetable?.name == "First" }
+            model.update("Renamed to Second") { it.copy(name = "Second") }
+            compose.waitUntil(10_000) { model.state.value.timetable?.name == "Second" }
+            // A late tap on the first snackbar's Undo must not reverse the newer rename.
+            model.undo(stale)
+            compose.waitForIdle()
+            runBlocking { repository.updateCollection { current -> assertEquals("Second", current.active.name); current } }
+            assertEquals("Renamed to Second", model.state.value.undoLabel)
         } finally { compose.runOnIdle { store.clear() } }
     }
 

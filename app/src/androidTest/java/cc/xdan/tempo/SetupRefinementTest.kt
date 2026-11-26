@@ -48,7 +48,7 @@ class SetupRefinementTest {
 
     @Test fun predictiveSettingsBackCanCancelOrCommit() {
         val table = Timetable(onboarded = true)
-        compose.setContent { TempoTheme(table.appearance) { SettingsScreen(table, {}, TimetableFileActions({}, {}), {}, false) } }
+        compose.setContent { TempoTheme(table.appearance) { SettingsScreen(table, {}) } }
         compose.onNodeWithText("Appearance").performClick()
         compose.onNodeWithText("Subject blocks").performScrollTo().assertIsDisplayed()
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.dispatchOnBackStarted(BackEventCompat(0f, 100f, 0f, BackEventCompat.EDGE_LEFT)) }

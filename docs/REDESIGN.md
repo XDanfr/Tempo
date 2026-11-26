@@ -14,7 +14,7 @@ Reviewing 0.5.2 on a device showed three recurring problems:
 
 | Action | 0.5.2 entry points | Single home after redesign |
 | --- | --- | --- |
-| Switch / manage timetables | Top-bar calendar icon, timetable-name dropdown, Settings → Timetables & files | **Timetable-name chip in the top bar** opens the timetable switcher sheet. Calendar icon removed; Settings links to the same sheet only as a labelled row, not a second implementation. |
+| Switch / manage timetables | Top-bar calendar icon, timetable-name dropdown, Settings → Timetables & files | **Timetable-name chip in the top bar** opens the timetable switcher sheet. Calendar icon and the Settings “Timetables & files” page removed. |
 | Import / export `.tempo.json` | Timetable sheet, Settings → Timetables & files, onboarding | **Timetable switcher sheet** (Import, and Export inside each timetable's overflow menu). Onboarding keeps "Import" only as a first-run starting path. Settings section removed. |
 | Rename / duplicate / delete timetable | Three text buttons on every card | **Overflow menu (⋮) per card**; tapping the card switches to it. |
 | Today vs Timetable | Two tabs rendering the same day list | **One Schedule tab** that opens on today and pages between dates. |

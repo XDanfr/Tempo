@@ -20,16 +20,14 @@ import cc.xdan.tempo.model.*
 import java.util.UUID
 
 private enum class SettingsPage(val label: String, val detail: String) {
-    FILES("Timetables & files", "Manage, import, backup and export images"),
     APPEARANCE("Appearance", "Themes, colours and block styles"),
     SCHEDULE("Schedule", "Repeating weeks, holidays, day hours and usual periods"),
     UPDATES("Updates", "Release checks and downloads")
 }
 
 @Composable
-fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, files: TimetableFileActions, manageTimetables: () -> Unit, fileBusy: Boolean, report: (String) -> Unit = {}) {
+fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit) {
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
-    var pngExport by remember { mutableStateOf(false) }
     var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
     PredictiveSettingsHost(page?.name, { page = null }) { shownPage ->
     val currentPage = shownPage?.let(SettingsPage::valueOf)
@@ -43,7 +41,7 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
         items(SettingsPage.entries) { section ->
             ElevatedCard(onClick = { page = section }, modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Icon(when (section) { SettingsPage.FILES -> Icons.Outlined.Folder; SettingsPage.APPEARANCE -> Icons.Outlined.Palette; SettingsPage.SCHEDULE -> Icons.Outlined.CalendarMonth; SettingsPage.UPDATES -> Icons.Outlined.SystemUpdate }, null)
+                    Icon(when (section) { SettingsPage.APPEARANCE -> Icons.Outlined.Palette; SettingsPage.SCHEDULE -> Icons.Outlined.CalendarMonth; SettingsPage.UPDATES -> Icons.Outlined.SystemUpdate }, null)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(section.label, style = MaterialTheme.typography.titleMedium)
                     Text(section.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -58,20 +56,6 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
                 FilledTonalIconButton(onClick = { page = null }, shape = CircleShape) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to settings") }
                 Text(currentPage.label, style = MaterialTheme.typography.headlineMedium)
             }
-        }
-        if (currentPage == SettingsPage.FILES) {
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Timetables", style = MaterialTheme.typography.titleLarge)
-                OutlinedButton(onClick = manageTimetables, modifier = Modifier.fillMaxWidth()) { Text("Manage timetables") }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = files.import, enabled = !fileBusy, modifier = Modifier.weight(1f)) { Text("Import file") }
-                    OutlinedButton(onClick = files.export, enabled = !fileBusy, modifier = Modifier.weight(1f)) { Text("Export file") }
-                }
-                Text("Tempo files include subjects, colours, times, breaks and settings.", style = MaterialTheme.typography.bodySmall)
-                OutlinedButton(onClick = { pngExport = true }, enabled = !fileBusy, modifier = Modifier.fillMaxWidth()) { Text("Export day / week PNG") }
-            }
-        }
         }
         if (currentPage == SettingsPage.APPEARANCE) item { AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } } }
         if (currentPage == SettingsPage.SCHEDULE) {
@@ -99,7 +83,6 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
     }
     }
     }
-    if (pngExport) PngExportSheet(timetable, { pngExport = false }, report)
     editingDay?.let { hours ->
         HoursEditor(hours, { editingDay = null }) { new -> update { t -> t.copy(days = t.days.filterNot { it.day == new.day } + new) }; editingDay = null }
     }

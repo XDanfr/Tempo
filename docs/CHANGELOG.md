@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — redesign foundations
+
+- Every saved edit now confirms what changed in a snackbar, such as “Added Physics session” or “Deleted Lunch”, with **Undo**. After undoing, the snackbar offers **Redo**. An Undo tapped late never reverses a newer change, and Undo and Redo stay in the ⋮ menu after the snackbar closes.
+- The top bar shows your timetable as a single chip that opens the timetable switcher. The calendar icon and the separate Undo/Redo icons are gone.
+- In the timetable switcher, tap a timetable to switch to it. Rename, Duplicate, Export and Delete are in each timetable's ⋮ menu. New and Import sit side by side, and Compare appears once you have two timetables.
+- Day and week images are now shared from the ⋮ menu (“Share as image”). The duplicate “Timetables & files” settings page has been removed.
+- Shared motion and haptic foundations: confirmations give a light haptic tick, and the timetable chip responds to presses.
+
 ## 0.5.2
 
 - Widget 2.0 styles: a new adaptive Tempo widget plus redesigned 2×1, square and wide widgets with connected event and countdown shapes, optional segment and outer outlines, subject-colour or theme-shade heroes, and a refreshed configuration screen with a live preview.

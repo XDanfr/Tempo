@@ -20,15 +20,32 @@ import kotlinx.coroutines.sync.withLock
 
 data class ImportPreview(val timetable: Timetable, val targetId: String)
 
+/**
+ * One piece of user-facing feedback, emitted only after an action has completed.
+ * [revision] binds Undo/Redo to the history state the person saw, so a late tap never reverses
+ * a different change.
+ */
+sealed interface Feedback {
+    val id: Long
+    /** A named edit was saved and can be undone. */
+    data class Changed(override val id: Long, val label: String, val revision: Int) : Feedback
+    /** An edit was undone and can be redone. */
+    data class Undone(override val id: Long, val label: String, val revision: Int) : Feedback
+    /** Plain information with no action, such as a finished export. */
+    data class Info(override val id: Long, val text: String) : Feedback
+}
+
 data class TempoState(val collection: TimetableCollection? = null, val error: String? = null,
-    val importPreview: ImportPreview? = null, val contentEpoch: Int = 0, val fileBusy: Boolean = false, val message: String? = null,
-    val canUndo: Boolean = false, val canRedo: Boolean = false) {
+    val importPreview: ImportPreview? = null, val contentEpoch: Int = 0, val fileBusy: Boolean = false,
+    val feedback: Feedback? = null, val canUndo: Boolean = false, val canRedo: Boolean = false,
+    val undoLabel: String? = null, val redoLabel: String? = null) {
     val timetable: Timetable? get() = collection?.active
 }
 
 class TempoViewModel(private val repository: TimetableRepository) : ViewModel() {
     private val editLock = Mutex()
-    private val history = EditHistory<TimetableCollection>()
+    private val history = ChangeHistory<TimetableCollection>()
+    private var feedbackId = 0L
     private val mutable = MutableStateFlow(TempoState())
     val state = mutable.asStateFlow()
     init {
@@ -38,24 +55,34 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
             catch (e: Exception) { showError("Could not read your timetables. Your saved data has been kept. " + (e.message ?: "Please restart Tempo.")) }
         }
     }
-    fun update(transform: (Timetable) -> Timetable) {
+    /**
+     * Saves a change to the active timetable. A [label] such as "Added Physics" shows an
+     * undoable snackbar once the change is stored; unlabelled changes (settings toggles,
+     * onboarding steps) stay undoable from the menu without interrupting.
+     */
+    fun update(label: String?, transform: (Timetable) -> Timetable) {
         val id = mutable.value.collection?.activeId ?: return
-        save { changeCollection { it.update(id, transform) } }
+        save { changeCollection(label) { it.update(id, transform) } }
     }
-    fun select(id: String) = save { changeCollection { it.select(id) } }
+    fun update(transform: (Timetable) -> Timetable) = update(null, transform)
+    fun select(id: String) = save { changeCollection(null) { it.select(id) } }
     fun create(name: String) = save {
-        changeCollection { it.add(UUID.randomUUID().toString(), Timetable(name = name.trim())) }
+        changeCollection("Created ${name.trim()}") { it.add(UUID.randomUUID().toString(), Timetable(name = name.trim())) }
     }
-    fun rename(id: String, name: String) = save { changeCollection { it.update(id) { t -> t.copy(name = name.trim()) } } }
+    fun rename(id: String, name: String) = save { changeCollection("Renamed to ${name.trim()}") { it.update(id) { t -> t.copy(name = name.trim()) } } }
     fun duplicate(id: String) = save {
-        changeCollection { collection ->
+        val source = mutable.value.collection?.timetables?.firstOrNull { it.id == id }?.timetable?.name ?: "timetable"
+        changeCollection("Duplicated $source") { collection ->
             val timetable = collection.timetables.first { it.id == id }.timetable
             collection.add(UUID.randomUUID().toString(), timetable.copy(name = uniqueName(timetable.name + " copy", collection)))
         }
     }
-    fun delete(id: String) = save { changeCollection { it.remove(id) } }
+    fun delete(id: String) = save {
+        val name = mutable.value.collection?.timetables?.firstOrNull { it.id == id }?.timetable?.name ?: "timetable"
+        changeCollection("Deleted $name") { it.remove(id) }
+    }
     fun importTimetable(timetable: Timetable, replaceId: String?) = save {
-        changeCollection { collection ->
+        changeCollection(if (replaceId != null) "Replaced with ${timetable.name}" else "Imported ${timetable.name}") { collection ->
             val ready = timetable.copy(onboarded = true, onboardingStep = 3)
             if (replaceId != null) collection.update(replaceId) { ready }.select(replaceId)
             else collection.add(UUID.randomUUID().toString(), ready.copy(name = uniqueName(ready.name, collection)))
@@ -76,30 +103,42 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
             catch (e: Exception) { showError("Could not save this change: " + (e.message ?: "Try again.")) }
         }
     }
-    private suspend fun changeCollection(transform: (TimetableCollection) -> TimetableCollection) {
+    private suspend fun changeCollection(label: String?, transform: (TimetableCollection) -> TimetableCollection) {
         var before: TimetableCollection? = null
         var after: TimetableCollection? = null
         repository.updateCollection { old -> transform(old).also { before = old; after = it } }
-        history.record(before!!, after!!)
-        publishHistory()
+        // Feedback is emitted only after storage succeeded, and never for unchanged values.
+        val changed = history.record(before!!, after!!, label)
+        publishHistory(if (changed && label != null) Feedback.Changed(++feedbackId, label, history.revision) else null)
     }
-    private fun publishHistory() {
-        mutable.value = mutable.value.copy(canUndo = history.canUndo, canRedo = history.canRedo)
+    private fun publishHistory(feedback: Feedback? = null) {
+        mutable.value = mutable.value.copy(canUndo = history.canUndo, canRedo = history.canRedo,
+            undoLabel = history.undoLabel, redoLabel = history.redoLabel,
+            feedback = feedback ?: mutable.value.feedback)
     }
-    fun undo() = save {
+    /**
+     * Undoes the latest change. When [expectedRevision] is given (from a snackbar), nothing
+     * happens unless history is still exactly as that snackbar described it.
+     */
+    fun undo(expectedRevision: Int?) = save {
+        if (expectedRevision != null && expectedRevision != history.revision) return@save
         val target = history.undoTarget() ?: return@save
         var current: TimetableCollection? = null
         repository.updateCollection { current = it; target }
-        history.didUndo(current!!)
-        publishHistory()
+        val label = history.didUndo(current!!)
+        publishHistory(Feedback.Undone(++feedbackId, label ?: "last change", history.revision))
     }
-    fun redo() = save {
+    fun undo() = undo(null)
+    /** Redoes the latest undone change, with the same revision guard as [undo]. */
+    fun redo(expectedRevision: Int?) = save {
+        if (expectedRevision != null && expectedRevision != history.revision) return@save
         val target = history.redoTarget() ?: return@save
         var current: TimetableCollection? = null
         repository.updateCollection { current = it; target }
-        history.didRedo(current!!)
-        publishHistory()
+        val label = history.didRedo(current!!)
+        publishHistory(Feedback.Changed(++feedbackId, label ?: "Redid last change", history.revision))
     }
+    fun redo() = redo(null)
     private var importTargetId: String? = null
     private var exportSnapshot: Timetable? = null
     fun beginImport() { importTargetId = mutable.value.collection?.activeId }
@@ -142,14 +181,18 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
                     require(bytes.size <= TimetableTransfer.MAX_BYTES) { "This timetable exceeds the 2 MB file limit" }
                     resolver.openOutputStream(uri, "wt")?.use { it.write(bytes) } ?: error("Could not write to the chosen location")
                 }
-                mutable.value = mutable.value.copy(message = "Exported ${snapshot.name}")
+                info("Exported ${snapshot.name}")
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { showError("Could not export your timetable. " + (e.message ?: "Try another location.")) }
             finally { mutable.value = mutable.value.copy(fileBusy = false) }
         }
     }
-    fun dismissMessage() { mutable.value = mutable.value.copy(message = null) }
-    fun showMessage(message: String) { mutable.value = mutable.value.copy(message = message) }
+    /** Clears feedback only if it is still the one that was shown, so newer feedback survives. */
+    fun dismissFeedback(id: Long) {
+        if (mutable.value.feedback?.id == id) mutable.value = mutable.value.copy(feedback = null)
+    }
+    fun info(text: String) { mutable.value = mutable.value.copy(feedback = Feedback.Info(++feedbackId, text)) }
+    fun showMessage(message: String) = info(message)
     fun showError(message: String) { mutable.value = mutable.value.copy(error = message) }
     fun dismissError() { mutable.value = mutable.value.copy(error = null) }
 }

@@ -54,7 +54,7 @@ class UxRefinementTest {
     @Test fun settingsPagesAndCustomCycleRetainRealActions() {
         var value by mutableStateOf(table)
         compose.setContent { TempoTheme(value.appearance) {
-            SettingsScreen(value, { value = it(value) }, TimetableFileActions({}, {}), {}, false)
+            SettingsScreen(value, { value = it(value) })
         } }
         compose.onNodeWithText("Schedule").performClick()
         compose.onNodeWithText("Edit week cycle").performScrollTo().performClick()
@@ -63,9 +63,6 @@ class UxRefinementTest {
         compose.onNodeWithText("Number of weeks").performImeAction()
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000) { value.cycle.weeks == 3 }
-        compose.onNodeWithContentDescription("Back to settings").performScrollTo().performClick()
-        compose.onNodeWithText("Timetables & files").performClick()
-        compose.onNodeWithText("Export day / week PNG").assertIsDisplayed()
         compose.onNodeWithContentDescription("Back to settings").performScrollTo().performClick()
         compose.onNodeWithText("Appearance").performClick()
         compose.onNodeWithText("Light").performScrollTo().performClick()
