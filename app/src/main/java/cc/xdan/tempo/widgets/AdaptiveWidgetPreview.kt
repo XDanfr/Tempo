@@ -27,6 +27,7 @@ internal enum class WidgetPreviewSize(val label: String, val height: Int) {
 @Composable
 internal fun AdaptiveWidgetPreview(timetable: Timetable?, settings: WidgetSettings) {
     var selected by remember { mutableStateOf(WidgetPreviewSize.COMPACT) }
+    val segmentHaptics = cc.xdan.tempo.design.rememberTempoHaptics()
     val scheme = MaterialTheme.colorScheme
     val dark = scheme.background.luminance() < .5f
     val fontScale = LocalConfiguration.current.fontScale
@@ -47,7 +48,7 @@ internal fun AdaptiveWidgetPreview(timetable: Timetable?, settings: WidgetSettin
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             WidgetPreviewSize.entries.forEachIndexed { index, size ->
-                SegmentedButton(selected == size, { selected = size },
+                SegmentedButton(selected == size, { segmentHaptics.tick(); selected = size },
                     SegmentedButtonDefaults.itemShape(index, WidgetPreviewSize.entries.size), icon = {}) {
                     Text(size.label, style = MaterialTheme.typography.labelMedium)
                 }

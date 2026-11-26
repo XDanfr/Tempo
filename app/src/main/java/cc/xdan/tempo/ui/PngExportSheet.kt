@@ -120,7 +120,7 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
 
 @Composable
 private fun PrivacyToggle(label: String, checked: Boolean, change: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().toggleable(checked, role = Role.Switch, onValueChange = change), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().hapticToggleable(checked, role = Role.Switch, onValueChange = change), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f)); Switch(checked, null)
     }
 }

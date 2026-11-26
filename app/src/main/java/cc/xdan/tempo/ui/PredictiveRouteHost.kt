@@ -28,11 +28,11 @@ fun PredictiveRouteHost(route: Destination, enabled: Boolean, navigate: (Destina
     val holder = rememberSaveableStateHolder()
     val shift = with(LocalDensity.current) { 36.dp.toPx() }
     val latestNavigate by rememberUpdatedState(navigate)
-    PredictiveBackHandler(enabled = enabled && route != Destination.TODAY) { events ->
+    PredictiveBackHandler(enabled = enabled && route != Destination.SCHEDULE) { events ->
         try {
             events.collect { event -> edge = event.swipeEdge; progress.snapTo(event.progress) }
             committed = true
-            latestNavigate(Destination.TODAY)
+            latestNavigate(Destination.SCHEDULE)
             progress.snapTo(0f)
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) { progress.animateTo(0f, spring(dampingRatio = .85f, stiffness = 550f)) }
@@ -40,8 +40,8 @@ fun PredictiveRouteHost(route: Destination, enabled: Boolean, navigate: (Destina
     }
     LaunchedEffect(route) { withFrameNanos { }; committed = false }
     Box(Modifier.fillMaxSize()) {
-        if (progress.value > 0f && route != Destination.TODAY) {
-            Box(Modifier.fillMaxSize().clearAndSetSemantics { }) { screen(Destination.TODAY) }
+        if (progress.value > 0f && route != Destination.SCHEDULE) {
+            Box(Modifier.fillMaxSize().clearAndSetSemantics { }) { screen(Destination.SCHEDULE) }
         }
         Surface(Modifier.fillMaxSize().graphicsLayer {
             scaleX = 1f - .07f * progress.value

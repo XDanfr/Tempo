@@ -77,26 +77,28 @@ class Release05UiTest {
         assertTrue(table.sessions.all { it.notes == "Private notes" })
     }
 
-    @Test fun dayNavigationUsesDatesAndScopeControl() {
+    @Test fun scheduleNavigatesByDateWithWeekStripAndToday() {
         var selected by mutableStateOf(date)
         val table = fixture.copy(cycle = WeekCycle(2, date.toString()), sessions = listOf(lesson.copy(cycleWeek = 1)))
         compose.setContent { TempoTheme(table.appearance) {
             Surface {
-            DayScreen(table, selected.dayOfWeek.value, LocalDateTime.of(2026, 10, 12, 10, 0), false,
-                { selected = selected.plusDays((it - selected.dayOfWeek.value).toLong()) }, {}, { _, _ -> }, {},
-                date = selected, selectDate = { selected = it })
+                ScheduleScreen(table, LocalDateTime.now(), selected, { selected = it }, {}, { _, _ -> }, {})
             }
         } }
-        compose.onNodeWithContentDescription("Next week").performClick()
-        compose.waitUntil(10_000) { selected == date.plusWeeks(1) }
-        val locale = InstrumentationRegistry.getInstrumentation().targetContext.resources.configuration.locales[0]
-        compose.onNodeWithText("${displayDate(date.plusWeeks(1), locale)} · Week 2 of 2").assertExists()
-        compose.onNodeWithContentDescription("Edit only this date").assertDoesNotExist()
-        compose.onNodeWithContentDescription("Previous week").performClick()
-        compose.waitUntil(10_000) { selected == date }
+        // The week strip opens any day of the shown week.
+        compose.onNodeWithContentDescription("Tuesday ${date.plusDays(1).dayOfMonth}", substring = true).performClick()
+        compose.waitUntil(10_000) { selected == date.plusDays(1) }
+        compose.runOnIdle { selected = date.plusWeeks(1) }
+        compose.onNodeWithText("Week 2 of 2").assertExists()
+        compose.onNodeWithText("Nothing scheduled").assertExists()
+        compose.runOnIdle { selected = date }
+        compose.onNodeWithText("Week 1 of 2").assertExists()
         compose.onNodeWithText("Maths").assertExists()
-        compose.onNodeWithText("1 session · 2h 0m scheduled").assertExists()
-        saveScreen("qa-timetable.png", "Monday")
+        compose.onNodeWithText("1 session · 2h scheduled").assertExists()
+        // Away from today, a single Today action returns.
+        compose.onNodeWithText("Today").performClick()
+        compose.waitUntil(10_000) { selected == LocalDate.now() }
+        saveScreen("qa-timetable.png", "Today")
     }
 
     @Test fun pngPrivacyPreviewRendersAndValidatesDimensions() {

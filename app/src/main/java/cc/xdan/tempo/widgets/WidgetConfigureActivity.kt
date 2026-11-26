@@ -19,6 +19,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
+// Tempo's haptic versions of the interactive components (explicit imports win over the star import).
+import cc.xdan.tempo.ui.Button
+import cc.xdan.tempo.ui.IconButton
+import cc.xdan.tempo.ui.OutlinedButton
+import cc.xdan.tempo.ui.Surface
+import cc.xdan.tempo.ui.Switch
+import cc.xdan.tempo.ui.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier

@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 fun <T> ChoiceField(label: String, selected: T, options: List<T>, optionLabel: (T) -> String, select: (T) -> Unit,
     leading: (@Composable (T) -> Unit)? = null) {
     var open by remember { mutableStateOf(false) }
+    val haptics = cc.xdan.tempo.design.rememberTempoHaptics()
     Box(Modifier.fillMaxWidth()) {
         OutlinedTextField(value = optionLabel(selected), onValueChange = {}, readOnly = true, singleLine = true,
             label = { Text(label) },
@@ -34,7 +35,7 @@ fun <T> ChoiceField(label: String, selected: T, options: List<T>, optionLabel: (
             modifier = Modifier.fillMaxWidth())
         // Covers the text field so taps open the sheet instead of focusing the read-only input.
         Box(Modifier.matchParentSize().clickable(remember { MutableInteractionSource() }, null,
-            role = Role.DropdownList, onClickLabel = "Choose $label") { open = true })
+            role = Role.DropdownList, onClickLabel = "Choose $label") { haptics.press(); open = true })
     }
     if (open) ChoiceSheet(label, selected, options, optionLabel, leading, { open = false }) { select(it) }
 }

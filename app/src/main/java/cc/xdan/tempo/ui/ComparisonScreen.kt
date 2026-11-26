@@ -30,6 +30,7 @@ import java.time.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComparisonScreen(collection: TimetableCollection, dismiss: () -> Unit) {
+    val segmentHaptics = cc.xdan.tempo.design.rememberTempoHaptics()
     var selected by rememberSaveable { mutableStateOf(collection.timetables.take(2).map { it.id }) }
     var day by rememberSaveable { mutableIntStateOf(LocalDate.now().dayOfWeek.value) }
     var dateText by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
@@ -58,8 +59,8 @@ fun ComparisonScreen(collection: TimetableCollection, dismiss: () -> Unit) {
                     }
                     DateNavigation(date) { dateText = it.toString(); day = it.dayOfWeek.value }
                     SingleChoiceSegmentedButtonRow(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
-                        SegmentedButton(selected = !combined, onClick = { combined = false }, shape = SegmentedButtonDefaults.itemShape(0, 2), icon = { Icon(Icons.Outlined.ViewColumn, null, Modifier.size(18.dp)) }) { Text("Side by side") }
-                        SegmentedButton(selected = combined, onClick = { combined = true }, shape = SegmentedButtonDefaults.itemShape(1, 2), icon = { Icon(Icons.Outlined.Groups, null, Modifier.size(18.dp)) }) { Text("Together") }
+                        SegmentedButton(selected = !combined, onClick = { segmentHaptics.tick(); combined = false }, shape = SegmentedButtonDefaults.itemShape(0, 2), icon = { Icon(Icons.Outlined.ViewColumn, null, Modifier.size(18.dp)) }) { Text("Side by side") }
+                        SegmentedButton(selected = combined, onClick = { segmentHaptics.tick(); combined = true }, shape = SegmentedButtonDefaults.itemShape(1, 2), icon = { Icon(Icons.Outlined.Groups, null, Modifier.size(18.dp)) }) { Text("Together") }
                     }
                     if (tables.size < 2) {
                         Column(Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -75,7 +76,7 @@ fun ComparisonScreen(collection: TimetableCollection, dismiss: () -> Unit) {
         }
         if (choosing) EditorSheet("Choose timetables", { choosing = false }, confirm = { choosing = false }, confirmLabel = "Compare", enabled = selected.count { id -> collection.timetables.any { it.id == id } } >= 2) {
             collection.timetables.forEach { entry ->
-                Row(Modifier.fillMaxWidth().toggleable(entry.id in selected) { checked -> selected = if (checked) selected + entry.id else selected - entry.id }, verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().hapticToggleable(entry.id in selected) { checked -> selected = if (checked) selected + entry.id else selected - entry.id }, verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(entry.id in selected, null)
                     Column(Modifier.padding(start = 12.dp)) {
                         Text(entry.timetable.name, style = MaterialTheme.typography.titleMedium)

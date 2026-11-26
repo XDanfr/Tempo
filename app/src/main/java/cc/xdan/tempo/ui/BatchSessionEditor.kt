@@ -31,7 +31,7 @@ fun BatchSessionEditor(table: Timetable, update: ((Timetable) -> Timetable) -> U
             Text(if (selected.size == table.sessions.size) "Clear selection" else "Select all")
         }
         table.sessions.sortedWith(compareBy<Session> { it.day }.thenBy { it.time.start }).forEach { session ->
-            Row(Modifier.fillMaxWidth().toggleable(session.id in selected) { checked -> selected = if (checked) selected + session.id else selected - session.id }, verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().hapticToggleable(session.id in selected) { checked -> selected = if (checked) selected + session.id else selected - session.id }, verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(session.id in selected, null)
                 Text("${table.subjects.first { it.id == session.subjectId }.name} · ${weekdayNames[session.day - 1].take(3)} ${minuteLabel(session.time.start)} · ${session.cycleWeek?.let { "week $it" } ?: "every week"}")
             }
@@ -42,7 +42,7 @@ fun BatchSessionEditor(table: Timetable, update: ((Timetable) -> Timetable) -> U
         if (table.cycle.weeks > 1) ChoiceField("Cycle week", week, (-1..table.cycle.weeks).toList(), {
             when (it) { -1 -> "Keep current weeks"; 0 -> "Every week"; else -> "Week $it" }
         }, { week = it })
-        Row(Modifier.fillMaxWidth().toggleable(changeLocation, role = Role.Switch) { changeLocation = it }, verticalAlignment = Alignment.CenterVertically) { Text("Replace location overrides", Modifier.weight(1f)); Switch(changeLocation, null) }
+        Row(Modifier.fillMaxWidth().hapticToggleable(changeLocation, role = Role.Switch) { changeLocation = it }, verticalAlignment = Alignment.CenterVertically) { Text("Replace location overrides", Modifier.weight(1f)); Switch(changeLocation, null) }
         if (changeLocation) OutlinedTextField(location, { location = it }, label = { Text("New location (empty uses subject default)") }, modifier = Modifier.fillMaxWidth())
         if (selected.isNotEmpty() && preview == null) Text("The change would create invalid times. All sessions must stay within 00:00–24:00.", color = MaterialTheme.colorScheme.error)
         if (preview != null && ScheduleResolver.conflicts(preview.sessions).any { it.first.id in selected || it.second.id in selected }) Text("The selected change creates overlapping sessions. Keep it if intentional.", color = MaterialTheme.colorScheme.error)

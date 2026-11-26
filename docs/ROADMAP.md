@@ -72,7 +72,8 @@ Agreed November 2026 after a device review of 0.5.2: remove duplicate controls, 
 
 - [ ] Foundations: motion tokens, haptics, press feedback and shared components in `core:designsystem`; one sheet state in place of scattered flags
 - [ ] Remove duplicates: one timetable switcher (top-bar chip), import/export only in the switcher, per-card overflow menus, no top-bar undo/redo or calendar icon, single About row
-- [ ] Schedule: merge Today and Timetable into one day pager with a week strip, live Now card, now-line, dimmed past, compact free gaps, no chevrons, tappable header and Now card
+- [x] Schedule: merge Today and Timetable into one day pager with a week strip, live Now card, now-line, dimmed past, compact free gaps, no chevrons, tappable header and Now card
+- [x] Haptics on every interactive control through a shared component layer
 - [ ] Week overview tab and Library subject detail (tap a subject to see where it occurs)
 - [ ] Onboarding rebuild: purpose question (school, college, work, personal) tailoring vocabulary and defaults, one question per screen, subject suggestions, live preview, progress opt-in, finish celebration
 - [ ] Opt-in progression: setup checklist, discovery milestones, lesson check-ins, XP, soft streaks that skip non-scheduled days, day-complete moment, weekly recap and Progress page

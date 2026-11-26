@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.CollectionsBookmark
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,7 +32,8 @@ import java.time.LocalDate
 import cc.xdan.tempo.schedule.*
 import kotlinx.coroutines.delay
 
-enum class Destination { TODAY, TIMETABLE, LIBRARY, SETTINGS }
+/** Bottom-bar destinations. Today and Timetable were merged into the single day-first Schedule. */
+enum class Destination(val label: String) { SCHEDULE("Schedule"), LIBRARY("Library"), SETTINGS("Settings") }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,8 +69,9 @@ fun TempoApp(model: TempoViewModel) {
             } else if (!timetable.onboarded) {
                 Onboarding(timetable, model::update, files.import, if ((state.collection?.timetables?.size ?: 0) > 1) ({ showTimetables = true }) else null)
             } else {
-                var destination by rememberSaveable { mutableStateOf(Destination.TODAY) }
-                var day by rememberSaveable { mutableIntStateOf(LocalDateTime.now().dayOfWeek.value) }
+                var destination by rememberSaveable { mutableStateOf(Destination.SCHEDULE) }
+                var fabExpanded by remember { mutableStateOf(true) }
+                val navHaptics = rememberTempoHaptics()
                 var selectedDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
                 var editingBaseDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
                 var editorDate by rememberSaveable { mutableStateOf<String?>(null) }
@@ -79,12 +84,12 @@ fun TempoApp(model: TempoViewModel) {
                 var showEditor by rememberSaveable { mutableStateOf(false) }
                 var initialStart by rememberSaveable { mutableStateOf<Int?>(null) }
                 var initialEnd by rememberSaveable { mutableStateOf<Int?>(null) }
-                var slotDay by rememberSaveable { mutableIntStateOf(day) }
+                var slotDay by rememberSaveable { mutableIntStateOf(LocalDate.now().dayOfWeek.value) }
                 var showFree by rememberSaveable { mutableStateOf(false) }
                 var showBreak by rememberSaveable { mutableStateOf(false) }
                 var breakId by rememberSaveable { mutableStateOf<String?>(null) }
                 var now by remember { mutableStateOf(LocalDateTime.now()) }
-                val visibleDate = if (destination == Destination.TODAY) now.toLocalDate() else LocalDate.parse(selectedDate)
+                val visibleDate = LocalDate.parse(selectedDate)
                 val scopeDate = LocalDate.parse(editingBaseDate)
                 val scopeLocked = timetable.exceptions.any { it.date == editingBaseDate }
                 val scopeControls: @Composable () -> Unit = {
@@ -96,7 +101,8 @@ fun TempoApp(model: TempoViewModel) {
                 }
                 val editFree: (Int, TimeSpan) -> Unit = { d, time -> beginEdit(); slotDay = d; initialStart = time.start; initialEnd = time.end; showFree = true }
                 val editPause: (ScheduledBreak) -> Unit = { pause -> beginEdit(); breakId = pause.id; initialStart = null; initialEnd = null; showBreak = true }
-                LaunchedEffect(Unit) { while (true) { now = LocalDateTime.now(); delay(30_000) } }
+                // Minute-aligned clock: past blocks dim and the now-line moves exactly on the minute.
+                LaunchedEffect(Unit) { while (true) { now = LocalDateTime.now(); delay(60_000L - System.currentTimeMillis() % 60_000L) } }
                 Scaffold(
                     // The timetable chip is the only way into the timetable switcher; the overflow
                     // holds history and sharing so they never compete with the content.
@@ -106,26 +112,29 @@ fun TempoApp(model: TempoViewModel) {
                     }) },
                     snackbarHost = { feedbackHost(Modifier) },
                     bottomBar = { NavigationBar {
-                        val icons = listOf(Icons.Outlined.Today, Icons.Outlined.CalendarViewWeek, Icons.Outlined.CollectionsBookmark, Icons.Outlined.Settings)
-                        Destination.entries.forEachIndexed { index, item ->
-                            NavigationBarItem(selected = destination == item, onClick = { destination = item },
-                                icon = { Icon(icons[index], null) }, label = { Text(item.name.lowercase().replaceFirstChar { it.titlecase() }, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) })
+                        Destination.entries.forEach { item ->
+                            val selected = destination == item
+                            NavigationBarItem(selected = selected, onClick = { if (!selected) { navHaptics.tick(); destination = item } },
+                                icon = { Icon(when (item) {
+                                    Destination.SCHEDULE -> if (selected) Icons.Filled.CalendarToday else Icons.Outlined.CalendarToday
+                                    Destination.LIBRARY -> if (selected) Icons.Filled.CollectionsBookmark else Icons.Outlined.CollectionsBookmark
+                                    Destination.SETTINGS -> if (selected) Icons.Filled.Settings else Icons.Outlined.Settings
+                                }, null) }, label = { Text(item.label, maxLines = 1) })
                         }
                     } },
                     floatingActionButton = {
-                        if (destination == Destination.TODAY || destination == Destination.TIMETABLE) ExtendedFloatingActionButton(
-                            onClick = { beginEdit(); editingSessionId = null; initialStart = null; initialEnd = null; showEditor = true }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Add session") })
+                        // Shrinks to an icon while scrolling so it never hides the timeline.
+                        if (destination == Destination.SCHEDULE) ExtendedFloatingActionButton(
+                            onClick = { navHaptics.press(); beginEdit(); editingSessionId = null; initialStart = null; initialEnd = null; showEditor = true },
+                            expanded = fabExpanded, icon = { Icon(Icons.Outlined.Add, "Add session") }, text = { Text("Add session") })
                     },
                 ) { padding ->
                     Box(Modifier.padding(padding).fillMaxSize()) {
                         PredictiveRouteHost(destination, enabled = !showEditor && !showFree && !showBreak && !showTimetables && !showComparison && state.importPreview == null, navigate = { destination = it }) { shown ->
                         when (shown) {
-                            Destination.TODAY -> DayScreen(timetable, now.dayOfWeek.value, now, true, {}, { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause,
-                                date = now.toLocalDate())
-                            Destination.TIMETABLE -> DayScreen(timetable, LocalDate.parse(selectedDate).dayOfWeek.value, now, false,
-                                { d -> selectedDate = LocalDate.parse(selectedDate).plusDays((d - LocalDate.parse(selectedDate).dayOfWeek.value).toLong()).toString(); day = d },
-                                { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true }, editFree, editPause,
-                                date = LocalDate.parse(selectedDate), selectDate = { selectedDate = it.toString(); day = it.dayOfWeek.value })
+                            Destination.SCHEDULE -> ScheduleScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
+                                { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true },
+                                { d, time -> editFree(d.dayOfWeek.value, time) }, editPause, onTopChanged = { fabExpanded = it })
                             Destination.LIBRARY -> LibraryScreen(timetable) { label, change -> model.update(label, change) }
                             Destination.SETTINGS -> SettingsScreen(timetable, model::update)
                         }
@@ -160,6 +169,8 @@ fun TempoApp(model: TempoViewModel) {
             }
             // Outside the main Scaffold (onboarding, loading) feedback sits above the system bars.
             if (timetable?.onboarded != true) feedbackHost(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(16.dp))
+            val errorHaptics = rememberTempoHaptics()
+            LaunchedEffect(state.error) { if (state.error != null) errorHaptics.reject() }
             if (state.error != null && timetable != null) AlertDialog(onDismissRequest = model::dismissError,
                 title = { Text("Something needs attention") }, text = { Text(state.error!!) },
                 confirmButton = { TextButton(onClick = model::dismissError) { Text("Close") } })
@@ -176,8 +187,7 @@ private fun sessionLabel(verb: String, subjectId: String?, table: Timetable): St
 @Composable
 private fun TimetableChip(name: String, open: () -> Unit) {
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val haptics = rememberTempoHaptics()
-    Surface(onClick = { haptics.press(); open() }, shape = androidx.compose.foundation.shape.CircleShape,
+    Surface(onClick = open, shape = androidx.compose.foundation.shape.CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh, interactionSource = interaction,
         modifier = Modifier.pressScale(interaction).semantics { contentDescription = "Timetable: $name. Switch or manage timetables" }) {
         Row(Modifier.padding(start = 16.dp, end = 10.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically,

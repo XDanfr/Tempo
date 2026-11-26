@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased — redesign foundations
+## Unreleased — redesign foundations and Schedule
+
+- **Schedule** replaces the separate Today and Timetable tabs. It opens on today; swipe left or right to move between days, or tap a day in the week strip, which you can also swipe to change week. Tap the date heading to jump to any date. A **Today** button appears only when you're on another day. Navigation is now Schedule · Library · Settings.
+- The week strip shows today's date ringed, the selected day filled, and up to three subject-colour dots for each day.
+- A live **Now** card for today. It shows a ring that counts down the current session, break or free time to the second, then what's next, in the subject's colour. Before your first session it counts down to the start. When you're done it shows "Done for today" with a summary and your next session on a later day. Tap the card to open what it's about, or jump to that next day.
+- A timeline with start times on a rail and a moving now-line. Earlier blocks fade, and the current block fills as time passes and is marked **Now**. Blocks show their duration ("1h 30m"), stay readable when short and no longer have chevrons; the whole block is the tap target. Free time is a compact "1h 30m free · Fill" row instead of a large empty box.
+- "Week 1 of 1" is gone: cycle weeks only appear for timetables that alternate. Holidays and changed days appear as labels.
+- The Add session button shrinks to an icon while you scroll.
+- **Haptics everywhere**: buttons, cards, menu items and dropdown fields give a light press; switches, checkboxes and toggle rows click on and off; chips, segmented buttons, tabs, day changes and swipes tick; saved, undone and redone edits confirm; errors buzz. Android's touch-feedback setting still applies.
 
 - Every saved edit now confirms what changed in a snackbar, such as “Added Physics session” or “Deleted Lunch”, with **Undo**. After undoing, the snackbar offers **Redo**. An Undo tapped late never reverses a newer change, and Undo and Redo stay in the ⋮ menu after the snackbar closes.
 - The top bar shows your timetable as a single chip that opens the timetable switcher. The calendar icon and the separate Undo/Redo icons are gone.

@@ -25,6 +25,9 @@ class TempoHaptics internal constructor(private val feedback: HapticFeedback) {
     /** A tappable surface was pressed. */
     fun press() = feedback.performHapticFeedback(HapticFeedbackType.ContextClick)
 
+    /** A switch or checkbox changed. */
+    fun toggle(on: Boolean) = feedback.performHapticFeedback(if (on) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+
     /** An edit was committed, undone or redone. */
     fun confirm() = feedback.performHapticFeedback(HapticFeedbackType.Confirm)
 

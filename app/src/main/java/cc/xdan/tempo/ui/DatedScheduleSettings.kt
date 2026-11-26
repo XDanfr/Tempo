@@ -89,7 +89,7 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
         }, enabled = parsed != null && !duplicate) {
             if (exception == null) DateField("Date", date) { date = it } else Text(date)
             OutlinedTextField(name, { name = it }, label = { Text("Reason / label (optional)") }, modifier = Modifier.fillMaxWidth())
-            Row(Modifier.fillMaxWidth().toggleable(closed, role = Role.Switch) { closed = it }, verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().hapticToggleable(closed, role = Role.Switch) { closed = it }, verticalAlignment = Alignment.CenterVertically) {
                 Text("Day off", Modifier.weight(1f)); Switch(closed, null)
             }
             Text(if (closed) "This date will have no sessions, breaks or frees." else "Start with this date's recurring schedule. Open the date in Timetable to edit its sessions and breaks.")

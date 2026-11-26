@@ -99,15 +99,15 @@ All progress is stored locally and included in backups only if the user chooses.
 ## Foundations (`core:designsystem`)
 
 - **Motion tokens**: `TempoMotion` springs (spatial fast/default/slow, effects) instead of scattered stiffness values; every animation reads them, so reduced-motion can turn them into snaps.
-- **Haptics**: `rememberTempoHaptics()` with `tick` (selection), `confirm` (committed edit), `reject` (error) and `celebrate`; respects system haptic settings and an in-app toggle.
+- **Haptics**: `rememberTempoHaptics()` with `tick` (selection), `press`, `toggle`, `confirm` (committed edit), `reject` (error) and `celebrate`; respects the system touch-feedback setting (an in-app toggle may follow). `ui/HapticComponents.kt` mirrors the interactive Material components with the same names, so every screen in the `ui` package gets haptics by default; `Modifier.hapticToggleable` covers whole-row toggles.
 - **Press feedback**: `Modifier.pressScale()` with spring scale and haptic tick.
 - **Components**: `TempoCard`, `SettingsRow` (icon, title, current value, chevron only for navigation), `EmptyState`, `TempoTopBar` with timetable chip, `FeedbackHost` (typed snackbars with Undo/Redo), `TopNotice` (milestones).
 - **App state**: replace the ~15 sheet flags in `TempoApp` with one `Sheet` sealed type held in the ViewModel, so sheets survive rotation and can't stack by accident.
 
 ## Delivery order
 
-1. **Foundations and feedback**: motion/haptics/press tokens, typed feedback with Undo → Redo snackbars, top-bar undo/redo and calendar icon removed, timetable sheet with overflow menus. *(in progress)*
-2. **Schedule**: merged day pager, week strip, live Now card, time rail, compact gaps, no chevrons, tappable header.
+1. **Foundations and feedback**: motion/haptics/press tokens, typed feedback with Undo → Redo snackbars, top-bar undo/redo and calendar icon removed, timetable sheet with overflow menus. *(done)*
+2. **Schedule**: merged day pager, week strip, live Now card, time rail, compact gaps, no chevrons, tappable header. *(done; Week tab still to come, so the bottom bar is Schedule · Library · Settings for now)*
 3. **Week overview** tab.
 4. **Onboarding rebuild** with purpose, tailored vocabulary and the progress opt-in.
 5. **Gamification**: checklist, milestones, check-ins, XP, soft streaks, day complete, recap, Progress page.

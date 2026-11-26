@@ -2,6 +2,13 @@ package cc.xdan.tempo.widgets
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+// Tempo's haptic versions of the interactive components (explicit imports win over the star import).
+import cc.xdan.tempo.ui.Button
+import cc.xdan.tempo.ui.IconButton
+import cc.xdan.tempo.ui.OutlinedButton
+import cc.xdan.tempo.ui.Surface
+import cc.xdan.tempo.ui.Switch
+import cc.xdan.tempo.ui.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
