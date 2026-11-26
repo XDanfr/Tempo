@@ -93,7 +93,7 @@ class ThemeGridTest {
         compose.onNodeWithText("System").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(ThemeMode.SYSTEM, mode) }
         compose.onNodeWithText("Red · System").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Close editor").performClick()
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Widget theme").fetchSemanticsNodes().isEmpty() }
         compose.runOnIdle { assertEquals(ThemePreset.RED, preset) }
         compose.onNodeWithText("Follow timetable").performClick()

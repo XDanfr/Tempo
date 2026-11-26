@@ -178,11 +178,11 @@ private fun ScheduleHeader(timetable: Timetable, date: LocalDate, today: LocalDa
         Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             // The date is the jump-to-date control: one obvious place, no separate calendar button.
             Surface(onClick = { choosing = true }, shape = MaterialTheme.shapes.small, color = Color.Transparent,
-                modifier = Modifier.weight(1f, fill = false).semantics { contentDescription = spokenDate }) {
+                modifier = Modifier.semantics { contentDescription = spokenDate }) {
                 Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column {
                         AnimatedContent(date, label = "weekday", transitionSpec = { fadeIn(TempoMotion.effects()) togetherWith fadeOut(TempoMotion.exit()) }) {
-                            Text(relativeDayName(it, today), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+                            Text(relativeDayName(it, today), style = MaterialTheme.typography.headlineMedium, maxLines = 1, softWrap = false, modifier = Modifier.semantics { heading() })
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(friendlyDate(date), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)

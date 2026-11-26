@@ -22,8 +22,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 /**
- * Tempo's editor drawer: close on the top left, the title, and Save on the top right. The drawer
- * can be dragged down to close. When [dirty] is true, closing by X, back or dragging asks
+ * Tempo's editor drawer: the title, and Save on the top right. Back, dragging down or tapping outside closes it. The drawer
+ * can be dragged down to close. When [dirty] is true, closing by back, dragging or tapping outside asks
  * whether to save or discard first, so no edit is lost by accident.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,12 +73,11 @@ fun EditorSheet(title: String, dismiss: () -> Unit, confirm: (() -> Unit)? = nul
         { askToSave = false; close() }, { askToSave = false }, enabled)
 }
 
-/** X on the left, title, primary action on the right. */
+/** Title on the left, primary action on the right. Back, swiping down or tapping outside closes. */
 @Composable
 private fun EditorHeader(title: String, close: () -> Unit, confirm: (() -> Unit)?, enabled: Boolean, confirmLabel: String) {
-    Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically,
+    Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 16.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        IconButton(onClick = close) { Icon(Icons.Outlined.Close, "Close editor") }
         Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (confirm != null) Button(onClick = confirm, enabled = enabled) { Text(confirmLabel) }
     }

@@ -10,7 +10,7 @@
 - "Week 1 of 1" is gone: cycle weeks only appear for timetables that alternate. Holidays and changed days appear as labels.
 - The Add session button shrinks to an icon while you scroll.
 - The Schedule date header slides away as you scroll down through the day and springs back as soon as you scroll up.
-- Editors are draggable drawers: drag down to close. Close (X) sits top left and Save top right. If you've changed something, closing by X, back or dragging asks whether to save or discard.
+- Editors are draggable drawers: drag down to close. Save sits top right; back, dragging down or tapping outside closes. If you’ve changed something, closing asks whether to save or discard.
 - Delete buttons are red with a trash icon and act straight away. The snackbar offers Undo, so there's no extra confirmation. Deleting a whole timetable still asks first.
 - Side-by-side buttons, such as New/Import and the System/Light/Dark choice, squish their neighbours with a bounce when pressed.
 - Flinging a list inside a drawer no longer drags or closes the drawer when the list reaches its end. Dragging down from the top still closes it.
