@@ -2,6 +2,8 @@
 
 ## Unreleased — redesign foundations and Schedule
 
+- **New setup**: a welcome screen previews Tempo, then asks one question per screen. **What's this timetable for?** (School, College or university, Work or shifts, Personal) sets sensible days, hours and wording. Next come your name and days, then your hours, with alternating weeks behind a single switch. School and college timetables then set up periods. One-tap subject suggestions pick colours and icons automatically. A theme step previews your own week, an optional progress step asks about celebrations, streaks and XP, and a “You're all set” summary finishes it.
+- Wording follows the timetable's purpose: “Add lesson” for school, “Add shift” for work, and so on. Purpose and celebrations can be changed in Settings. Turning celebrations off also turns off day-complete confetti.
 - **Schedule** replaces the separate Today and Timetable tabs. It opens on today; swipe left or right to move between days, or tap a day in the week strip, which you can also swipe to change week. Tap the date heading to jump to any date. A **Today** button appears only when you're on another day. 
 - **Week** tab: move between weeks with the arrows, and jump back with **This week**. Switch between the **Whole week** and what's **Still ahead**, see tiles for sessions, scheduled time, free time and breaks, and a by-subject breakdown with colour bars. A time-aligned grid shows every block, with overlaps side by side, past blocks faded and a now-line on today. Tap any block or day to open it in Schedule. Weekend columns appear only when something happens on them. Navigation is now Schedule · Week · Library · Settings.
 - The week strip shows today's date ringed, the selected day filled, and up to three subject-colour dots for each day.
@@ -24,6 +26,7 @@
 - The top bar shows your timetable as a single chip that opens the timetable switcher. The calendar icon and the separate Undo/Redo icons are gone.
 - In the timetable switcher, tap a timetable to switch to it. Rename, Duplicate, Export and Delete are in each timetable's ⋮ menu. New and Import sit side by side, and Compare appears once you have two timetables.
 - Day and week images are now shared from the ⋮ menu (“Share as image”). The duplicate “Timetables & files” settings page has been removed.
+- Timetables gain optional purpose, progress and setup-step fields, so existing data and files load unchanged. Exported files that use them need this version or newer.
 - Shared motion and haptic foundations: confirmations give a light haptic tick, and the timetable chip responds to presses.
 
 ## 0.5.2

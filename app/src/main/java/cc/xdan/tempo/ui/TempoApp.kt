@@ -128,7 +128,7 @@ fun TempoApp(model: TempoViewModel) {
                         // Shrinks to an icon while scrolling so it never hides the timeline.
                         if (destination == Destination.SCHEDULE) ExtendedFloatingActionButton(
                             onClick = { navHaptics.press(); beginEdit(); editingSessionId = null; initialStart = null; initialEnd = null; showEditor = true },
-                            expanded = fabExpanded, icon = { Icon(Icons.Outlined.Add, "Add session") }, text = { Text("Add session") })
+                            expanded = fabExpanded, icon = { Icon(Icons.Outlined.Add, "Add ${timetable.sessionWord}") }, text = { Text("Add ${timetable.sessionWord}") })
                     },
                 ) { padding ->
                     Box(Modifier.padding(padding).fillMaxSize()) {

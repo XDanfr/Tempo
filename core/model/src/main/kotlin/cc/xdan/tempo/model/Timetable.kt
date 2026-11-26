@@ -111,6 +111,22 @@ data class DatedException(val date: String, val name: String = "", val closed: B
     }
 }
 
+/** What a timetable is for. */
+@Serializable
+enum class TimetablePurpose(val label: String, val sessionWord: String, val subjectWord: String) {
+    SCHOOL("School", "lesson", "subject"),
+    COLLEGE("College or university", "session", "module"),
+    WORK("Work or shifts", "shift", "activity"),
+    PERSONAL("Personal", "activity", "activity"),
+}
+
+/** How much celebration and progression a person wants. */
+@Serializable
+enum class ProgressMode { OFF, CELEBRATIONS, STREAKS }
+
+/** Number of screens in the setup flow. */
+const val SETUP_STEPS = 9
+
 @Serializable
 data class Timetable(
     val schemaVersion: Int = 3,
@@ -131,9 +147,16 @@ data class Timetable(
     val cycle: WeekCycle = WeekCycle(),
     val holidays: List<Holiday> = emptyList(),
     val exceptions: List<DatedException> = emptyList(),
+    /** What the timetable is for; tailors wording and defaults, never hides features. */
+    val purpose: TimetablePurpose? = null,
+    /** Optional celebrations and progression, chosen during setup. */
+    val progress: ProgressMode = ProgressMode.CELEBRATIONS,
+    /** Step in the current setup flow; null for timetables from older versions, see [currentSetupStep]. */
+    val setupStep: Int? = null,
 ) {
     init {
         require(onboardingStep in 0..3)
+        require(setupStep == null || setupStep in 0 until SETUP_STEPS)
         require(schemaVersion in 2..3) { "Unsupported timetable version" }
         require(name.isNotBlank())
         require(subjects.map { it.id }.distinct().size == subjects.size)
@@ -192,3 +215,12 @@ data class TimetableCollection(
         return copy(activeId = if (activeId == id) remaining.first().id else activeId, timetables = remaining)
     }
 }
+
+/** Setup position, mapping setups interrupted in older versions (4 steps) onto the current flow. */
+val Timetable.currentSetupStep: Int get() = setupStep ?: when (onboardingStep) { 1 -> 4; 2 -> 5; 3 -> 6; else -> 0 }
+
+/** "lesson", "shift", … for this timetable's purpose. */
+val Timetable.sessionWord: String get() = purpose?.sessionWord ?: "session"
+
+/** "subject", "module", "activity", … for this timetable's purpose. */
+val Timetable.subjectWord: String get() = purpose?.subjectWord ?: "subject"

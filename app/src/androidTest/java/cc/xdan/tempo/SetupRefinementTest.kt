@@ -76,14 +76,30 @@ class SetupRefinementTest {
     }
 
     @Test fun onboardingPersistsCustomCycleBeforeProceeding() {
-        var value by mutableStateOf(Timetable())
+        var value by mutableStateOf(Timetable(purpose = TimetablePurpose.SCHOOL, setupStep = 3))
         compose.setContent { TempoTheme(value.appearance) { Surface { Onboarding(value, { value = it(value) }, {}) } } }
+        compose.onNodeWithText("My weeks alternate").performClick()
         compose.onNodeWithText("Number of weeks").performScrollTo().performTextReplacement("0")
         compose.onNodeWithText("Continue").assertIsNotEnabled()
         compose.onNodeWithText("Number of weeks").performTextReplacement("3")
         compose.onNodeWithText("Continue").performClick()
-        compose.waitUntil(10_000) { value.onboardingStep == 1 }
+        compose.waitUntil(10_000) { value.setupStep == 4 }
         assertEquals(3, value.cycle.weeks)
+    }
+
+    @Test fun onboardingPurposeSetsDefaultsAndSkipsPeriodsForWork() {
+        var value by mutableStateOf(Timetable(setupStep = 1))
+        compose.setContent { TempoTheme(value.appearance) { Surface { Onboarding(value, { value = it(value) }, {}) } } }
+        compose.onNodeWithText("Work or shifts").performClick()
+        compose.waitUntil(10_000) { value.purpose == TimetablePurpose.WORK }
+        compose.onNodeWithText("Continue").performClick()
+        compose.waitUntil(10_000) { value.setupStep == 2 }
+        compose.onNodeWithText("Continue").performClick()
+        compose.waitUntil(10_000) { value.setupStep == 3 }
+        compose.onNodeWithText("Continue").performClick()
+        // Work timetables go straight from hours to subjects.
+        compose.waitUntil(10_000) { value.setupStep == 5 }
+        assertEquals(TimeSpan(540, 1050), value.days.first().time)
     }
 
     @Test fun compactEditorKeepsActionsVisibleWithoutFillingTheScreen() {

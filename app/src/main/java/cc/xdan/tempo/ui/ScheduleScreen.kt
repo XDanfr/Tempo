@@ -335,7 +335,7 @@ private fun DaySummary(timetable: Timetable, date: LocalDate, lessons: List<Sche
     if (lessons.isEmpty() && timetable.cycle.weeks <= 1 && exception == null && holiday == null) return
     Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         // Empty days say so once, in the empty state below; the summary only counts real sessions.
-        Text(if (lessons.isEmpty()) "" else "${countLabel(lessons.size, "session")} · ${durationLabel(minutes)} scheduled",
+        Text(if (lessons.isEmpty()) "" else "${countLabel(lessons.size, timetable.sessionWord)} · ${durationLabel(minutes)} scheduled",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
         // Cycle weeks only matter when the timetable actually alternates.
         if (timetable.cycle.weeks > 1) InfoPill("Week ${ScheduleResolver.cycleWeek(timetable, date)} of ${timetable.cycle.weeks}")
@@ -549,7 +549,7 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
     val confettiColours = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.secondary) +
         lessons.map { Color(it.subject.colour) }.distinct()
     val body: @Composable () -> Unit = { Box {
-        if (state is NowState.Done) DayCompleteConfetti(date, confettiColours, Modifier.matchParentSize())
+        if (state is NowState.Done && timetable.progress != ProgressMode.OFF) DayCompleteConfetti(date, confettiColours, Modifier.matchParentSize())
         Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 AnimatedContent(state::class to nowTitle(state), label = "now title", transitionSpec = {

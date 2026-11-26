@@ -38,7 +38,7 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
     val overlapsSession = candidate != null && ScheduleResolver.conflicts(timetable.sessions.filterNot { it.id == id } + candidate).any { it.first.id == id || it.second.id == id }
     val overlapsBreak = time != null && timetable.breaks.any { day in it.days && (week == 0 || it.cycleWeek == null || week == it.cycleWeek) && time.start < it.time.end && it.time.start < time.end }
     val initial = remember { candidate }
-    EditorSheet(if (existing == null) "Add session" else "Edit session", onDismiss,
+    EditorSheet(if (existing == null) "Add ${timetable.sessionWord}" else "Edit ${timetable.sessionWord}", onDismiss,
         confirm = { candidate?.let(onSave) }, enabled = candidate != null, dirty = candidate != initial) {
         scopeControls?.invoke()
         SubjectPickerField("Subject / activity", subject, timetable.subjects) { subject = it }

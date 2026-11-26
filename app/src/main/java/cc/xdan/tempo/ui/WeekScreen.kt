@@ -129,7 +129,7 @@ private fun WeekBody(timetable: Timetable, days: List<WeekDay>, now: LocalDateTi
             }
         } else Text(if (past) "This week has passed, so these are its full totals." else "Everything here is still ahead.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        StatTiles(stats)
+        StatTiles(stats, timetable.sessionWord)
         if (stats.bySubject.isNotEmpty()) SubjectBreakdown(stats)
         Text("Week at a glance", style = MaterialTheme.typography.titleMedium)
         WeekGrid(timetable, days, now, openDay)
@@ -137,9 +137,9 @@ private fun WeekBody(timetable: Timetable, days: List<WeekDay>, now: LocalDateTi
 }
 
 @Composable
-private fun StatTiles(stats: WeekTotals) {
+private fun StatTiles(stats: WeekTotals, word: String) {
     val tiles = listOf(
-        "Sessions" to stats.sessions.toString(),
+        "${word.replaceFirstChar(Char::titlecase)}s" to stats.sessions.toString(),
         "Scheduled" to durationLabel(stats.sessionMinutes),
         "Free time" to durationLabel(stats.freeMinutes),
         "Breaks" to durationLabel(stats.breakMinutes),

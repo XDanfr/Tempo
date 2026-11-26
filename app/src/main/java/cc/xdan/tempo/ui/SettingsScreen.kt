@@ -58,7 +58,16 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
             }
         }
         if (currentPage == SettingsPage.APPEARANCE) item { AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } } }
+        if (currentPage == SettingsPage.APPEARANCE) item {
+            ChoiceField("Celebrations", timetable.progress, ProgressMode.entries, { when (it) {
+                ProgressMode.OFF -> "Off"; ProgressMode.CELEBRATIONS -> "Celebrations"; ProgressMode.STREAKS -> "Celebrations, streaks and XP" } },
+                { mode -> update { it.copy(progress = mode) } })
+        }
         if (currentPage == SettingsPage.SCHEDULE) {
+        item {
+            ChoiceField("Timetable for", timetable.purpose, listOf<TimetablePurpose?>(null) + TimetablePurpose.entries, { it?.label ?: "Not set" },
+                { purpose -> update { it.copy(purpose = purpose) } })
+        }
         item { DatedScheduleSettings(timetable, update) }
         item { Text("Day lengths", style = MaterialTheme.typography.titleLarge) }
         items((1..7).toList()) { day ->

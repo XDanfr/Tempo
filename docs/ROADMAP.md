@@ -76,7 +76,7 @@ Agreed November 2026 after a device review of 0.5.2: remove duplicate controls, 
 - [x] Haptics on every interactive control through a shared component layer
 - [x] Week overview tab
 - [ ] Library subject detail (tap a subject to see where it occurs)
-- [ ] Onboarding rebuild: purpose question (school, college, work, personal) tailoring vocabulary and defaults, one question per screen, subject suggestions, live preview, progress opt-in, finish celebration
+- [x] Onboarding rebuild: purpose question (school, college, work, personal) tailoring vocabulary and defaults, one question per screen, subject suggestions, live preview, progress opt-in, finish celebration
 - [ ] Opt-in progression: setup checklist, discovery milestones, lesson check-ins, XP, soft streaks that skip non-scheduled days, day-complete moment, weekly recap and Progress page
 
 ## Next — interaction feedback and safe recovery
