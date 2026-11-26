@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -51,7 +52,7 @@ private fun <T> ChoiceSheet(title: String, selected: T, options: List<T>, option
     }
     ModalBottomSheet(onDismissRequest = dismiss, sheetState = state) {
         Text(title, Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp), style = MaterialTheme.typography.headlineSmall)
-        LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 24.dp),
+        LazyColumn(Modifier.fillMaxWidth().nestedScroll(KeepFlingsInContent), contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             itemsIndexed(options) { _, option ->
                 val active = option == selected

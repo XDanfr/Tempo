@@ -139,7 +139,7 @@ fun FilterChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> 
     elevation: SelectableChipElevationOrNull = FilterChipDefaults.filterChipElevation(),
     border: BorderStroke? = FilterChipDefaults.filterChipBorder(enabled, selected), interactionSource: MutableInteractionSource? = null) {
     val haptics = rememberTempoHaptics()
-    M3FilterChip(selected, { haptics.tick(); onClick() }, label, modifier, enabled, leadingIcon, trailingIcon, shape, colors, elevation, border, interactionSource)
+    M3FilterChip(selected, { haptics.tick(); onClick() }, label, modifier, enabled, leadingIcon, trailingIcon, shape, colors, elevation, border, interactionSource = interactionSource)
 }
 
 private typealias SelectableChipElevationOrNull = androidx.compose.material3.SelectableChipElevation?

@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -62,7 +63,7 @@ fun EditorSheet(title: String, dismiss: () -> Unit, confirm: (() -> Unit)? = nul
             EditorHeader(title, requestClose, confirm?.let { save -> {
                 focus.clearFocus(); keyboard?.hide(); scope.launch { state.hide() }.invokeOnCompletion { save() }
             } }, enabled, confirmLabel)
-            Column(Modifier.weight(1f, fill = false).then(if (scrollContent) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+            Column(Modifier.weight(1f, fill = false).nestedScroll(KeepFlingsInContent).then(if (scrollContent) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .testTag("editor-content").padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
             Spacer(Modifier.navigationBarsPadding())
@@ -102,4 +103,17 @@ fun DeleteButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifi
             contentColor = MaterialTheme.colorScheme.onErrorContainer)) {
         Icon(Icons.Outlined.Delete, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(label)
     }
+}
+
+/**
+ * Stops content flings from moving the drawer. When a fling inside the drawer hits the top or
+ * bottom of its content, Material hands the leftover momentum to the sheet, which then slides
+ * or dismisses on its own. Leftover fling scroll and velocity are absorbed here; a finger drag
+ * (UserInput) still reaches the sheet, so dragging down from the top closes it as expected.
+ */
+internal val KeepFlingsInContent = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+    override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset,
+        source: androidx.compose.ui.input.nestedscroll.NestedScrollSource) =
+        if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) androidx.compose.ui.geometry.Offset.Zero else available
+    override suspend fun onPostFling(consumed: androidx.compose.ui.unit.Velocity, available: androidx.compose.ui.unit.Velocity) = available
 }

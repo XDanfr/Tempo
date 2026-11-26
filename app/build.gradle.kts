@@ -13,7 +13,7 @@ require(!hasReleaseSigning || releaseSigning.values.all { !it.isNullOrBlank() })
 
 android {
     namespace = "cc.xdan.tempo"
-    compileSdk = 37
+    compileSdk { version = release(37) { minorApiLevel = 1 } }
     defaultConfig {
         applicationId = "cc.xdan.tempo"
         minSdk = 26
