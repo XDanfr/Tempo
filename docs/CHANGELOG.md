@@ -15,7 +15,7 @@
 - Side-by-side buttons, such as New/Import and the System/Light/Dark choice, squish their neighbours with a bounce when pressed.
 - Flinging a list inside a drawer no longer drags or closes the drawer when the list reaches its end. Dragging down from the top still closes it.
 - Updated to the stable Material 3 1.5.0, with Expressive, and Compose BOM 2026.11.01. The project now compiles against Android SDK 37.1.
-- Free gaps no longer show a “Fill” label; the whole gap is the tap target.
+- Free gaps no longer show a “Fill” label; the whole gap is the tap target. Tapping one offers two buttons, **Session** and **Break time**, instead of a dropdown and Continue.
 - **Haptics everywhere**: buttons, cards, menu items and dropdown fields give a light press; switches, checkboxes and toggle rows click on and off; chips, segmented buttons, tabs, day changes and swipes tick; saved, undone and redone edits confirm; errors buzz. Android's touch-feedback setting still applies.
 
 - Every saved edit now confirms what changed in a snackbar, such as “Added Physics session” or “Deleted Lunch”, with **Undo**. After undoing, the snackbar offers **Redo**. An Undo tapped late never reverses a newer change, and Undo and Redo stay in the ⋮ menu after the snackbar closes.
