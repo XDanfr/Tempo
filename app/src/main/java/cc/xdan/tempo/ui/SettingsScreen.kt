@@ -27,7 +27,7 @@ private enum class SettingsPage(val label: String, val detail: String) {
 }
 
 @Composable
-fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, profileName: String = "", setProfileName: (String) -> Unit = {}) {
+fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, profileName: String = "", setProfileName: (String) -> Unit = {}, openUpdate: () -> Unit = {}) {
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
     var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
     PredictiveSettingsHost(page?.name, { page = null }) { shownPage ->
@@ -95,7 +95,7 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
         }
         item { PeriodSetup(timetable, update) }
         }
-        if (currentPage == SettingsPage.UPDATES) item { UpdateControls() }
+        if (currentPage == SettingsPage.UPDATES) item { UpdateControls(openUpdate) }
 
     }
     }

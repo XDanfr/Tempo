@@ -57,6 +57,7 @@ fun TempoApp(model: TempoViewModel) {
         var showTimetables by rememberSaveable { mutableStateOf(false) }
         var showImageExport by rememberSaveable { mutableStateOf(false) }
         var showProgress by rememberSaveable { mutableStateOf(false) }
+        var forceUpdatePrompt by rememberSaveable { mutableStateOf(false) }
         val feedbackHost: @Composable (Modifier) -> Unit = { modifier ->
             FeedbackHost(state.feedback, { model.undo(it) }, { model.redo(it) }, model::dismissFeedback, modifier)
         }
@@ -158,7 +159,7 @@ fun TempoApp(model: TempoViewModel) {
                             Destination.WEEK -> WeekScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
                                 { day -> selectedDate = day.toString(); destination = Destination.SCHEDULE }, people)
                             Destination.LIBRARY -> LibraryScreen(timetable) { label, change -> model.update(label, change) }
-                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, state.collection?.profileName ?: "", model::setProfileName)
+                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, state.collection?.profileName ?: "", model::setProfileName) { forceUpdatePrompt = true }
                         }
                         }
                     }
@@ -183,6 +184,8 @@ fun TempoApp(model: TempoViewModel) {
             }
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
             WhatsNewOnUpdate(state.collection)
+            // The updater waits until setup is finished, and never shows over the What's new sheet's first launch.
+            if (timetable?.onboarded == true) UpdatePrompt(forceUpdatePrompt) { forceUpdatePrompt = false }
             if (showProgress && timetable != null) ProgressSheet(timetable, LocalDate.now()) { showProgress = false }
             if (showImageExport && timetable != null) PngExportSheet(timetable, { showImageExport = false }, model::info)
             if (showTimetables) state.collection?.let { TimetableManager(it, model, files, { showComparison = true }) { showTimetables = false } }

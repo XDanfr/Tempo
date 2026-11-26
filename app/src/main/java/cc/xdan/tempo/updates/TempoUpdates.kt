@@ -24,15 +24,64 @@ object TempoUpdates {
         val info = context.packageManager.getPackageInfo(context.packageName, 0)
         @Suppress("DEPRECATION") return if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
     }
+    /** Automatic daily checks are on unless the person turns them off. Downloads always wait for a tap. */
+    fun autoCheck(context: Context) = prefs(context).getBoolean("autoCheck", true)
+    val available: (Context) -> Boolean = { context -> prefs(context).getLong("versionCode", 0) > installedCode(context) }
+
+    /** Keeps the daily check scheduled while automatic checks are on; called whenever Tempo opens. */
+    fun ensureScheduled(context: Context) {
+        if (!autoCheck(context)) return
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork("tempo-release-updates", ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<ReleaseUpdateWorker>(1, TimeUnit.DAYS)
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build())
+    }
+
     fun schedule(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean("automatic", enabled).apply()
-        val work = WorkManager.getInstance(context)
-        if (enabled) {
-            work.enqueueUniquePeriodicWork("tempo-release-updates", ExistingPeriodicWorkPolicy.UPDATE,
-                PeriodicWorkRequestBuilder<ReleaseUpdateWorker>(1, TimeUnit.DAYS)
-                    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.UNMETERED).build()).build())
-            check(context)
-        } else work.cancelUniqueWork("tempo-release-updates")
+        prefs(context).edit().putBoolean("autoCheck", enabled).apply()
+        if (enabled) { ensureScheduled(context); check(context) } else WorkManager.getInstance(context).cancelUniqueWork("tempo-release-updates")
+    }
+
+    /** Download progress for the in-app prompt: bytes so far, total bytes (or -1), and whether it failed. */
+    data class DownloadProgress(val downloaded: Long, val total: Long, val failed: Boolean)
+
+    fun progress(context: Context): DownloadProgress? {
+        val id = prefs(context).getLong("downloadId", -1)
+        if (id == -1L) return null
+        return context.getSystemService(DownloadManager::class.java).query(DownloadManager.Query().setFilterById(id)).use { cursor ->
+            if (!cursor.moveToFirst()) return null
+            DownloadProgress(cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)),
+                cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)),
+                cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_FAILED)
+        }
+    }
+
+    /** Hides the popup for this version until the next release (Settings still offers it). */
+    fun dismiss(context: Context) { prefs(context).edit().putLong("dismissedCode", prefs(context).getLong("versionCode", 0)).apply() }
+
+    fun cancelDownload(context: Context) {
+        val id = prefs(context).getLong("downloadId", -1)
+        if (id != -1L) context.getSystemService(DownloadManager::class.java).remove(id)
+        prefs(context).edit().remove("downloadId").putBoolean("ready", false).apply()
+    }
+
+    /** Posts "Tempo X is available" once per version, if notifications are allowed. */
+    fun notifyAvailable(context: Context) {
+        val p = prefs(context)
+        val code = p.getLong("versionCode", 0)
+        if (!available(context) || p.getLong("notifiedCode", 0) == code) return
+        if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        val manager = context.getSystemService(android.app.NotificationManager::class.java)
+        if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(android.app.NotificationChannel("updates", "App updates", android.app.NotificationManager.IMPORTANCE_DEFAULT)
+            .apply { description = "When a new version of Tempo is available" })
+        val open = android.app.PendingIntent.getActivity(context, 0, Intent(context, cc.xdan.tempo.MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT)
+        val notification = androidx.core.app.NotificationCompat.Builder(context, "updates")
+            .setSmallIcon(cc.xdan.tempo.R.drawable.ic_notification_update)
+            .setContentTitle("Tempo ${p.getString("versionName", "")} is available")
+            .setContentText("Tap to see what's new and update.")
+            .setContentIntent(open).setAutoCancel(true).build()
+        manager.notify(4100, notification)
+        p.edit().putLong("notifiedCode", code).apply()
     }
     fun check(context: Context) {
         WorkManager.getInstance(context).enqueueUniqueWork("tempo-check-release", ExistingWorkPolicy.KEEP,
@@ -83,6 +132,7 @@ object TempoUpdates {
             p.edit().remove("downloadId").putBoolean("ready", false).apply()
         }
         p.edit().putLong("versionCode", manifest.versionCode).putString("versionName", manifest.versionName)
+            .putString("notes", release.optString("body").replace("\r", "").take(1200))
             .putString("url", url).putString("sha256", manifest.sha256).putString("status", if (manifest.versionCode > installedCode(context)) "Tempo ${manifest.versionName} is available" else "You’re up to date")
             .putLong("checked", System.currentTimeMillis()).apply()
     }
@@ -97,7 +147,6 @@ object TempoUpdates {
         val request = DownloadManager.Request(Uri.parse(url)).setTitle("Tempo update").setDescription("Downloading the next Tempo release")
             .setDestinationUri(Uri.fromFile(file)).setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setAllowedOverRoaming(false)
-        if (p.getBoolean("automatic", false)) request.setAllowedOverMetered(false)
         val id = context.getSystemService(DownloadManager::class.java).enqueue(request)
         p.edit().putLong("downloadId", id).putBoolean("ready", false).putString("status", "Downloading update…").apply()
     }
@@ -139,9 +188,7 @@ class ReleaseUpdateWorker(context: Context, params: WorkerParameters) : Coroutin
     override suspend fun doWork(): Result = try {
         TempoUpdates.findRelease(applicationContext)
         val p = TempoUpdates.prefs(applicationContext)
-        if (p.getBoolean("automatic", false) && p.getLong("versionCode", 0) > TempoUpdates.installedCode(applicationContext)) {
-            TempoUpdates.download(applicationContext)
-        }
+        TempoUpdates.notifyAvailable(applicationContext)
         Result.success()
     } catch (e: kotlinx.coroutines.CancellationException) { throw e }
     catch (e: Exception) {

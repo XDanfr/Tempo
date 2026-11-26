@@ -32,6 +32,7 @@
 - In the timetable switcher, tap a timetable to switch to it. Rename, Duplicate, Export and Delete are in each timetable's ⋮ menu. New and Import sit side by side, and Compare appears once you have two timetables.
 - Day and week images are now shared from the ⋮ menu (“Share as image”). The duplicate “Timetables & files” settings page has been removed.
 - Timetables gain optional purpose, progress and setup-step fields, so existing data and files load unchanged. Exported files that use them need this version or newer.
+- **New updater**: Tempo checks for new releases automatically once a day (on by default; turn it off in Settings › Updates) and posts a notification when one is available. In the app, a popup shows what's new with **Update** or **Later**. The download runs with a wavy progress bar you can hide or cancel. The update is checked against its published checksum and Tempo's signing key, then Tempo asks you to install it. Updates only download when you tap Update.
 - **What's new**: people updating from 0.5.2 see a one-time sheet showing where things moved. New timetables now follow the system light or dark theme by default.
 - Shared motion and haptic foundations: confirmations give a light haptic tick, and the timetable chip responds to presses.
 

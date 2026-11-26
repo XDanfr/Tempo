@@ -46,6 +46,7 @@ fun WhatsNewItems() {
         Item(Icons.Outlined.Undo, "Undo after every change", "A snackbar offers Undo, then Redo. Both are also in the ⋮ menu, along with Share as image.")
         Item(Icons.Outlined.Delete, "Deleting is instant", "Sessions, breaks and subjects delete straight away. Undo brings them back.")
         Item(Icons.Outlined.Celebration, "Celebrations and streaks", "Confetti when your day is done. Turn on check-ins, XP and streaks in Settings › Appearance › Celebrations.")
+        Item(Icons.Outlined.SystemUpdate, "Easier updates", "Tempo now checks for updates and tells you when one is ready. Tap Update, watch it download, then install.")
         Item(Icons.Outlined.Group, "Frees with friends", "Add your name in Settings, then mark a friend's imported timetable as theirs to see when you're both free.")
 }
 

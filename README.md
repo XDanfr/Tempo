@@ -14,7 +14,7 @@
 
 Download the latest stable APK from [GitHub Releases](https://github.com/XDanfr/Tempo/releases). Tempo works on Android 8.0 (Oreo) and newer.
 
-Once a public stable release is available, you can check for updates in Settings or turn on automatic updates. Android will ask before installing an update.
+Tempo checks for new releases automatically and lets you know when one is ready. Tap Update to download it, and Android asks before installing. You can turn automatic checks off in Settings.
 
 ## Plan your week
 
