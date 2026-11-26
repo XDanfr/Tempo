@@ -136,7 +136,14 @@ fun TempoApp(model: TempoViewModel) {
                         when (shown) {
                             Destination.SCHEDULE -> ScheduleScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
                                 { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true },
-                                { d, time -> editFree(d.dayOfWeek.value, time) }, editPause, onTopChanged = { fabExpanded = it })
+                                { d, time -> editFree(d.dayOfWeek.value, time) }, editPause, onTopChanged = { fabExpanded = it },
+                                checkIn = { day, session, on ->
+                                    val subject = timetable.subjects.firstOrNull { it.id == session.subjectId }?.name ?: timetable.sessionWord
+                                    model.update(if (on) "Checked in to $subject" else "Removed check-in") { t ->
+                                        val others = t.checkIns.filterNot { it.date == day.toString() && it.sessionId == session.id }
+                                        t.copy(checkIns = if (on) others + CheckIn(day.toString(), session.id) else others)
+                                    }
+                                })
                             Destination.WEEK -> WeekScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
                                 { day -> selectedDate = day.toString(); destination = Destination.SCHEDULE })
                             Destination.LIBRARY -> LibraryScreen(timetable) { label, change -> model.update(label, change) }

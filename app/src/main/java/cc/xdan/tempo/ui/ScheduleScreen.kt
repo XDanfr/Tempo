@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -75,7 +77,7 @@ private const val CentreWeek = WeekPages / 2
 @Composable
 fun ScheduleScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, selectDate: (LocalDate) -> Unit,
     edit: (Session) -> Unit, editFree: (LocalDate, TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit,
-    onTopChanged: (Boolean) -> Unit = {}) {
+    onTopChanged: (Boolean) -> Unit = {}, checkIn: (LocalDate, Session, Boolean) -> Unit = { _, _, _ -> }) {
     val today = now.toLocalDate()
     // Pages are counted from the day the screen opened, so page numbers stay stable while it is shown.
     val anchor = remember { today }
@@ -110,7 +112,7 @@ fun ScheduleScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, se
         }) { ScheduleHeader(timetable, date, today, selectDate) }
         HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1, key = { it }) { page ->
             val pageDate = dateOf(page)
-            DayTimeline(timetable, pageDate, now, today, edit, { editFree(pageDate, it) }, editBreak, selectDate,
+            DayTimeline(timetable, pageDate, now, today, edit, { editFree(pageDate, it) }, editBreak, selectDate, { session, on -> checkIn(pageDate, session, on) },
                 onTopChanged = { if (page == pager.settledPage) onTopChanged(it) })
         }
     }, modifier = Modifier.fillMaxSize().clipToBounds().nestedScroll(header.connection)) { measurables, constraints ->
@@ -173,6 +175,7 @@ private fun rememberCollapsingHeader(): CollapsingHeader {
 @Composable
 private fun ScheduleHeader(timetable: Timetable, date: LocalDate, today: LocalDate, select: (LocalDate) -> Unit) {
     var choosing by remember { mutableStateOf(false) }
+    var showProgress by remember { mutableStateOf(false) }
     val haptics = rememberTempoHaptics()
     val spokenDate = "${weekdayNames[date.dayOfWeek.value - 1]}, ${friendlyDate(date)}. Choose a date"
     Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
@@ -193,6 +196,11 @@ private fun ScheduleHeader(timetable: Timetable, date: LocalDate, today: LocalDa
                 }
             }
             Spacer(Modifier.weight(1f))
+            if (timetable.progress == ProgressMode.STREAKS) {
+                val summary = remember(timetable, today) { Progress.summary(timetable, today) }
+                StreakChip(summary) { showProgress = true }
+                Spacer(Modifier.width(8.dp))
+            }
             // "Today" only exists while you are somewhere else.
             AnimatedVisibility(date != today, enter = fadeIn(TempoMotion.effects()) + scaleIn(TempoMotion.fastSpatial()),
                 exit = fadeOut(TempoMotion.exit()) + scaleOut(TempoMotion.exit())) {
@@ -204,6 +212,7 @@ private fun ScheduleHeader(timetable: Timetable, date: LocalDate, today: LocalDa
         WeekStrip(timetable, date, today, select)
     }
     if (choosing) DateSelectionDialog(date, { choosing = false }) { haptics.tick(); select(it) }
+    if (showProgress) ProgressSheet(timetable, today) { showProgress = false }
 }
 
 private fun relativeDayName(date: LocalDate, today: LocalDate): String = when (date) {
@@ -282,6 +291,7 @@ private fun Modifier.graphicsScale(scale: Float) = graphicsLayer { scaleX = scal
 @Composable
 private fun DayTimeline(timetable: Timetable, date: LocalDate, now: LocalDateTime, today: LocalDate,
     edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit, selectDate: (LocalDate) -> Unit,
+    checkIn: (Session, Boolean) -> Unit,
     onTopChanged: (Boolean) -> Unit) {
     val blocks = remember(timetable, date) { ScheduleResolver.resolve(timetable, date) }
     val lessons = blocks.filterIsInstance<ScheduleBlock.Lesson>()
@@ -311,9 +321,13 @@ private fun DayTimeline(timetable: Timetable, date: LocalDate, now: LocalDateTim
             val past = date < today || (isToday && block.time.end <= minute)
             val current = isToday && minute >= block.time.start && minute < block.time.end
             val progress = if (current) (minute - block.time.start).toFloat() / block.time.minutes else 0f
+            // Check-ins: only with streaks on, for lessons that have started, today or in the last two days.
+            val checkable = timetable.progress == ProgressMode.STREAKS && block is ScheduleBlock.Lesson && !date.isAfter(today) &&
+                date.isAfter(today.minusDays(3)) && (date < today || block.time.start <= minute)
+            val checked = block is ScheduleBlock.Lesson && timetable.checkIns.any { it.date == date.toString() && it.sessionId == block.session.id }
             TimelineRow(block, timetable.appearance, past, current, progress, Modifier.animateItem(
                 fadeInSpec = TempoMotion.effects(), placementSpec = TempoMotion.spatial(), fadeOutSpec = TempoMotion.exit()),
-                edit, editFree, editBreak)
+                edit, editFree, editBreak, if (checkable) checked else null, { on -> (block as? ScheduleBlock.Lesson)?.let { checkIn(it.session, on) } })
         }
         if (afterDay) item(key = "now-line-end") { NowLine(minute) }
     }
@@ -391,7 +405,8 @@ private val RailWidth = 52.dp
 /** One block with its start time on the rail. The current block carries the moving now-line. */
 @Composable
 private fun TimelineRow(block: ScheduleBlock, appearance: Appearance, past: Boolean, current: Boolean, progress: Float, modifier: Modifier,
-    edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit) {
+    edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit,
+    checkedIn: Boolean? = null, toggleCheckIn: (Boolean) -> Unit = {}) {
     val lineColour = MaterialTheme.colorScheme.primary
     val fade by animateFloatAsState(if (past) .5f else 1f, TempoMotion.effects(), label = "past fade")
     val animatedProgress by animateFloatAsState(progress, TempoMotion.spatial(), label = "now line")
@@ -411,7 +426,7 @@ private fun TimelineRow(block: ScheduleBlock, appearance: Appearance, past: Bool
         Box(Modifier.weight(1f).alpha(fade)) {
             when (block) {
                 is ScheduleBlock.Free -> FreeGap(block, appearance) { editFree(block.time) }
-                else -> BlockCard(block, appearance, current, animatedProgress) {
+                else -> BlockCard(block, appearance, current, animatedProgress, checkedIn, toggleCheckIn) {
                     when (block) { is ScheduleBlock.Lesson -> edit(block.session); is ScheduleBlock.Break -> editBreak(block.scheduled); else -> Unit }
                 }
             }
@@ -445,7 +460,8 @@ fun breakColour(kind: BreakKind): Color = when (kind) {
 }
 
 @Composable
-private fun BlockCard(block: ScheduleBlock, appearance: Appearance, current: Boolean, progress: Float, onClick: () -> Unit) {
+private fun BlockCard(block: ScheduleBlock, appearance: Appearance, current: Boolean, progress: Float,
+    checkedIn: Boolean? = null, toggleCheckIn: (Boolean) -> Unit = {}, onClick: () -> Unit) {
     val outlined = (if (block is ScheduleBlock.Break) appearance.effectiveBreakStyle else appearance.blockStyle) == BlockStyle.OUTLINED
     val colour = when (block) { is ScheduleBlock.Lesson -> Color(block.subject.colour); is ScheduleBlock.Break -> breakColour(block.scheduled.kind); else -> Color.Transparent }
     val surface = MaterialTheme.colorScheme.surface
@@ -482,7 +498,8 @@ private fun BlockCard(block: ScheduleBlock, appearance: Appearance, current: Boo
                         Icon(Icons.Outlined.Place, null, Modifier.size(14.dp)); Text(block.location, style = MaterialTheme.typography.bodySmall)
                     }
             }
-            if (current) Surface(shape = CircleShape, color = foreground.copy(alpha = .14f), contentColor = foreground) {
+            if (checkedIn != null) CheckInButton(checkedIn, foreground, toggleCheckIn)
+            else if (current) Surface(shape = CircleShape, color = foreground.copy(alpha = .14f), contentColor = foreground) {
                 Text("Now", Modifier.padding(horizontal = 10.dp, vertical = 3.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
             }
         }
@@ -561,6 +578,11 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
                     }
                 }
                 Text(nowDetail(state, timetable.appearance.showLocations, minute), style = MaterialTheme.typography.bodyMedium)
+                if (state is NowState.Done && timetable.progress == ProgressMode.STREAKS) {
+                    val summary = remember(timetable, date) { Progress.summary(timetable, date) }
+                    if (summary.xpToday > 0) Text("+${summary.xpToday} XP today" + if (summary.streak > 1) " · ${summary.streak}-day streak" else "",
+                        style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                }
                 nowFollowing(state)?.let {
                     HorizontalDivider(Modifier.padding(vertical = 8.dp), color = content.copy(alpha = .2f))
                     Text(it, style = MaterialTheme.typography.titleSmall)
@@ -735,5 +757,86 @@ private fun DayCompleteConfetti(date: LocalDate, colours: List<Color>, modifier:
             drawOutline(outline, piece.colour, alpha = alpha.coerceIn(0f, 1f))
             drawContext.canvas.restore()
         }
+    }
+}
+
+/** One tap to say you attended; a "+10 XP" floats up when checking in. */
+@Composable
+private fun CheckInButton(checked: Boolean, ink: Color, toggle: (Boolean) -> Unit) {
+    var burst by remember { mutableIntStateOf(0) }
+    val haptics = rememberTempoHaptics()
+    val scale by animateFloatAsState(if (checked) 1f else .9f, androidx.compose.animation.core.spring(dampingRatio = .4f, stiffness = 600f), label = "check scale")
+    Box(contentAlignment = Alignment.Center) {
+        Surface(onClick = { if (!checked) { burst++; haptics.confirm() }; toggle(!checked) }, shape = CircleShape,
+            color = if (checked) ink else ink.copy(alpha = .12f), contentColor = if (checked) subjectForeground(ink) else ink,
+            border = if (checked) null else BorderStroke(1.5.dp, ink.copy(alpha = .5f)),
+            modifier = Modifier.size(40.dp).graphicsLayer { scaleX = scale; scaleY = scale }.semantics {
+                contentDescription = if (checked) "Attended. Undo check-in" else "Check in as attended"; stateDescription = if (checked) "Checked in" else "Not checked in" }) {
+            Box(contentAlignment = Alignment.Center) { Icon(if (checked) Icons.Outlined.Check else Icons.Outlined.TaskAlt, null, Modifier.size(22.dp)) }
+        }
+        if (burst > 0) key(burst) {
+            val rise = remember { androidx.compose.animation.core.Animatable(0f) }
+            LaunchedEffect(Unit) { rise.animateTo(1f, androidx.compose.animation.core.tween(900)) }
+            Text("+${Progress.XP_PER_CHECK_IN} XP", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = ink,
+                modifier = Modifier.graphicsLayer { translationY = -rise.value * 90f; alpha = 1f - rise.value; scaleX = 1f + rise.value * .2f; scaleY = scaleX })
+        }
+    }
+}
+
+/** Streak at a glance; opens the progress drawer. */
+@Composable
+private fun StreakChip(summary: Progress.Summary, open: () -> Unit) {
+    val active = summary.streak > 0 && !summary.paused
+    Surface(onClick = open, shape = CircleShape, color = if (active) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = if (active) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.semantics { contentDescription = "${summary.streak}-day streak" + (if (summary.paused) ", paused" else "") + ", level ${summary.level}. Open progress" }) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Icon(Icons.Outlined.LocalFireDepartment, null, Modifier.size(18.dp))
+            AnimatedContent(summary.streak, label = "streak", transitionSpec = { (slideInVertically { it } + fadeIn()) togetherWith (slideOutVertically { -it } + fadeOut()) }) {
+                Text(it.toString(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit) {
+    val summary = remember(timetable, today) { Progress.summary(timetable, today) }
+    EditorSheet("Your progress", dismiss) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Box(Modifier.size(84.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("LEVEL", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(summary.level.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("${summary.xp} XP", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                val fraction by animateFloatAsState(summary.levelXp.toFloat() / summary.levelGoal, TempoMotion.spatial(), label = "level")
+                LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(8.dp))
+                Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Streak" to "${summary.streak} ${if (summary.streak == 1) "day" else "days"}", "Best" to "${summary.bestStreak} ${if (summary.bestStreak == 1) "day" else "days"}",
+                "Today" to "+${summary.xpToday} XP").forEach { (label, value) ->
+                Surface(Modifier.weight(1f), shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+        if (summary.paused) Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+            Text("Your streak is paused after a missed day. Check in on your next ${timetable.sessionWord} day to keep it going.", Modifier.padding(14.dp))
+        }
+        Text("How it works", style = MaterialTheme.typography.titleMedium)
+        Text("Tap the check on a ${timetable.sessionWord} you attended to earn ${Progress.XP_PER_CHECK_IN} XP, plus ${Progress.FULL_DAY_BONUS} for checking in to a whole day. " +
+            "Streaks count days that have ${timetable.sessionWord}s, so weekends and holidays never break them, and one missed day only pauses it. " +
+            "Levels are just for fun and never lock anything. Turn this off in Settings › Appearance › Celebrations.",
+            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
