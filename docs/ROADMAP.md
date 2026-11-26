@@ -53,9 +53,22 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Suggest icons for recognised new subject names, while preserving saved and manually selected icons, including None
 - [x] Subject and cycle fields expose keyboard Done actions; colour/icon choices dismiss text keyboards, with retained focus for hardware-keyboard colour selection
 
-## 0.5.2 candidate — interaction feedback and safe recovery
+## 0.5.2 — Widget 2.0 and dropdown fix
 
-A tightly scoped usability pass before or alongside 0.6; it should not block the Widget 2.0 release if widget work is ready first. Detailed behaviour, copy, interaction rules and test matrix: [Experience Integrity](EXPERIENCE_INTEGRITY.md).
+- [x] Rebuild the widgets as one adaptive Tempo widget (Glance 1.3 alpha) with distinct compositions at measured breakpoints: compact single event, square visual hero, wide hero plus next event and a non-scrolling mini-agenda
+- [x] Shared widget presentation state resolved once from the dated schedule, with explicit current/next/break/free/done states, privacy-filtered locations and refresh boundaries
+- [x] Mirrored Material shape rules for standalone, paired and three-part groups, with segment and outer outlines, subject-colour or theme-shade heroes, and shape tests that check the XML tokens
+- [x] Hours-and-minutes countdowns fitted to the available space, readable start durations, truthful labels for overlapping events, and large-text labels that stay readable
+- [x] Direct refresh on resize, clock/time-zone changes and leaving the app; optional exact-alarm timing, documented as non-wakeup otherwise
+- [x] New widget configuration screen with a live preview built from the real renderer; saved per-widget timetable, theme, icon and location settings carry over, and legacy providers and widget IDs stay installed
+- [x] Adopt Glance 1.3.0-alpha02, compile SDK 37 and AGP 9.2 for the widget work; isolated Remote Compose lab and QA APKs published from CI
+- [x] Fix dropdowns that did not open in signed release builds; every choice field now opens a Tempo-styled bottom sheet, with subject colour and icon on subject choices
+- [x] Publish the signed 0.5.2 APK and update metadata; add a manually triggered workflow for signed Android App Bundles
+- [x] Record the Widget 2.0 evidence, plus the [Experience Integrity](EXPERIENCE_INTEGRITY.md) plan
+
+## Next — interaction feedback and safe recovery
+
+A tightly scoped usability pass, moved from the 0.5.2 candidate slot because 0.5.2 shipped Widget 2.0 and the dropdown fix instead. Detailed behaviour, copy, interaction rules and test matrix: [Experience Integrity](EXPERIENCE_INTEGRITY.md).
 
 - [ ] Replace prominent toolbar-first Undo/Redo with contextual **bottom snackbars** after *committed* edits (e.g. “Added subject”): **Undo** plus close/dismiss, and a corresponding **Redo** action after undo
 - [ ] Keep bounded undo history available after snackbar dismissal through a secondary accessible action; ensure rapid edits, bulk actions, timetable switches, keyboard users and TalkBack never undo the wrong thing
@@ -64,37 +77,37 @@ A tightly scoped usability pass before or alongside 0.6; it should not block the
 - [ ] Audit setup → create → edit → undo/redo → export/import → switch timetable end-to-end, including cancellation, navigation/back, offline, rotation and accessibility cases
 - [ ] Add regression tests for feedback actions, data preservation on failure, repeated Undo/Redo and lifecycle interruption
 
-## 0.6 candidate — Widget 2.0: adaptive Material 3 Expressive widgets & Remote Compose
+## Widget 2.0 — shipped in 0.5.2; device validation and Remote Compose still open
 
 **Ground-up widget redesign**, not a reskin of the three existing size-specific presentations. Follow Google's canonical widget layouts and progressive-disclosure resizing: a single primary Adaptive Tempo widget should feel more useful as users expand it, moving from one legible current/next event and countdown to visual progress, another event and eventually a **non-scrollable mini-agenda**. **Scrolling is deliberately deferred until after the first batch is implemented and tested.** Preserve existing placed widgets and preferences through compatibility adapters for the current provider components; consolidating picker entries must not break upgrades. Remote Compose remains a **feasibility-first experiment**, not a release requirement. Full architecture, design constraints, development phases, breakpoints, device matrix and go/no-go criteria: [Widget 2.0](WIDGET_2_0.md).
 
 ### Design and compatibility
 
-- [ ] Develop one default adaptive widget experience with **distinct canonical compositions at measured size breakpoints**, not three fixed widget types or scaled-up text layouts; align with Google's [Canonical Widget Layouts](https://developer.android.com/design/ui/mobile/guides/widgets/layouts) and [sizing guidance](https://developer.android.com/design/ui/mobile/guides/widgets/sizing)
-- [ ] Make resize feel like useful progressive disclosure: **2×1 single entity** → **2×2 visual entity** → **4×2 multiple entities** → **larger agenda**, with tall/short variants based on actual dp dimensions and font scale
+- [x] Develop one default adaptive widget experience with **distinct canonical compositions at measured size breakpoints**, not three fixed widget types or scaled-up text layouts; align with Google's [Canonical Widget Layouts](https://developer.android.com/design/ui/mobile/guides/widgets/layouts) and [sizing guidance](https://developer.android.com/design/ui/mobile/guides/widgets/sizing)
+- [x] Make resize feel like useful progressive disclosure: **2×1 single entity** → **2×2 visual entity** → **4×2 multiple entities** → **larger agenda**, with tall/short variants based on actual dp dimensions and font scale
 - [ ] Prototype brief **end-of-day particle celebrations** (optional subtle Material-shaped confetti) while keeping completion readable and static on unsupported hosts, honouring reduced motion and avoiding repeated effects on refresh
-- [ ] Preserve existing Android widget IDs, installed providers and per-widget settings during the ground-up renderer replacement; assess safely retiring duplicate picker entries separately
-- [ ] Design expressive compact, square, wide and expanded canonical compositions around one large, clearly labelled countdown, subject and relevant next activity
-- [ ] Use official Material 3 shape/corner values and a **strict consistent-corner rule**: standalone corners match; connected pairs mirror their inner/outer radii; middle segments of three-part groups have consistent inner radii
+- [x] Preserve existing Android widget IDs, installed providers and per-widget settings during the ground-up renderer replacement; assessing the safe retirement of duplicate picker entries remains open
+- [x] Design expressive compact, square, wide and expanded canonical compositions around one large, clearly labelled countdown, subject and relevant next activity
+- [x] Use official Material 3 shape/corner values and a **strict consistent-corner rule**: standalone corners match; connected pairs mirror their inner/outer radii; middle segments of three-part groups have consistent inner radii
 - [ ] Use semantic icons, restrained coloured segments and an optional compact timeline to organise available space; take visual inspiration from [Material 3 UI Widgets on Figma](https://www.figma.com/community/file/1504472410356443638/material-3-ui-widgets) and Google's widget examples
 - [ ] Fix density/readability on compact widgets and adaptive behaviour on 4-, 5- and 6+-column launchers, including resizing, font scaling, landscape and accessible layout alternatives
-- [ ] Preserve accurate current/next, break/free, done-today, week-done and empty states; keep the existing native countdown's efficient update behaviour unless an alternative is proven
+- [x] Preserve accurate current/next, break/free, done-today, week-done and empty states; keep the existing native countdown's efficient update behaviour unless an alternative is proven
 - [ ] Design honest recovery states for missing/deleted selected timetables, widget setup not finished and known unavailable/stale data, with reconfigure/refresh affordances where supported; do not silently show another timetable (see [Experience Integrity](EXPERIENCE_INTEGRITY.md))
 - [ ] Verify app/widget parity after edits, Undo/Redo, cycle/exception changes, clock/time-zone changes and delayed refresh; retain battery-friendly recovery
-- [ ] Preserve per-widget timetable selection, Material You/custom themes, subject colours, icons, location privacy, fills, outlines and configuration previews
+- [x] Preserve per-widget timetable selection, Material You/custom themes, subject colours, icons, location privacy, fills, outlines and configuration previews
 
 ### Remote Compose feasibility and delivery
 
-- [ ] Prototype **Remote Compose** with isolated experimental dependencies; establish whether a public, compatible home-screen host pathway actually renders shapes, text, taps, size changes and countdowns (an in-app player alone is insufficient)
+- [x] Prototype **Remote Compose** with isolated experimental dependencies; the lab and Glance backend probe exist, but a public home-screen host pathway rendering shapes, text, taps, size changes and countdowns is **not yet demonstrated** (an in-app player alone is insufficient)
 - [ ] Test Remote Compose's **native path/shape drawing** for the mirrored component geometry, sharing the same radius tokens with XML/vector fallbacks; rendering support does not eliminate the design rule
 - [ ] Inspect alpha21 `RemoteEnterTransition.Particle`/`RemoteExitTransition.Particle` on actual widget hosts; confirm whether the available enter/exit effect can reproduce a tiny falling-confetti celebration before making implementation promises
-- [ ] Check Glance/Glance Adaptive release maturity, host capability, Android/launcher coverage, build-tool compatibility and performance before choosing a renderer
-- [ ] Extract a shared widget presentation state while replacing the old layout templates and size handling; retain **RemoteViews/XML/vector shapes as the production fallback** for Android 8+ and unsupported launchers
-- [ ] Make an explicit **adopt / defer / reject** decision based on [Widget 2.0's acceptance gates](WIDGET_2_0.md); do not delay visual improvements if Remote Compose support is not ready
+- [x] Check Glance/Glance Adaptive release maturity, host capability, Android/launcher coverage, build-tool compatibility and performance before choosing a renderer
+- [x] Extract a shared widget presentation state while replacing the old layout templates and size handling; production now renders through Glance (RemoteViews underneath, Android 8+); legacy layout templates are removed
+- [x] Decision recorded in the [implementation log](WIDGET_2_0_IMPLEMENTATION.md): adopt Glance with the shared presentation, **defer Remote Compose**, per [Widget 2.0's acceptance gates](WIDGET_2_0.md); do not delay visual improvements if Remote Compose support is not ready
 - [ ] Validate real launcher behaviour, TalkBack, long subject names, large text, light/dark contrast, clock/time-zone transitions, battery efficiency, recovery updates and release/QA CI before rollout
 - [ ] Test replay-safe once-per-day completion semantics, reduced motion, and resize/launcher-host behaviours without requiring the widget to scroll
 
-The Expressive widget redesign is the user-facing target for 0.6; adopting Remote Compose is conditional on successful device-level tests. **The first batch does not require scrolling or snap gestures.** This work can proceed independently of Feel & Flow.
+The Expressive widget redesign shipped in 0.5.2 without scrolling; adopting Remote Compose remains conditional on successful device-level tests, and launcher, TalkBack and battery validation is still to do. **The first batch does not require scrolling or snap gestures.** This work can proceed independently of Feel & Flow.
 
 ## Towards 1.0 — Feel & Flow
 
@@ -128,7 +141,7 @@ I want Tempo to feel like a polished, expressive utility, not a productivity gam
 
 ## After Widget 2.0 — connected experiences (proposals)
 
-These are **future experiments, not part of the first 0.6 widget batch**. They must reuse Tempo's existing timetable resolver and preserve offline, private, account-free usage. Research scope, feasibility gates and API references live in [Connected Experiences](CONNECTED_EXPERIENCES.md).
+These are **future experiments, not part of the first Widget 2.0 batch**. They must reuse Tempo's existing timetable resolver and preserve offline, private, account-free usage. Research scope, feasibility gates and API references live in [Connected Experiences](CONNECTED_EXPERIENCES.md).
 
 ### Wear OS companion — high priority after widgets
 
@@ -150,7 +163,7 @@ These are **future experiments, not part of the first 0.6 widget batch**. They m
 
 ## Later releases
 
-- [ ] **After Widget 2.0 ships and is tested:** revisit scrollable agendas for the largest layouts; consider ordinary Glance `LazyColumn` first and optional Android 17+ `SnapScrollMatchHeight` only if real launcher testing demonstrates a benefit. Do not treat either as an initial 0.6 deliverable; see [Widget 2.0 future investigation](WIDGET_2_0.md#future-investigation--scrollable-agendas-and-snap-scrolling-after-the-first-widget-20-release)
+- [ ] **After Widget 2.0 ships and is tested:** revisit scrollable agendas for the largest layouts; consider ordinary Glance `LazyColumn` first and optional Android 17+ `SnapScrollMatchHeight` only if real launcher testing demonstrates a benefit. Neither was part of the first Widget 2.0 release; see [Widget 2.0 future investigation](WIDGET_2_0.md#future-investigation--scrollable-agendas-and-snap-scrolling-after-the-first-widget-20-release)
 - [ ] Restore bottom-sheet drag handles and swipe-down dismissal without coupling content flings to changing sheet anchors; include boundary-fling and keyboard regression checks
 - [ ] Landscape timetable image exports with a time-grid/map layout and dotted hour or period guides, matching preview and privacy controls
 - [ ] Tap a Library subject to quickly schedule it; retain an explicit pencil action for full subject editing
