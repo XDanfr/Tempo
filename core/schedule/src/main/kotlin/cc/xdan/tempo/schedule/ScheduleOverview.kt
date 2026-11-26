@@ -71,3 +71,29 @@ fun scheduleLanes(blocks: List<ScheduleBlock>): List<LaneBlock> {
     }
     return assigned.map { LaneBlock(it.first, it.second, ends.size.coerceAtLeast(1)) }
 }
+
+/** An interval where you and [people] are all free. */
+data class SharedFree(val time: TimeSpan, val people: List<String>)
+
+/**
+ * Free intervals you share with each person on [date], merged where adjacent. Only calculated
+ * frees inside everyone's day hours count, never time outside them.
+ */
+fun sharedFrees(me: Timetable, people: List<Pair<String, Timetable>>, date: LocalDate): List<SharedFree> {
+    val perPerson = people.flatMap { (name, timetable) ->
+        val slices = compareTimetables(listOf(me, timetable), date).filter { it.sharedFree }.map { it.time }
+        mergeSpans(slices).map { name to it }
+    }
+    // Group identical intervals so "Alex and Sam" read together.
+    return perPerson.groupBy({ it.second }, { it.first }).map { (time, names) -> SharedFree(time, names.distinct()) }.sortedBy { it.time.start }
+}
+
+/** Intervals where everyone (you plus all [people]) is free. */
+fun everyoneFree(me: Timetable, people: List<Timetable>, date: LocalDate): List<TimeSpan> =
+    if (people.isEmpty()) emptyList() else mergeSpans(compareTimetables(listOf(me) + people, date).filter { it.sharedFree }.map { it.time })
+
+private fun mergeSpans(spans: List<TimeSpan>): List<TimeSpan> = spans.sortedBy { it.start }.fold(mutableListOf()) { acc, span ->
+    val last = acc.lastOrNull()
+    if (last != null && last.end >= span.start) acc[acc.lastIndex] = TimeSpan(last.start, maxOf(last.end, span.end)) else acc += span
+    acc
+}

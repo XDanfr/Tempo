@@ -77,6 +77,13 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
             collection.add(UUID.randomUUID().toString(), timetable.copy(name = uniqueName(timetable.name + " copy", collection)))
         }
     }
+    fun setProfileName(name: String) = save { changeCollection(null) { it.copy(profileName = name.trim().take(40)) } }
+    /** Marks a saved timetable as someone else's ([name]) or as yours (null). */
+    fun setPerson(id: String, name: String?) = save {
+        changeCollection(if (name.isNullOrBlank()) "Marked as yours" else "Marked as ${name.trim()}'s") {
+            it.update(id) { t -> t.copy(person = name?.trim()?.takeIf(String::isNotEmpty)?.take(40)) }
+        }
+    }
     fun delete(id: String) = save {
         val name = mutable.value.collection?.timetables?.firstOrNull { it.id == id }?.timetable?.name ?: "timetable"
         changeCollection("Deleted $name") { it.remove(id) }

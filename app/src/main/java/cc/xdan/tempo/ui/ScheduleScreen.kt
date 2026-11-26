@@ -77,7 +77,8 @@ private const val CentreWeek = WeekPages / 2
 @Composable
 fun ScheduleScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, selectDate: (LocalDate) -> Unit,
     edit: (Session) -> Unit, editFree: (LocalDate, TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit,
-    onTopChanged: (Boolean) -> Unit = {}, checkIn: (LocalDate, Session, Boolean) -> Unit = { _, _, _ -> }) {
+    onTopChanged: (Boolean) -> Unit = {}, checkIn: (LocalDate, Session, Boolean) -> Unit = { _, _, _ -> },
+    people: List<Pair<String, Timetable>> = emptyList()) {
     val today = now.toLocalDate()
     // Pages are counted from the day the screen opened, so page numbers stay stable while it is shown.
     val anchor = remember { today }
@@ -112,7 +113,7 @@ fun ScheduleScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, se
         }) { ScheduleHeader(timetable, date, today, selectDate) }
         HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1, key = { it }) { page ->
             val pageDate = dateOf(page)
-            DayTimeline(timetable, pageDate, now, today, edit, { editFree(pageDate, it) }, editBreak, selectDate, { session, on -> checkIn(pageDate, session, on) },
+            DayTimeline(timetable, pageDate, now, today, edit, { editFree(pageDate, it) }, editBreak, selectDate, { session, on -> checkIn(pageDate, session, on) }, people,
                 onTopChanged = { if (page == pager.settledPage) onTopChanged(it) })
         }
     }, modifier = Modifier.fillMaxSize().clipToBounds().nestedScroll(header.connection)) { measurables, constraints ->
@@ -182,20 +183,19 @@ private fun ScheduleHeader(timetable: Timetable, date: LocalDate, today: LocalDa
         Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             // The date is the jump-to-date control: one obvious place, no separate calendar button.
             Surface(onClick = { choosing = true }, shape = MaterialTheme.shapes.small, color = Color.Transparent,
-                modifier = Modifier.semantics { contentDescription = spokenDate }) {
+                modifier = Modifier.weight(1f).semantics { contentDescription = spokenDate }) {
                 Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column {
                         AnimatedContent(date, label = "weekday", transitionSpec = { fadeIn(TempoMotion.effects()) togetherWith fadeOut(TempoMotion.exit()) }) {
                             Text(relativeDayName(it, today), style = MaterialTheme.typography.headlineMedium, maxLines = 1, softWrap = false, modifier = Modifier.semantics { heading() })
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(friendlyDate(date), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(friendlyDate(date), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                             Icon(Icons.Outlined.ExpandMore, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
-            Spacer(Modifier.weight(1f))
             if (timetable.progress == ProgressMode.STREAKS) {
                 val summary = remember(timetable, today) { Progress.summary(timetable, today) }
                 StreakChip(summary) { showProgress = true }
@@ -205,7 +205,7 @@ private fun ScheduleHeader(timetable: Timetable, date: LocalDate, today: LocalDa
             AnimatedVisibility(date != today, enter = fadeIn(TempoMotion.effects()) + scaleIn(TempoMotion.fastSpatial()),
                 exit = fadeOut(TempoMotion.exit()) + scaleOut(TempoMotion.exit())) {
                 FilledTonalButton(onClick = { select(today) }) {
-                    Icon(Icons.Outlined.Today, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Today")
+                    Icon(Icons.Outlined.Today, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Today", maxLines = 1, softWrap = false)
                 }
             }
         }
@@ -291,20 +291,21 @@ private fun Modifier.graphicsScale(scale: Float) = graphicsLayer { scaleX = scal
 @Composable
 private fun DayTimeline(timetable: Timetable, date: LocalDate, now: LocalDateTime, today: LocalDate,
     edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit, selectDate: (LocalDate) -> Unit,
-    checkIn: (Session, Boolean) -> Unit,
+    checkIn: (Session, Boolean) -> Unit, people: List<Pair<String, Timetable>>,
     onTopChanged: (Boolean) -> Unit) {
     val blocks = remember(timetable, date) { ScheduleResolver.resolve(timetable, date) }
     val lessons = blocks.filterIsInstance<ScheduleBlock.Lesson>()
     val isToday = date == today
     val minute = now.hour * 60 + now.minute
     val conflicts = remember(timetable, date) { ScheduleResolver.blockConflicts(ScheduleResolver.resolvedTemplate(timetable, date), date.dayOfWeek.value).isNotEmpty() }
+    val shared = remember(timetable, people, date) { if (people.isEmpty()) emptyList() else sharedFrees(timetable, people, date) }
     val list = rememberLazyListState()
     val latestTop by rememberUpdatedState(onTopChanged)
     LaunchedEffect(list) { snapshotFlow { list.firstVisibleItemIndex == 0 && list.firstVisibleItemScrollOffset < 24 }.collect { latestTop(it) } }
     LazyColumn(Modifier.fillMaxSize(), state = list,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item(key = "summary") { DaySummary(timetable, date, lessons) }
-        if (isToday) item(key = "now") { NowCard(timetable, blocks, date, edit, editFree, editBreak, selectDate) }
+        if (isToday) item(key = "now") { NowCard(timetable, blocks, date, edit, editFree, editBreak, selectDate, shared) }
         if (conflicts) item(key = "conflicts") {
             Surface(color = MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.medium) {
                 Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -327,7 +328,7 @@ private fun DayTimeline(timetable: Timetable, date: LocalDate, now: LocalDateTim
             val checked = block is ScheduleBlock.Lesson && timetable.checkIns.any { it.date == date.toString() && it.sessionId == block.session.id }
             TimelineRow(block, timetable.appearance, past, current, progress, Modifier.animateItem(
                 fadeInSpec = TempoMotion.effects(), placementSpec = TempoMotion.spatial(), fadeOutSpec = TempoMotion.exit()),
-                edit, editFree, editBreak, if (checkable) checked else null, { on -> (block as? ScheduleBlock.Lesson)?.let { checkIn(it.session, on) } })
+                edit, editFree, editBreak, if (checkable) checked else null, alsoFree = shared.filter { it.time.start < block.time.end && it.time.end > block.time.start }.flatMap { it.people }.distinct(), toggleCheckIn = { on -> (block as? ScheduleBlock.Lesson)?.let { checkIn(it.session, on) } })
         }
         if (afterDay) item(key = "now-line-end") { NowLine(minute) }
     }
@@ -406,7 +407,7 @@ private val RailWidth = 52.dp
 @Composable
 private fun TimelineRow(block: ScheduleBlock, appearance: Appearance, past: Boolean, current: Boolean, progress: Float, modifier: Modifier,
     edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit,
-    checkedIn: Boolean? = null, toggleCheckIn: (Boolean) -> Unit = {}) {
+    checkedIn: Boolean? = null, alsoFree: List<String> = emptyList(), toggleCheckIn: (Boolean) -> Unit = {}) {
     val lineColour = MaterialTheme.colorScheme.primary
     val fade by animateFloatAsState(if (past) .5f else 1f, TempoMotion.effects(), label = "past fade")
     val animatedProgress by animateFloatAsState(progress, TempoMotion.spatial(), label = "now line")
@@ -425,7 +426,7 @@ private fun TimelineRow(block: ScheduleBlock, appearance: Appearance, past: Bool
             fontWeight = if (current) FontWeight.Bold else FontWeight.Normal)
         Box(Modifier.weight(1f).alpha(fade)) {
             when (block) {
-                is ScheduleBlock.Free -> FreeGap(block, appearance) { editFree(block.time) }
+                is ScheduleBlock.Free -> FreeGap(block, appearance, alsoFree) { editFree(block.time) }
                 else -> BlockCard(block, appearance, current, animatedProgress, checkedIn, toggleCheckIn) {
                     when (block) { is ScheduleBlock.Lesson -> edit(block.session); is ScheduleBlock.Break -> editBreak(block.scheduled); else -> Unit }
                 }
@@ -436,7 +437,7 @@ private fun TimelineRow(block: ScheduleBlock, appearance: Appearance, past: Bool
 
 /** Compact, tappable gap: it says how long it is and offers to fill it, without eating the screen. */
 @Composable
-private fun FreeGap(block: ScheduleBlock.Free, appearance: Appearance, fill: () -> Unit) {
+private fun FreeGap(block: ScheduleBlock.Free, appearance: Appearance, alsoFree: List<String> = emptyList(), fill: () -> Unit) {
     val outline = MaterialTheme.colorScheme.outline.copy(alpha = .45f)
     Surface(onClick = fill, shape = RoundedCornerShape(18.dp), color = Color.Transparent,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics { contentDescription = "${durationLabel(block.time.minutes)} free, ${minuteLabel(block.time.start)} to ${minuteLabel(block.time.end)}. Fill this gap" }
@@ -449,6 +450,7 @@ private fun FreeGap(block: ScheduleBlock.Free, appearance: Appearance, fill: () 
         Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (appearance.showIcons) Icon(Icons.Outlined.Add, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("${durationLabel(block.time.minutes)} free", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (alsoFree.isNotEmpty()) PeopleFree(alsoFree)
         }
     }
 }
@@ -527,7 +529,8 @@ private fun firstLessonAfter(timetable: Timetable, date: LocalDate): Pair<LocalD
  */
 @Composable
 private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: LocalDate,
-    edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit, selectDate: (LocalDate) -> Unit) {
+    edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit, selectDate: (LocalDate) -> Unit,
+    shared: List<SharedFree> = emptyList()) {
     val clock by produceState(LocalDateTime.now()) {
         while (true) { value = LocalDateTime.now(); delay(1_000L - System.currentTimeMillis() % 1_000L) }
     }
@@ -583,6 +586,15 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
                     if (summary.xpToday > 0) Text("+${summary.xpToday} XP today" + if (summary.streak > 1) " · ${summary.streak}-day streak" else "",
                         style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 }
+                // "Alex is free too": the social moment, only while you're actually free.
+                if (state is NowState.During && state.block is ScheduleBlock.Free) shared.filter { minute >= it.time.start && minute < it.time.end }
+                    .flatMap { s -> s.people.map { it to s.time.end } }.distinctBy { it.first }.takeIf { it.isNotEmpty() }?.let { free ->
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PeopleFree(free.map { it.first }, showText = false)
+                            Text("${peopleList(free.map { it.first })} ${if (free.size == 1) "is" else "are"} free too until ${minuteLabel(free.minOf { it.second })}",
+                                style = MaterialTheme.typography.titleSmall)
+                        }
+                    }
                 nowFollowing(state)?.let {
                     HorizontalDivider(Modifier.padding(vertical = 8.dp), color = content.copy(alpha = .2f))
                     Text(it, style = MaterialTheme.typography.titleSmall)
@@ -840,3 +852,27 @@ private fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () ->
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
+
+fun peopleList(names: List<String>): String = when (names.size) {
+    0 -> ""; 1 -> names[0]; 2 -> "${names[0]} and ${names[1]}"; else -> "${names[0]}, ${names[1]} and ${names.size - 2} more"
+}
+
+/** Overlapping initials for people who share this free, with "Alex is free too". */
+@Composable
+fun PeopleFree(names: List<String>, showText: Boolean = true) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = "${peopleList(names)} ${if (names.size == 1) "is" else "are"} free too" }) {
+        Box {
+            names.take(3).forEachIndexed { i, name ->
+                Surface(shape = CircleShape, color = personColour(name), contentColor = subjectForeground(personColour(name)),
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.surface), modifier = Modifier.padding(start = (i * 14).dp).size(24.dp)) {
+                    Box(contentAlignment = Alignment.Center) { Text(name.take(1).uppercase(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold) }
+                }
+            }
+        }
+        if (showText) Text(if (names.size == 1) "${names[0]} too" else "${names.size} too", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
+    }
+}
+
+/** A stable colour per person name. */
+fun personColour(name: String): Color = Color(cc.xdan.tempo.design.subjectColours[Math.floorMod(name.lowercase().hashCode(), cc.xdan.tempo.design.subjectColours.size)].argb)

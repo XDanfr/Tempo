@@ -159,6 +159,8 @@ data class Timetable(
     val setupStep: Int? = null,
     /** Sessions the person marked as attended; only used when [progress] is STREAKS. */
     val checkIns: List<CheckIn> = emptyList(),
+    /** Set when this is someone else's timetable saved on this device, e.g. "Alex". */
+    val person: String? = null,
 ) {
     init {
         require(onboardingStep in 0..3)
@@ -199,6 +201,8 @@ data class TimetableCollection(
     val formatVersion: Int = 1,
     val activeId: String = "local",
     val timetables: List<SavedTimetable> = listOf(SavedTimetable("local", Timetable())),
+    /** Your display name, shown to others when you share. Stored on this device. */
+    val profileName: String = "",
 ) {
     init {
         require(format == "cc.xdan.tempo.library" && formatVersion == 1) { "Unsupported timetable collection" }

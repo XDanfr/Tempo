@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
@@ -26,7 +27,7 @@ private enum class SettingsPage(val label: String, val detail: String) {
 }
 
 @Composable
-fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit) {
+fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, profileName: String = "", setProfileName: (String) -> Unit = {}) {
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
     var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
     PredictiveSettingsHost(page?.name, { page = null }) { shownPage ->
@@ -35,8 +36,15 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (currentPage == null) {
         item {
-            Text("Your Tempo", style = MaterialTheme.typography.headlineMedium)
-            Text("Part of Axis", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // Your name is shown to people when frees line up and, later, on timetables you share.
+            var name by rememberSaveable(profileName) { mutableStateOf(profileName) }
+            val focus = androidx.compose.ui.platform.LocalFocusManager.current
+            OutlinedTextField(name, { name = it.take(40) }, label = { Text("Your name") }, singleLine = true, modifier = Modifier.fillMaxWidth()
+                .onFocusChanged { if (!it.isFocused && name.trim() != profileName) setProfileName(name) },
+                supportingText = { Text("Shown to people you compare frees with. Stays on this device.") },
+                leadingIcon = { Icon(Icons.Outlined.Person, null) },
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { setProfileName(name); focus.clearFocus() }))
         }
         items(SettingsPage.entries) { section ->
             ElevatedCard(onClick = { page = section }, modifier = Modifier.fillMaxWidth()) {

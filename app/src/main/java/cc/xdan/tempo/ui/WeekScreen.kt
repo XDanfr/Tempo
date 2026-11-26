@@ -78,7 +78,8 @@ private fun totals(days: List<WeekDay>, cutoff: LocalDateTime?): WeekTotals {
  * time-aligned grid. Tapping a block opens that day in Schedule.
  */
 @Composable
-fun WeekScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, selectDate: (LocalDate) -> Unit, openDay: (LocalDate) -> Unit) {
+fun WeekScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, selectDate: (LocalDate) -> Unit, openDay: (LocalDate) -> Unit,
+    people: List<Pair<String, Timetable>> = emptyList()) {
     val monday = date.with(DayOfWeek.MONDAY)
     val thisMonday = now.toLocalDate().with(DayOfWeek.MONDAY)
     Column(Modifier.fillMaxSize()) {
@@ -89,7 +90,7 @@ fun WeekScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, select
                 (slideOutHorizontally(TempoMotion.slide) { -it * direction / 6 } + fadeOut(TempoMotion.exit()))
         }) { shownMonday ->
             val days = remember(timetable, shownMonday) { (0 until 7).map { shownMonday.plusDays(it.toLong()) }.map { WeekDay(it, ScheduleResolver.resolve(timetable, it)) } }
-            WeekBody(timetable, days, now, shownMonday == thisMonday, shownMonday < thisMonday, openDay)
+            WeekBody(timetable, days, now, shownMonday == thisMonday, shownMonday < thisMonday, openDay, people)
         }
     }
 }
@@ -115,7 +116,8 @@ private fun WeekHeader(monday: LocalDate, thisMonday: LocalDate, move: (Int) -> 
 }
 
 @Composable
-private fun WeekBody(timetable: Timetable, days: List<WeekDay>, now: LocalDateTime, current: Boolean, past: Boolean, openDay: (LocalDate) -> Unit) {
+private fun WeekBody(timetable: Timetable, days: List<WeekDay>, now: LocalDateTime, current: Boolean, past: Boolean, openDay: (LocalDate) -> Unit,
+    people: List<Pair<String, Timetable>>) {
     // "Still ahead" only means something for the week you're in.
     var ahead by rememberSaveable { mutableStateOf(false) }
     val showAhead = current && ahead
@@ -129,10 +131,15 @@ private fun WeekBody(timetable: Timetable, days: List<WeekDay>, now: LocalDateTi
             }
         } else Text(if (past) "This week has passed, so these are its full totals." else "Everything here is still ahead.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (timetable.progress == ProgressMode.STREAKS) WeekXp(timetable, days, now.toLocalDate())
         StatTiles(stats, timetable.sessionWord)
+        var hidden by rememberSaveable { mutableStateOf(emptyList<String>()) }
+        val shown = people.filter { it.first !in hidden }
+        val shared = remember(timetable, shown, days) { days.associate { it.date to sharedFrees(timetable, shown, it.date) } }
+        if (people.isNotEmpty()) SharedFreesCard(people, hidden, { name -> hidden = if (name in hidden) hidden - name else hidden + name }, shared, openDay)
         if (stats.bySubject.isNotEmpty()) SubjectBreakdown(stats)
         Text("Week at a glance", style = MaterialTheme.typography.titleMedium)
-        WeekGrid(timetable, days, now, openDay)
+        WeekGrid(timetable, days, now, openDay, if (people.isEmpty()) emptyMap() else shared)
     }
 }
 
@@ -190,7 +197,8 @@ private const val MinuteHeight = 0.9f
 
 /** Time-aligned week grid. Overlapping blocks share their column side by side. */
 @Composable
-private fun WeekGrid(timetable: Timetable, days: List<WeekDay>, now: LocalDateTime, openDay: (LocalDate) -> Unit) {
+private fun WeekGrid(timetable: Timetable, days: List<WeekDay>, now: LocalDateTime, openDay: (LocalDate) -> Unit,
+    shared: Map<LocalDate, List<SharedFree>> = emptyMap()) {
     // Weekend columns appear only when something happens on them.
     val shown = days.filter { it.date.dayOfWeek.value <= 5 || it.blocks.any { b -> b !is ScheduleBlock.Free } }
     val occupied = shown.flatMap { it.blocks }
@@ -226,6 +234,11 @@ private fun WeekGrid(timetable: Timetable, days: List<WeekDay>, now: LocalDateTi
                 Spacer(Modifier.height(2.dp))
                 BoxWithConstraints(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(10.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerLow)) {
+                    // Shared frees sit behind the blocks as soft bands.
+                    shared[day.date].orEmpty().forEach { free ->
+                        Box(Modifier.offset(y = ((free.time.start - start) * MinuteHeight).dp).fillMaxWidth().height((free.time.minutes * MinuteHeight).dp)
+                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = .28f)))
+                    }
                     val lanes = laneOf(day.blocks.filterNot { it is ScheduleBlock.Free })
                     lanes.forEach { (block, lane, laneCount) ->
                         val colour = when (block) { is ScheduleBlock.Lesson -> Color(block.subject.colour); is ScheduleBlock.Break -> breakColour(block.scheduled.kind); else -> Color.Transparent }
@@ -270,4 +283,59 @@ private fun laneOf(blocks: List<ScheduleBlock>): List<Triple<ScheduleBlock, Int,
     }
     flush()
     return result
+}
+
+/** XP earned this week so far and how far it is to the next level. */
+@Composable
+private fun WeekXp(timetable: Timetable, days: List<WeekDay>, today: LocalDate) {
+    val weekXp = remember(timetable, days, today) { days.filter { !it.date.isAfter(today) }.sumOf { Progress.xpForDay(timetable, it.date) } }
+    val summary = remember(timetable, today) { Progress.summary(timetable, today) }
+    val fraction by animateFloatAsState(summary.levelXp.toFloat() / summary.levelGoal, TempoMotion.spatial(), label = "week xp")
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.tertiaryContainer, contentColor = MaterialTheme.colorScheme.onTertiaryContainer) {
+        Column(Modifier.fillMaxWidth().padding(16.dp).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("+$weekXp XP", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("Level ${summary.level}", style = MaterialTheme.typography.labelLarge)
+            }
+            LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(8.dp),
+                color = MaterialTheme.colorScheme.onTertiaryContainer, trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .2f))
+            Text("Earned this week · ${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+/** Who's free when you are this week, with people you can toggle in and out. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SharedFreesCard(people: List<Pair<String, Timetable>>, hidden: List<String>, toggle: (String) -> Unit,
+    shared: Map<LocalDate, List<SharedFree>>, openDay: (LocalDate) -> Unit) {
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Frees you share", style = MaterialTheme.typography.titleMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                people.map { it.first }.distinct().forEach { name ->
+                    FilterChip(name !in hidden, { toggle(name) }, label = { Text(name) }, leadingIcon = {
+                        Box(Modifier.size(18.dp).clip(CircleShape).background(personColour(name)), contentAlignment = Alignment.Center) {
+                            Text(name.take(1).uppercase(), style = MaterialTheme.typography.labelSmall, color = subjectForeground(personColour(name)))
+                        }
+                    })
+                }
+            }
+            val rows = shared.entries.sortedBy { it.key }.flatMap { (day, frees) -> frees.map { day to it } }
+            if (rows.isEmpty()) Text("No shared frees this week.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            rows.forEach { (day, free) ->
+                Surface(onClick = { openDay(day) }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text("${weekdayNames[day.dayOfWeek.value - 1]} · ${minuteLabel(free.time.start)}–${minuteLabel(free.time.end)}", style = MaterialTheme.typography.titleSmall)
+                            Text("${durationLabel(free.time.minutes)} with ${peopleList(free.people)}", style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        PeopleFree(free.people, showText = false)
+                    }
+                }
+            }
+        }
+    }
 }

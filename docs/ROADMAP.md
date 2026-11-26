@@ -80,12 +80,20 @@ Agreed November 2026 after a device review of 0.5.2: remove duplicate controls, 
 - [x] Opt-in check-ins, XP, soft streaks that skip non-scheduled days, day-complete moment and Progress drawer
 - [ ] Achievements that encourage exploring the app, setup checklist and weekly recap (after the social features settle)
 
+## Redesign — still to plan
+
+- [ ] Widget redesign for streaks and progress: today's check-ins, streak and XP on larger widgets, and a check-in action where hosts allow it
+- [ ] Full redesign of every Settings page (grouped rows with current values, one action per row)
+- [ ] Replace short dropdowns with buttons or segmented choices, as with free gaps and break types
+- [ ] Add session opens a quick subject picker first, then the full editor with that subject chosen
+
 ## Social Tempo — plan
 
 Optional, end-to-end encrypted and free-tier only. Full plan, privacy rules and Cloudflare budget: [Social](SOCIAL.md).
 
-- [ ] Profile name on device
-- [ ] People and shared-free alerts (“Alex also has a free at 13:10”), including a Week tab overlay
+- [x] Profile name on device
+- [x] People (timetables marked as someone else's) and shared frees on Schedule and the Week tab
+- [ ] Optional “Alex also has a free at 13:10” notification before a shared free
 - [ ] Encrypted share links at `tempo.xdan.cc/t/<id>#<key>` (Worker + D1), app links and a web viewer
 - [ ] Live updates, and removal from other devices when the owner stops sharing
 - [ ] Groups for tracking shared frees

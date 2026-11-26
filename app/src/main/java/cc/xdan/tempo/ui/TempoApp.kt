@@ -73,6 +73,11 @@ fun TempoApp(model: TempoViewModel) {
                 var destination by rememberSaveable { mutableStateOf(Destination.SCHEDULE) }
                 var fabExpanded by remember { mutableStateOf(true) }
                 val navHaptics = rememberTempoHaptics()
+                // Other people's timetables saved on this device, for shared frees.
+                val people = remember(state.collection) {
+                    state.collection?.timetables.orEmpty().filter { it.id != state.collection?.activeId && it.timetable.onboarded }
+                        .mapNotNull { saved -> saved.timetable.person?.let { it to saved.timetable } }
+                }
                 var selectedDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
                 var editingBaseDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
                 var editorDate by rememberSaveable { mutableStateOf<String?>(null) }
@@ -137,6 +142,7 @@ fun TempoApp(model: TempoViewModel) {
                             Destination.SCHEDULE -> ScheduleScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
                                 { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true },
                                 { d, time -> editFree(d.dayOfWeek.value, time) }, editPause, onTopChanged = { fabExpanded = it },
+                                people = people,
                                 checkIn = { day, session, on ->
                                     val subject = timetable.subjects.firstOrNull { it.id == session.subjectId }?.name ?: timetable.sessionWord
                                     model.update(if (on) "Checked in to $subject" else "Removed check-in") { t ->
@@ -145,9 +151,9 @@ fun TempoApp(model: TempoViewModel) {
                                     }
                                 })
                             Destination.WEEK -> WeekScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
-                                { day -> selectedDate = day.toString(); destination = Destination.SCHEDULE })
+                                { day -> selectedDate = day.toString(); destination = Destination.SCHEDULE }, people)
                             Destination.LIBRARY -> LibraryScreen(timetable) { label, change -> model.update(label, change) }
-                            Destination.SETTINGS -> SettingsScreen(timetable, model::update)
+                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, state.collection?.profileName ?: "", model::setProfileName)
                         }
                         }
                     }

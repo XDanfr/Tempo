@@ -20,6 +20,8 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
     var renameId by rememberSaveable { mutableStateOf<String?>(null) }
     var name by rememberSaveable { mutableStateOf("") }
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
+    var personId by rememberSaveable { mutableStateOf<String?>(null) }
+    var personName by rememberSaveable { mutableStateOf("") }
     EditorSheet("Your timetables", dismiss) {
         collection.timetables.forEach { saved ->
             val active = saved.id == collection.activeId
@@ -31,7 +33,7 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(if (active) Icons.Outlined.CheckCircle else Icons.Outlined.CalendarViewWeek, null)
                     Column(Modifier.weight(1f)) {
-                        Text(saved.timetable.name, style = MaterialTheme.typography.titleMedium)
+                        Text(saved.timetable.person?.let { "$it · ${saved.timetable.name}" } ?: saved.timetable.name, style = MaterialTheme.typography.titleMedium)
                         Text(if (!saved.timetable.onboarded) "Setup in progress" else "${countLabel(saved.timetable.sessions.size, "session")} · ${countLabel(saved.timetable.subjects.size, "subject")}",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -41,6 +43,9 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
                         DropdownMenu(menu, { menu = false }, shape = MaterialTheme.shapes.medium) {
                             DropdownMenuItem(text = { Text("Rename") }, leadingIcon = { Icon(Icons.Outlined.Edit, null) },
                                 onClick = { menu = false; renameId = saved.id; name = saved.timetable.name; naming = true })
+                            DropdownMenuItem(text = { Text(if (saved.timetable.person == null) "Someone else's…" else "Mark as mine") },
+                                leadingIcon = { Icon(if (saved.timetable.person == null) Icons.Outlined.PersonAdd else Icons.Outlined.Person, null) },
+                                onClick = { menu = false; if (saved.timetable.person == null) { personId = saved.id; personName = "" } else model.setPerson(saved.id, null) })
                             DropdownMenuItem(text = { Text("Duplicate") }, leadingIcon = { Icon(Icons.Outlined.ContentCopy, null) },
                                 onClick = { menu = false; model.duplicate(saved.id) })
                             // Export always saves the active timetable, so it is offered only there.
@@ -84,5 +89,14 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
             confirmButton = { Button(onClick = { model.delete(id); deleteId = null }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
                 contentColor = MaterialTheme.colorScheme.onError)) { Text("Delete timetable") } },
             dismissButton = { TextButton(onClick = { deleteId = null }) { Text("Keep") } })
+    }
+    personId?.let { id ->
+        AlertDialog(onDismissRequest = { personId = null }, icon = { Icon(Icons.Outlined.PersonAdd, null) },
+            title = { Text("Whose timetable is this?") },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Tempo will tell you when your frees line up with theirs.")
+                OutlinedTextField(personName, { personName = it }, label = { Text("Their name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            } },
+            confirmButton = { Button(enabled = personName.isNotBlank(), onClick = { model.setPerson(id, personName); personId = null }) { Text("Save") } })
     }
 }
