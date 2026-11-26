@@ -66,6 +66,17 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Publish the signed 0.5.2 APK and update metadata; add a manually triggered workflow for signed Android App Bundles
 - [x] Record the Widget 2.0 evidence, plus the [Experience Integrity](EXPERIENCE_INTEGRITY.md) plan
 
+## Redesign — one home per action, alive when you tap
+
+Agreed November 2026 after a device review of 0.5.2: remove duplicate controls, make prominent surfaces tappable, rebuild onboarding around what the timetable is for, and add opt-in progression. Full spec: [Redesign](REDESIGN.md).
+
+- [ ] Foundations: motion tokens, haptics, press feedback and shared components in `core:designsystem`; one sheet state in place of scattered flags
+- [ ] Remove duplicates: one timetable switcher (top-bar chip), import/export only in the switcher, per-card overflow menus, no top-bar undo/redo or calendar icon, single About row
+- [ ] Schedule: merge Today and Timetable into one day pager with a week strip, live Now card, now-line, dimmed past, compact free gaps, no chevrons, tappable header and Now card
+- [ ] Week overview tab and Library subject detail (tap a subject to see where it occurs)
+- [ ] Onboarding rebuild: purpose question (school, college, work, personal) tailoring vocabulary and defaults, one question per screen, subject suggestions, live preview, progress opt-in, finish celebration
+- [ ] Opt-in progression: setup checklist, discovery milestones, lesson check-ins, XP, soft streaks that skip non-scheduled days, day-complete moment, weekly recap and Progress page
+
 ## Next — interaction feedback and safe recovery
 
 A tightly scoped usability pass, moved from the 0.5.2 candidate slot because 0.5.2 shipped Widget 2.0 and the dropdown fix instead. Detailed behaviour, copy, interaction rules and test matrix: [Experience Integrity](EXPERIENCE_INTEGRITY.md).
@@ -111,7 +122,7 @@ The Expressive widget redesign shipped in 0.5.2 without scrolling; adopting Remo
 
 ## Towards 1.0 — Feel & Flow
 
-I want Tempo to feel like a polished, expressive utility, not a productivity game. The following is a **design direction**, not a commitment to pack every feature into 1.0: suitable parts may arrive in intermediate releases alongside the existing functional backlog. Details and acceptance criteria live in [Feel & Flow](FEEL_AND_FLOW.md).
+I want Tempo to feel like a polished, expressive utility; any progression is opt-in. The following is a **design direction**, not a commitment to pack every feature into 1.0: suitable parts may arrive in intermediate releases alongside the existing functional backlog. Details and acceptance criteria live in [Feel & Flow](FEEL_AND_FLOW.md).
 
 ### Schedule and week-at-a-glance
 
@@ -127,7 +138,7 @@ I want Tempo to feel like a polished, expressive utility, not a productivity gam
 - [ ] Apply one documented cross-screen interaction contract for success/error/loading, navigation/back, confirmations and empty states; carry forward [Experience Integrity](EXPERIENCE_INTEGRITY.md) rather than creating new per-screen rules
 - [ ] Audit connected user flows across Schedule, Overview, Library, editing, comparison and settings; preserve date/week/timetable context and verify recovery paths
 - [ ] Living timetable states for past/current/next activities, clear elapsed/remaining progress and calm end-of-day/week transitions
-- [ ] Small, optional celebrations and **permanent discovery achievements** with rounded top-of-screen notices; no login streaks, XP, leaderboards or gated essentials
+- [ ] Small, optional celebrations and **permanent discovery achievements** with rounded top-of-screen notices; opt-in XP and soft streaks from check-ins only (see [Redesign](REDESIGN.md#gamification)); no leaderboards or gated essentials
 - [ ] Dismissible contextual post-onboarding hints, replayable from Help, introducing gestures and relevant customisation when needed
 - [ ] Audit reduced motion, animation scale, TalkBack, large text, contrast, gesture conflicts, performance and system-back behaviour
 - [ ] Consider an optional factual weekly recap (schedule counts and hours, never inferred attendance)

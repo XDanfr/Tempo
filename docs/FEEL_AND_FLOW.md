@@ -1,14 +1,14 @@
 # Feel & Flow — the Tempo 1.0 experience direction
 
-Status: **design proposal**, not implemented or a fixed release promise. Features may arrive in smaller releases before 1.0. This supplements [the roadmap](ROADMAP.md) and must not imply that 0.5 is unfinished. The earlier, testable feedback/recovery slice and shared QA contract are specified in [Experience Integrity](EXPERIENCE_INTEGRITY.md); do not reimplement those independently in 1.0.
+Status: **design proposal**, not implemented or a fixed release promise. Concrete screen decisions, the duplicate-control audit and the agreed opt-in progression model now live in [Redesign](REDESIGN.md), which takes precedence where the two differ. Features may arrive in smaller releases before 1.0. This supplements [the roadmap](ROADMAP.md) and must not imply that 0.5 is unfinished. The earlier, testable feedback/recovery slice and shared QA contract are specified in [Experience Integrity](EXPERIENCE_INTEGRITY.md); do not reimplement those independently in 1.0.
 
 ## Product principles
 
-Tempo is an expressive, accessible timetable utility for school, college, work and everyday schedules — not a habit tracker or productivity game.
+Tempo is an expressive, accessible timetable utility for school, college, work and everyday schedules. Light, **opt-in** progression (check-ins, XP and soft streaks) is allowed; it is never the default and never gates features.
 
 1. **Useful before playful.** Motion communicates state, position or success. No meaningless animation, cosmetic clutter or forced engagement.
 2. **Local-first by default.** People can create, edit, compare, use widgets, import and export timetables without accounts or network access.
-3. **No manufactured pressure.** No login streaks, XP, leaderboards, punitive reminders or rewards for unverified attendance. Elapsed time is not evidence of completed work.
+3. **No manufactured pressure.** No leaderboards, punitive reminders, streak-loss notifications or rewards for unverified attendance. XP and soft streaks are opt-in, count only explicit check-ins on scheduled days, and pause rather than reset. Elapsed time is not evidence of completed work.
 4. **Discoverable, not intrusive.** Progressive hints, permanent user control and optional celebrations; no mandatory touring of unrelated features.
 5. **Respect the system and user.** Honour accessibility settings (including animator duration scale and reduced motion), contrast, large text, screen readers and haptics preferences.
 
@@ -55,7 +55,7 @@ Establish a small, documented motion vocabulary in `core:designsystem` (tokens/b
 ## 4. Optional milestones and celebrations
 
 - Small permanent **discovery milestones** for actions already useful: first timetable, theme customisation, widget configured, first export/import, advanced feature explored.
-- No XP, streaks, public rankings, artificial unlock gates or achievements that require returning daily.
+- No public rankings, artificial unlock gates or achievements that require opening the app daily. Opt-in XP and soft streaks follow [Redesign → Gamification](REDESIGN.md#gamification).
 - Rounded top-of-screen notification (icon, name, short explanation), brief optional particles/confetti for meaningful milestones, haptics if enabled. Queue/suppress duplicates and avoid interruption during editing/onboarding.
 - A simple Milestones page to revisit earned items; do not make it a primary tab.
 - Store achievements locally and avoid uploading usage telemetry. Reinstall/restore behaviour should be explicit.
