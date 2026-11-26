@@ -184,6 +184,12 @@ fun TempoApp(model: TempoViewModel) {
             }
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
             WhatsNewOnUpdate(state.collection)
+            state.sharePreview?.let { SharePreviewDialog(it, { model.acceptShare(true) }, { model.acceptShare(false) }, model::dismissSharePreview) }
+            if (state.openingShare) Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp), shape = MaterialTheme.shapes.medium) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CircularProgressIndicator(Modifier.size(24.dp)); Text("Opening shared timetable…")
+                }
+            }
             // The updater waits until setup is finished, and never shows over the What's new sheet's first launch.
             if (timetable?.onboarded == true) UpdatePrompt(forceUpdatePrompt) { forceUpdatePrompt = false }
             if (showProgress && timetable != null) ProgressSheet(timetable, LocalDate.now()) { showProgress = false }

@@ -1,0 +1,19 @@
+# Tempo share service: stores end-to-end encrypted timetable snapshots only.
+# Deploy only after review (see docs/SOCIAL.md). Free plan: D1 stops at its limits instead of billing.
+name = "tempo-share"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = false
+routes = [{ pattern = "tempo.xdan.cc", custom_domain = true }]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tempo-share"
+database_id = "REPLACE_WITH_DATABASE_ID"
+
+[triggers]
+crons = ["17 3 * * *"]
+
+[vars]
+# SHA-256 fingerprint(s) of the release signing certificate, comma-separated, for Android App Links.
+ANDROID_CERT_FINGERPRINTS = ""

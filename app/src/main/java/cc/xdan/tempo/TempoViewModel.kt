@@ -38,7 +38,8 @@ sealed interface Feedback {
 data class TempoState(val collection: TimetableCollection? = null, val error: String? = null,
     val importPreview: ImportPreview? = null, val contentEpoch: Int = 0, val fileBusy: Boolean = false,
     val feedback: Feedback? = null, val canUndo: Boolean = false, val canRedo: Boolean = false,
-    val undoLabel: String? = null, val redoLabel: String? = null) {
+    val undoLabel: String? = null, val redoLabel: String? = null,
+    val sharePreview: cc.xdan.tempo.data.SharedTimetable? = null, val openingShare: Boolean = false) {
     val timetable: Timetable? get() = collection?.active
 }
 
@@ -82,6 +83,34 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
     fun setPerson(id: String, name: String?) = save {
         changeCollection(if (name.isNullOrBlank()) "Marked as yours" else "Marked as ${name.trim()}'s") {
             it.update(id) { t -> t.copy(person = name?.trim()?.takeIf(String::isNotEmpty)?.take(40)) }
+        }
+    }
+    /** Opens a shared link: downloads the ciphertext and decrypts it with the key from the link. */
+    fun openShareLink(text: String) {
+        val link = cc.xdan.tempo.data.ShareLink.parse(text) ?: return showError("That isn't a complete Tempo share link. Ask for the full link, including the part after #.")
+        mutable.value = mutable.value.copy(openingShare = true)
+        viewModelScope.launch {
+            try {
+                val data = cc.xdan.tempo.share.ShareClient.fetch(link.id)
+                val shared = withContext(Dispatchers.Default) { cc.xdan.tempo.data.ShareCrypto.decrypt(data, link.key) }
+                mutable.value = mutable.value.copy(sharePreview = shared)
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { showError(e.message ?: "Couldn't open this shared timetable.") }
+            finally { mutable.value = mutable.value.copy(openingShare = false) }
+        }
+    }
+    fun dismissSharePreview() { mutable.value = mutable.value.copy(sharePreview = null) }
+    /** Adds the previewed share as someone's timetable (for frees) or as an independent copy of your own. */
+    fun acceptShare(asPerson: Boolean) {
+        val shared = mutable.value.sharePreview ?: return
+        dismissSharePreview()
+        val name = shared.sharer.ifBlank { "Friend" }
+        save {
+            changeCollection(if (asPerson) "Added $name" else "Imported ${shared.timetable.name}") { collection ->
+                val copy = shared.timetable.copy(onboarded = true, person = if (asPerson) name else null)
+                collection.add(UUID.randomUUID().toString(), copy.copy(name = uniqueName(if (asPerson) "$name · ${copy.name}" else copy.name, collection)))
+                    .select(collection.activeId)
+            }
         }
     }
     fun delete(id: String) = save {

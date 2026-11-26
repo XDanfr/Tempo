@@ -21,6 +21,9 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
     var name by rememberSaveable { mutableStateOf("") }
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
     var personId by rememberSaveable { mutableStateOf<String?>(null) }
+    var shareId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pasting by rememberSaveable { mutableStateOf(false) }
+    var pasted by rememberSaveable { mutableStateOf("") }
     var personName by rememberSaveable { mutableStateOf("") }
     EditorSheet("Your timetables", dismiss) {
         collection.timetables.forEach { saved ->
@@ -46,6 +49,8 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
                             DropdownMenuItem(text = { Text(if (saved.timetable.person == null) "Someone else's…" else "Mark as mine") },
                                 leadingIcon = { Icon(if (saved.timetable.person == null) Icons.Outlined.PersonAdd else Icons.Outlined.Person, null) },
                                 onClick = { menu = false; if (saved.timetable.person == null) { personId = saved.id; personName = "" } else model.setPerson(saved.id, null) })
+                            if (saved.timetable.person == null && saved.timetable.onboarded) DropdownMenuItem(text = { Text("Share link…") },
+                                leadingIcon = { Icon(Icons.Outlined.Link, null) }, onClick = { menu = false; shareId = saved.id })
                             DropdownMenuItem(text = { Text("Duplicate") }, leadingIcon = { Icon(Icons.Outlined.ContentCopy, null) },
                                 onClick = { menu = false; model.duplicate(saved.id) })
                             // Export always saves the active timetable, so it is offered only there.
@@ -67,6 +72,9 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
             OutlinedButton(onClick = { files.import(); dismiss() }, modifier = squishWeight(importPress), interactionSource = importPress) {
                 Icon(Icons.Outlined.FileOpen, null); Text("Import", Modifier.padding(start = 8.dp))
             }
+        }
+        TextButton(onClick = { pasted = ""; pasting = true }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Outlined.AddLink, null); Text("Add from link", Modifier.padding(start = 8.dp))
         }
         if (collection.timetables.size >= 2) TextButton(onClick = { dismiss(); compare() }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.ViewColumn, null); Text("Compare timetables", Modifier.padding(start = 8.dp))
@@ -99,4 +107,10 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
             } },
             confirmButton = { Button(enabled = personName.isNotBlank(), onClick = { model.setPerson(id, personName); personId = null }) { Text("Save") } })
     }
+    shareId?.let { id -> collection.timetables.firstOrNull { it.id == id }?.let { saved ->
+        ShareSheet(id, saved.timetable, collection.profileName, model::setProfileName) { shareId = null }
+    } }
+    if (pasting) AlertDialog(onDismissRequest = { pasting = false }, icon = { Icon(Icons.Outlined.AddLink, null) }, title = { Text("Add from link") },
+        text = { OutlinedTextField(pasted, { pasted = it }, label = { Text("Paste a Tempo link") }, singleLine = true, modifier = Modifier.fillMaxWidth()) },
+        confirmButton = { Button(enabled = cc.xdan.tempo.data.ShareLink.parse(pasted) != null, onClick = { pasting = false; dismiss(); model.openShareLink(pasted) }) { Text("Open") } })
 }

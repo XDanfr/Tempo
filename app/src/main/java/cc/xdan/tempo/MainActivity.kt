@@ -13,6 +13,13 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 class MainActivity : ComponentActivity() {
+    private var shareIntent by mutableStateOf<String?>(null)
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        intent.dataString?.let { shareIntent = it }
+    }
+
     override fun onStop() {
         super.onStop()
         if (!isChangingConfigurations) cc.xdan.tempo.widgets.WidgetRefresh.refreshNow(applicationContext)
@@ -22,6 +29,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val repository = TimetableRepository(applicationContext)
+        if (savedInstanceState == null) intent?.dataString?.let { shareIntent = it }
         setContent {
             val model: TempoViewModel = viewModel(factory = object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -30,6 +38,11 @@ class MainActivity : ComponentActivity() {
             TempoApp(model)
             val current by model.state.collectAsStateWithLifecycle()
             LaunchedEffect(current.collection) { cc.xdan.tempo.widgets.WidgetRefresh.start(applicationContext) }
+            // A tapped share link opens once the timetables have loaded.
+            LaunchedEffect(current.collection != null, shareIntent) {
+                val link = shareIntent
+                if (current.collection != null && link != null) { model.openShareLink(link); shareIntent = null }
+            }
             LaunchedEffect(current.collection != null) {
                 val id = intent.getStringExtra("widgetTimetableId")
                 current.collection?.let { collection ->
