@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -545,7 +546,10 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
         is NowState.Done -> state.nextDay?.let { (day, _) -> { selectDate(day) } }
         is NowState.Nothing -> ({ selectDate(state.nextDay.first) })
     }
-    val body: @Composable () -> Unit = {
+    val confettiColours = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.secondary) +
+        lessons.map { Color(it.subject.colour) }.distinct()
+    val body: @Composable () -> Unit = { Box {
+        if (state is NowState.Done) DayCompleteConfetti(date, confettiColours, Modifier.matchParentSize())
         Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 AnimatedContent(state::class to nowTitle(state), label = "now title", transitionSpec = {
@@ -564,7 +568,7 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
             }
             NowDial(state, seconds, content)
         }
-    }
+    } }
     val modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}
     if (onClick != null) Surface(onClick = onClick, color = animatedContainer, contentColor = content, shape = RoundedCornerShape(28.dp), modifier = modifier) { body() }
     else Surface(color = animatedContainer, contentColor = content, shape = RoundedCornerShape(28.dp), modifier = modifier) { body() }
@@ -664,5 +668,72 @@ private fun DoneBadge(content: Color) {
     Box(Modifier.size(68.dp).graphicsLayer { scaleX = scale; scaleY = scale; rotationZ = rotation }
         .clip(MaterialShapes.Cookie9Sided.toShape()).background(content.copy(alpha = .18f)), contentAlignment = Alignment.Center) {
         Icon(Icons.Outlined.Check, "Day complete", Modifier.size(34.dp), tint = content)
+    }
+}
+
+/** Dates that have already celebrated in this app session, so scrolling or recomposing never replays it. */
+private val celebratedDates = mutableSetOf<LocalDate>()
+
+private class ConfettiPiece(val shape: androidx.compose.ui.graphics.Shape, val colour: Color, val angle: Float, val speed: Float,
+    val size: Float, val spin: Float, val delay: Float)
+
+/**
+ * A short burst of Material Expressive shapes from the completion badge, clipped to the card.
+ * Plays once per day per app session: on opening Tempo after the day is done, or when the last
+ * session ends while Tempo is open. Skipped entirely when system animations are off.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DayCompleteConfetti(date: LocalDate, colours: List<Color>, modifier: Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val animationsOn = remember {
+        android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
+    }
+    // Decided once when the card appears; the card recomposes every second for its clock.
+    val play = remember(date) { animationsOn && date !in celebratedDates }
+    if (!play) return
+    val haptics = rememberTempoHaptics()
+    val shapes = listOf(MaterialShapes.Cookie4Sided, MaterialShapes.Cookie9Sided, MaterialShapes.Clover4Leaf, MaterialShapes.Sunny,
+        MaterialShapes.Pill, MaterialShapes.Circle, MaterialShapes.Triangle, MaterialShapes.Gem).map { it.toShape() }
+    val pieces = remember {
+        val random = kotlin.random.Random(date.toEpochDay())
+        List(46) {
+            // Mostly up and to the left, away from the badge on the right edge.
+            ConfettiPiece(shapes[random.nextInt(shapes.size)], colours[random.nextInt(colours.size)],
+                angle = Math.toRadians(95.0 + random.nextDouble() * 110.0).toFloat(), speed = 0.55f + random.nextFloat() * 0.75f,
+                size = 7f + random.nextFloat() * 9f, spin = (random.nextFloat() - .5f) * 900f, delay = random.nextFloat() * .12f)
+        }
+    }
+    val progress = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) {
+        celebratedDates += date
+        delay(250)
+        haptics.celebrate()
+        progress.animateTo(1f, androidx.compose.animation.core.tween(2200, easing = androidx.compose.animation.core.LinearEasing))
+    }
+    val layoutDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.foundation.Canvas(modifier) {
+        val t = progress.value
+        if (t <= 0f || t >= 1f) return@Canvas
+        // Burst origin: the completion badge, centred vertically near the right edge.
+        val origin = Offset(size.width - 62.dp.toPx(), size.height / 2f)
+        val reach = size.width * .9f
+        pieces.forEach { piece ->
+            val local = ((t - piece.delay) / (1f - piece.delay)).coerceIn(0f, 1f)
+            if (local <= 0f) return@forEach
+            // Fast launch that eases out, then gravity takes over.
+            val travel = reach * piece.speed * (1f - (1f - local) * (1f - local))
+            val x = origin.x + kotlin.math.cos(piece.angle) * travel
+            val y = origin.y - kotlin.math.sin(piece.angle) * travel * .9f + 210.dp.toPx() * local * local
+            val alpha = if (local > .7f) (1f - local) / .3f else 1f
+            val side = piece.size.dp.toPx()
+            val outline = piece.shape.createOutline(Size(side, side), layoutDirection, density)
+            drawContext.canvas.save()
+            drawContext.transform.translate(x - side / 2, y - side / 2)
+            drawContext.transform.rotate(piece.spin * local, Offset(side / 2, side / 2))
+            drawOutline(outline, piece.colour, alpha = alpha.coerceIn(0f, 1f))
+            drawContext.canvas.restore()
+        }
     }
 }

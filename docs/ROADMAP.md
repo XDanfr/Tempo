@@ -139,6 +139,7 @@ I want Tempo to feel like a polished, expressive utility; any progression is opt
 - [ ] Apply one documented cross-screen interaction contract for success/error/loading, navigation/back, confirmations and empty states; carry forward [Experience Integrity](EXPERIENCE_INTEGRITY.md) rather than creating new per-screen rules
 - [ ] Audit connected user flows across Schedule, Overview, Library, editing, comparison and settings; preserve date/week/timetable context and verify recovery paths
 - [ ] Living timetable states for past/current/next activities, clear elapsed/remaining progress and calm end-of-day/week transitions
+- [x] In-app day-complete confetti inside the Done card (once per day per launch, skipped when animations are off)
 - [ ] Small, optional celebrations and **permanent discovery achievements** with rounded top-of-screen notices; opt-in XP and soft streaks from check-ins only (see [Redesign](REDESIGN.md#gamification)); no leaderboards or gated essentials
 - [ ] Dismissible contextual post-onboarding hints, replayable from Help, introducing gestures and relevant customisation when needed
 - [ ] Audit reduced motion, animation scale, TalkBack, large text, contrast, gesture conflicts, performance and system-back behaviour
