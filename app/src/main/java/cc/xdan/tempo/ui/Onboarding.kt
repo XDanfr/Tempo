@@ -447,9 +447,21 @@ private fun BreakLengthRow(label: String, icon: ImageVector, value: Int?, option
                 Switch(value != null, null)
             }
             AnimatedVisibility(value != null, enter = expandVertically(TempoMotion.spatial()) + fadeIn(), exit = shrinkVertically(TempoMotion.spatial()) + fadeOut()) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    options.forEach { minutes ->
-                        FilterChip(value == minutes, { change(minutes) }, label = { Text(if (minutes == suggested) "$minutes min · suggested" else "$minutes min") })
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    var custom by rememberSaveable { mutableStateOf(value != null && value !in options) }
+                    var text by rememberSaveable { mutableStateOf(value?.toString() ?: "") }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        options.forEach { minutes ->
+                            FilterChip(!custom && value == minutes, { custom = false; change(minutes) }, label = { Text("$minutes min") })
+                        }
+                        FilterChip(custom, { custom = true; text = value?.toString() ?: ""; text.toIntOrNull()?.let(change) }, label = { Text("Custom") })
+                    }
+                    AnimatedVisibility(custom, enter = expandVertically(TempoMotion.spatial()) + fadeIn(), exit = shrinkVertically(TempoMotion.spatial()) + fadeOut()) {
+                        OutlinedTextField(text, { input -> text = input.filter(Char::isDigit).take(3); text.toIntOrNull()?.takeIf { it in 1..240 }?.let(change) },
+                            label = { Text("Minutes") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number, imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+                            isError = text.toIntOrNull()?.let { it !in 1..240 } ?: true,
+                            supportingText = { if (text.toIntOrNull()?.let { it in 1..240 } != true) Text("Enter 1–240 minutes") })
                     }
                 }
             }

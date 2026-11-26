@@ -120,6 +120,10 @@ enum class TimetablePurpose(val label: String, val sessionWord: String, val subj
     PERSONAL("Personal", "activity", "activity"),
 }
 
+/** A session the person said they attended on a date. Elapsed time alone never counts. */
+@Serializable
+data class CheckIn(val date: String, val sessionId: String)
+
 /** How much celebration and progression a person wants. */
 @Serializable
 enum class ProgressMode { OFF, CELEBRATIONS, STREAKS }
@@ -153,6 +157,8 @@ data class Timetable(
     val progress: ProgressMode = ProgressMode.CELEBRATIONS,
     /** Step in the current setup flow; null for timetables from older versions, see [currentSetupStep]. */
     val setupStep: Int? = null,
+    /** Sessions the person marked as attended; only used when [progress] is STREAKS. */
+    val checkIns: List<CheckIn> = emptyList(),
 ) {
     init {
         require(onboardingStep in 0..3)
