@@ -94,7 +94,7 @@ Optional, end-to-end encrypted and free-tier only. Full plan, privacy rules and 
 - [x] Profile name on device
 - [x] People (timetables marked as someone else's) and shared frees on Schedule and the Week tab
 - [ ] Optional “Alex also has a free at 13:10” notification before a shared free
-- [x] Encrypted share links at `tempo.xdan.cc/t/<id>#<key>` (Worker + D1), app links and a web viewer — built; deploy pending
+- [x] Encrypted share links at `tempo.xdan.cc/t/<id>#<key>` (Worker + D1), app links and a web viewer — service live; app support in the next release
 - [ ] Live updates, and removal from other devices when the owner stops sharing
 - [ ] Groups for tracking shared frees
 - [ ] Sync between your own devices

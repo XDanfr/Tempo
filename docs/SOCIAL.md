@@ -1,6 +1,6 @@
 # Social Tempo — plan
 
-Status: **ideas 1–2 shipped in 0.6; idea 3 (share links) is built — Worker in [`server/share`](../server/share) and app support — but not deployed yet.** This replaces the sharing and profile sections of [Feel & Flow](FEEL_AND_FLOW.md) and the link format in [Architecture](ARCHITECTURE.md#future-link-sharing). Every feature here stays **optional**: Tempo keeps working fully offline, without an account, and with no data leaving the device unless the person shares it.
+Status: **ideas 1–2 shipped in 0.6; idea 3 (share links) is live at `tempo.xdan.cc` — Worker in [`server/share`](../server/share) — and ships in the next app release.** This replaces the sharing and profile sections of [Feel & Flow](FEEL_AND_FLOW.md) and the link format in [Architecture](ARCHITECTURE.md#future-link-sharing). Every feature here stays **optional**: Tempo keeps working fully offline, without an account, and with no data leaving the device unless the person shares it.
 
 ## Ground rules
 

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Share links** (once the sharing service is live): share any of your timetables from its ⋮ menu. Tempo encrypts it on your phone and creates a link at tempo.xdan.cc. The key is part of the link and never reaches the server. Rooms and notes are left out unless you include them, and check-ins are never shared. Copy or share the link, update the shared copy, or stop sharing at any time. Opening a link shows a preview: **Add [name]** to compare frees, or **Import as my own**. You can also paste a link with **Add from link** in the timetable switcher. Without Tempo, the link opens a private read-only web view.
+- **Share links**: share any of your timetables from its ⋮ menu. Tempo encrypts it on your phone and creates a link at tempo.xdan.cc. The key is part of the link and never reaches the server. Rooms and notes are left out unless you include them, and check-ins are never shared. Copy or share the link, update the shared copy, or stop sharing at any time. Opening a link shows a preview: **Add [name]** to compare frees, or **Import as my own**. You can also paste a link with **Add from link** in the timetable switcher. Without Tempo, the link opens a private read-only web view.
 - The Done for today card now just says that and shows what's next. Today's XP appears inside the streak chip.
 
 ## 0.6.0 — Schedule, Week, setup and frees with friends

@@ -52,7 +52,8 @@ async function api(request, env, url) {
     if (row.deleted_at) return problem(410, "The owner stopped sharing this timetable");
     const etag = `"${row.rev}"`;
     if (request.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers: { etag } });
-    return new Response(request.method === "HEAD" ? null : row.body, {
+    // D1 returns BLOBs as an array of numbers or an ArrayBuffer depending on the runtime; send real bytes.
+    return new Response(request.method === "HEAD" ? null : new Uint8Array(row.body), {
       headers: { "content-type": "application/octet-stream", etag, "x-tempo-rev": String(row.rev), "cache-control": "no-cache" } });
   }
   if (request.method === "PUT") {
