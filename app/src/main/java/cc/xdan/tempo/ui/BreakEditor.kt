@@ -26,13 +26,15 @@ fun BreakEditor(timetable: Timetable, existing: ScheduledBreak? = null, initialD
     val time = existing?.time ?: initialTime ?: TimeSpan(630, 645)
     var start by rememberSaveable { mutableStateOf(minuteLabel(time.start)) }
     var end by rememberSaveable { mutableStateOf(minuteLabel(time.end)) }
-    var confirmDelete by remember { mutableStateOf(false) }
     var week by rememberSaveable { mutableIntStateOf(existing?.cycleWeek ?: if (existing == null && timetable.cycle.weeks > 1) initialCycleWeek else 0) }
     val span = validSpan(start, end)
     val overlaps = span != null && (timetable.sessions.any { (week == 0 || it.cycleWeek == null || week == it.cycleWeek) && it.day in selectedDays && it.time.start < span.end && span.start < it.time.end } ||
         timetable.breaks.any { (week == 0 || it.cycleWeek == null || week == it.cycleWeek) && it.id != id && it.days.any { d -> d in selectedDays } && it.time.start < span.end && span.start < it.time.end })
+    val draft = listOf(kind, name.trim(), selectedDays, span, week)
+    val initial = remember { draft }
     EditorSheet(if (existing == null) "Add break time" else "Edit break time", dismiss,
-        confirm = { span?.let { save(ScheduledBreak(id, name.trim(), if (dated) listOf(initialDay!!) else selectedDays, it, kind, if (dated || week == 0) null else week)) } }, enabled = span != null && name.isNotBlank() && selectedDays.isNotEmpty()) {
+        confirm = { span?.let { save(ScheduledBreak(id, name.trim(), if (dated) listOf(initialDay!!) else selectedDays, it, kind, if (dated || week == 0) null else week)) } }, enabled = span != null && name.isNotBlank() && selectedDays.isNotEmpty(),
+        dirty = draft != initial) {
         scopeControls?.invoke()
         ChoiceField("Type", kind, BreakKind.entries, { it.label() }, { chosen -> if (name == kind.label()) name = chosen.label(); kind = chosen })
         OutlinedTextField(name, { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
@@ -48,9 +50,6 @@ fun BreakEditor(timetable: Timetable, existing: ScheduledBreak? = null, initialD
         }
         if (overlaps) Text("Overlaps a session or another break. Keep it if intentional.", color = MaterialTheme.colorScheme.error)
         Text("Breaks are separate from frees and appear in your day timeline.", style = MaterialTheme.typography.bodySmall)
-        if (existing != null) TextButton(onClick = { confirmDelete = true }) { Text("Delete break", color = MaterialTheme.colorScheme.error) }
+        if (existing != null) DeleteButton("Delete break", { delete(id) })
     }
-    if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete this break?") },
-        text = { Text("This removes it from every selected day.") }, confirmButton = { TextButton(onClick = { delete(id) }) { Text("Delete") } },
-        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep") } })
 }

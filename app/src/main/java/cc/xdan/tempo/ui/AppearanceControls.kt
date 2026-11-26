@@ -62,8 +62,13 @@ fun ThemeSelector(appearance: Appearance, change: (Appearance) -> Unit) {
                 }
             }
         }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ThemeMode.entries.forEach { mode -> FilterChip(appearance.mode == mode, { change(appearance.copy(mode = mode)) }, label = { Text(mode.name.lowercase().replaceFirstChar { it.titlecase() }) }) }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ThemeMode.entries.forEach { mode ->
+                val press = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                FilterChip(appearance.mode == mode, { change(appearance.copy(mode = mode)) },
+                    label = { Text(mode.name.lowercase().replaceFirstChar { it.titlecase() }, Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+                    modifier = squishWeight(press), interactionSource = press)
+            }
         }
     }
 }

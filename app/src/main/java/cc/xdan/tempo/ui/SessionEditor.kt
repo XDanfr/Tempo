@@ -33,13 +33,13 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
     var end by rememberSaveable { mutableStateOf(minuteLabel(startingTime.end)) }
     var location by rememberSaveable { mutableStateOf(existing?.location ?: "") }
     var notes by rememberSaveable { mutableStateOf(existing?.notes ?: "") }
-    var deleteConfirmation by remember { mutableStateOf(false) }
     val time = validSpan(start, end)
     val candidate = time?.let { Session(id, subject, if (dated) initialDay else day, it, location.trim(), notes.trim(), if (dated || week == 0) null else week) }
     val overlapsSession = candidate != null && ScheduleResolver.conflicts(timetable.sessions.filterNot { it.id == id } + candidate).any { it.first.id == id || it.second.id == id }
     val overlapsBreak = time != null && timetable.breaks.any { day in it.days && (week == 0 || it.cycleWeek == null || week == it.cycleWeek) && time.start < it.time.end && it.time.start < time.end }
+    val initial = remember { candidate }
     EditorSheet(if (existing == null) "Add session" else "Edit session", onDismiss,
-        confirm = { candidate?.let(onSave) }, enabled = candidate != null) {
+        confirm = { candidate?.let(onSave) }, enabled = candidate != null, dirty = candidate != initial) {
         scopeControls?.invoke()
         SubjectPickerField("Subject / activity", subject, timetable.subjects) { subject = it }
         if (dated) {
@@ -66,9 +66,7 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
             val minute = parseMinute(splitAt)
             OutlinedButton(onClick = { candidate?.let { onSplit(splitSession(it, minute!!, UUID.randomUUID().toString())) } },
                 enabled = candidate != null && minute != null && minute > candidate.time.start && minute < candidate.time.end) { Text("Split session") }
-            TextButton(onClick = { deleteConfirmation = true }) { Text("Delete session", color = MaterialTheme.colorScheme.error) }
+            DeleteButton("Delete session", { onDelete(id) })
         }
     }
-    if (deleteConfirmation) AlertDialog(onDismissRequest = { deleteConfirmation = false }, title = { Text("Delete this session?") },
-        confirmButton = { TextButton(onClick = { onDelete(id) }) { Text("Delete") } }, dismissButton = { TextButton(onClick = { deleteConfirmation = false }) { Text("Keep") } })
 }

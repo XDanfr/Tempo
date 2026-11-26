@@ -9,6 +9,11 @@
 - The Now card never says the same thing twice: its small label names the moment (Now, Up next, Next session) and the title names the thing. After your last session it shows “Done for today” with when you finished and what's next, even if your day hours run later. On a day with no sessions it points to your next session instead.
 - "Week 1 of 1" is gone: cycle weeks only appear for timetables that alternate. Holidays and changed days appear as labels.
 - The Add session button shrinks to an icon while you scroll.
+- The Schedule date header slides away as you scroll down through the day and springs back as soon as you scroll up.
+- Editors are draggable drawers: drag down to close. Close (X) sits top left and Save top right. If you've changed something, closing by X, back or dragging asks whether to save or discard.
+- Delete buttons are red with a trash icon and act straight away. The snackbar offers Undo, so there's no extra confirmation. Deleting a whole timetable still asks first.
+- Side-by-side buttons, such as New/Import and the System/Light/Dark choice, squish their neighbours with a bounce when pressed.
+- Free gaps no longer show a “Fill” label; the whole gap is the tap target.
 - **Haptics everywhere**: buttons, cards, menu items and dropdown fields give a light press; switches, checkboxes and toggle rows click on and off; chips, segmented buttons, tabs, day changes and swipes tick; saved, undone and redone edits confirm; errors buzz. Android's touch-feedback setting still applies.
 
 - Every saved edit now confirms what changed in a snackbar, such as “Added Physics session” or “Deleted Lunch”, with **Undo**. After undoing, the snackbar offers **Redo**. An Undo tapped late never reverses a newer change, and Undo and Redo stay in the ⋮ menu after the snackbar closes.

@@ -66,7 +66,7 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
             DateField("First day (included)", start) { start = it }
             DateField("Last day (included)", end) { end = it }
             if (a != null && b != null && b.isBefore(a)) Text("The last day must follow the first day.", color = MaterialTheme.colorScheme.error)
-            if (holiday != null) TextButton(onClick = { update { it.copy(holidays = it.holidays.filterNot { h -> h.id == id }) }; holidayEditor = false }) { Text("Remove holiday") }
+            if (holiday != null) DeleteButton("Delete holiday", { update { it.copy(holidays = it.holidays.filterNot { h -> h.id == id }) }; holidayEditor = false })
         }
     }
     if (exceptionEditor) {
@@ -94,10 +94,10 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
             }
             Text(if (closed) "This date will have no sessions, breaks or frees." else "Start with this date's recurring schedule. Open the date in Timetable to edit its sessions and breaks.")
             if (duplicate) Text("An exception already exists for this date. Edit it from the list.", color = MaterialTheme.colorScheme.error)
-            if (exception != null) TextButton(onClick = {
+            if (exception != null) DeleteButton("Delete change and restore usual schedule", {
                 val originalDate = exception!!.date
                 update { it.copy(exceptions = it.exceptions.filterNot { e -> e.date == originalDate }) }; exceptionEditor = false
-            }) { Text("Remove exception and restore recurring schedule") }
+            })
         }
     }
     if (batchEditor) BatchSessionEditor(timetable, update) { batchEditor = false }

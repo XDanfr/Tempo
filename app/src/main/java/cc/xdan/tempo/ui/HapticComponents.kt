@@ -26,6 +26,8 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Color
@@ -182,4 +184,16 @@ fun Surface(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean
 fun Modifier.hapticToggleable(value: Boolean, enabled: Boolean = true, role: Role? = null, onValueChange: (Boolean) -> Unit): Modifier {
     val haptics = rememberTempoHaptics()
     return toggleable(value, enabled = enabled, role = role) { haptics.toggle(it); onValueChange(it) }
+}
+
+/**
+ * Bouncy squish for buttons placed side by side: the pressed one grows and its neighbours
+ * give way, then everything springs back. Pass the same [interactionSource] to the button.
+ */
+@Composable
+fun androidx.compose.foundation.layout.RowScope.squishWeight(interactionSource: MutableInteractionSource, base: Float = 1f): Modifier {
+    val pressed by interactionSource.collectIsPressedAsState()
+    val weight by androidx.compose.animation.core.animateFloatAsState(if (pressed) base * 1.22f else base,
+        androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 700f), label = "squish")
+    return Modifier.weight(weight)
 }

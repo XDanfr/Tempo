@@ -54,10 +54,12 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { renameId = null; name = ""; naming = true }, modifier = Modifier.weight(1f)) {
+            val newPress = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            val importPress = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+            Button(onClick = { renameId = null; name = ""; naming = true }, modifier = squishWeight(newPress), interactionSource = newPress) {
                 Icon(Icons.Outlined.Add, null); Text("New", Modifier.padding(start = 8.dp))
             }
-            OutlinedButton(onClick = { files.import(); dismiss() }, modifier = Modifier.weight(1f)) {
+            OutlinedButton(onClick = { files.import(); dismiss() }, modifier = squishWeight(importPress), interactionSource = importPress) {
                 Icon(Icons.Outlined.FileOpen, null); Text("Import", Modifier.padding(start = 8.dp))
             }
         }
@@ -75,9 +77,12 @@ fun TimetableManager(collection: TimetableCollection, model: TempoViewModel, fil
         dismissButton = { TextButton(onClick = { naming = false }) { Text("Cancel") } })
     deleteId?.let { id ->
         val saved = collection.timetables.firstOrNull { it.id == id }
-        AlertDialog(onDismissRequest = { deleteId = null }, title = { Text("Delete ${saved?.timetable?.name}?") },
+        // Deleting a whole timetable is the one delete that still confirms first.
+        AlertDialog(onDismissRequest = { deleteId = null }, icon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Delete ${saved?.timetable?.name}?") },
             text = { Text("This removes its subjects, sessions, breaks and settings from this device. You can undo it until Tempo closes; export a copy to keep it longer.") },
-            confirmButton = { TextButton(onClick = { model.delete(id); deleteId = null }) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
+            confirmButton = { Button(onClick = { model.delete(id); deleteId = null }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError)) { Text("Delete timetable") } },
             dismissButton = { TextButton(onClick = { deleteId = null }) { Text("Keep") } })
     }
 }

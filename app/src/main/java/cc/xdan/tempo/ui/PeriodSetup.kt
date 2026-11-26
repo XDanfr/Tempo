@@ -64,6 +64,6 @@ private fun PeriodEditor(period: PeriodTemplate?, dismiss: () -> Unit, save: (Pe
         OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         TimeFields(start, end, { start = it }, { end = it })
         Text("Existing sessions keep their saved times when this shortcut changes.", style = MaterialTheme.typography.bodySmall)
-        if (period != null) TextButton(onClick = { delete(id) }) { Text("Remove shortcut") }
+        if (period != null) DeleteButton("Delete period", { delete(id) })
     }
 }

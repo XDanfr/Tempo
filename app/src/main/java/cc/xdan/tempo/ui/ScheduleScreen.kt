@@ -50,6 +50,13 @@ import cc.xdan.tempo.design.subjectOutline
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.Layout
+import kotlin.math.roundToInt
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -90,14 +97,76 @@ fun ScheduleScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, se
             else pager.scrollToPage(target)
         }
     }
-    Column(Modifier.fillMaxSize()) {
-        ScheduleHeader(timetable, date, today, selectDate)
+    val header = rememberCollapsingHeader()
+    // A new day always starts with the header in view.
+    LaunchedEffect(pager.settledPage) { header.reveal() }
+    Layout(content = {
+        Box(Modifier.graphicsLayer {
+            val hidden = header.fraction
+            alpha = 1f - hidden
+            translationY = header.offset * .15f
+            scaleX = 1f - .04f * hidden; scaleY = scaleX
+        }) { ScheduleHeader(timetable, date, today, selectDate) }
         HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1, key = { it }) { page ->
             val pageDate = dateOf(page)
             DayTimeline(timetable, pageDate, now, today, edit, { editFree(pageDate, it) }, editBreak, selectDate,
                 onTopChanged = { if (page == pager.settledPage) onTopChanged(it) })
         }
+    }, modifier = Modifier.fillMaxSize().clipToBounds().nestedScroll(header.connection)) { measurables, constraints ->
+        val headerPlaceable = measurables[0].measure(constraints.copy(minHeight = 0))
+        header.height = headerPlaceable.height.toFloat()
+        val top = (headerPlaceable.height + header.offset).roundToInt().coerceIn(0, constraints.maxHeight)
+        val body = measurables[1].measure(constraints.copy(minHeight = 0, maxHeight = (constraints.maxHeight - top).coerceAtLeast(0)))
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            headerPlaceable.place(0, header.offset.roundToInt())
+            body.place(0, top)
+        }
     }
+}
+
+/**
+ * Date header that slides away while scrolling down through the day and springs back as soon as
+ * you scroll up, settling fully open or closed with a little bounce.
+ */
+@Stable
+private class CollapsingHeader(private val scope: kotlinx.coroutines.CoroutineScope) {
+    var height = 0f
+    var offset by mutableFloatStateOf(0f)
+        private set
+    val fraction get() = if (height <= 0f) 0f else (-offset / height).coerceIn(0f, 1f)
+    private var settling: kotlinx.coroutines.Job? = null
+
+    val connection = object : NestedScrollConnection {
+        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+            if (height <= 0f || available.y == 0f) return Offset.Zero
+            settling?.cancel()
+            val old = offset
+            offset = (old + available.y).coerceIn(-height, 0f)
+            return Offset(0f, offset - old)
+        }
+        override suspend fun onPostFling(consumed: androidx.compose.ui.unit.Velocity, available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
+            settle(if (offset < -height / 2) -height else 0f)
+            return androidx.compose.ui.unit.Velocity.Zero
+        }
+    }
+
+    fun reveal() { settle(0f) }
+
+    private fun settle(target: Float) {
+        if (offset == target) return
+        settling?.cancel()
+        settling = scope.launch {
+            androidx.compose.animation.core.animate(offset, target, animationSpec = androidx.compose.animation.core.spring(dampingRatio = .72f, stiffness = 420f)) { value, _ ->
+                offset = value.coerceIn(-height, 0f)
+            }
+        }
+    }
+}
+
+@Composable
+private fun rememberCollapsingHeader(): CollapsingHeader {
+    val scope = rememberCoroutineScope()
+    return remember { CollapsingHeader(scope) }
 }
 
 @Composable
@@ -364,7 +433,6 @@ private fun FreeGap(block: ScheduleBlock.Free, appearance: Appearance, fill: () 
         Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (appearance.showIcons) Icon(Icons.Outlined.Add, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("${durationLabel(block.time.minutes)} free", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Fill", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
     }
 }

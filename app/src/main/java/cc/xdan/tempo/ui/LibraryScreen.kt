@@ -76,9 +76,10 @@ fun SubjectEditor(existing: Subject?, sessionCount: Int, onDismiss: () -> Unit, 
     var icon by rememberSaveable { mutableStateOf(existing?.icon ?: SubjectIcon.NONE) }
     var manualIcon by rememberSaveable { mutableStateOf(existing != null) }
     var showIcons by remember { mutableStateOf(false) }
-    var confirmDelete by remember { mutableStateOf(false) }
+    val draft = listOf(name.trim(), location.trim(), colour, icon)
+    val initial = remember { draft }
     EditorSheet(if (existing == null) "New subject / activity" else "Edit subject / activity", onDismiss,
-        confirm = { onSave(Subject(id, name.trim(), colour, icon, location.trim())) }, enabled = name.isNotBlank()) {
+        confirm = { onSave(Subject(id, name.trim(), colour, icon, location.trim())) }, enabled = name.isNotBlank(), dirty = draft != initial) {
         val focus = LocalFocusManager.current
         val keyboard = LocalSoftwareKeyboardController.current
         val inputMode = LocalInputModeManager.current
@@ -102,9 +103,10 @@ fun SubjectEditor(existing: Subject?, sessionCount: Int, onDismiss: () -> Unit, 
             Text("${icon.label()} · Choose icon", Modifier.padding(start = 12.dp))
         }
         if (!manualIcon && icon != SubjectIcon.NONE) Text("Suggested from the subject name. You can choose another icon.", style = MaterialTheme.typography.bodySmall)
-        if (existing != null) TextButton(onClick = { confirmDelete = true }) { Text("Delete subject", color = MaterialTheme.colorScheme.error) }
+        if (existing != null) {
+            if (sessionCount > 0) Text("Deleting also removes ${countLabel(sessionCount, "scheduled session")}. You can undo it.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            DeleteButton("Delete subject", { onDelete(id) })
+        }
     }
     if (showIcons) IconPicker(icon, { showIcons = false }, { icon = it; manualIcon = true; showIcons = false })
-    if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Delete ${existing?.name}?") }, text = { Text("This also removes ${countLabel(sessionCount, "scheduled session")}.") },
-        confirmButton = { TextButton(onClick = { onDelete(id) }) { Text("Delete") } }, dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep") } })
 }
