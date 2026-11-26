@@ -56,6 +56,7 @@ fun TempoApp(model: TempoViewModel) {
         var showComparison by rememberSaveable { mutableStateOf(false) }
         var showTimetables by rememberSaveable { mutableStateOf(false) }
         var showImageExport by rememberSaveable { mutableStateOf(false) }
+        var showProgress by rememberSaveable { mutableStateOf(false) }
         val feedbackHost: @Composable (Modifier) -> Unit = { modifier ->
             FeedbackHost(state.feedback, { model.undo(it) }, { model.redo(it) }, model::dismissFeedback, modifier)
         }
@@ -113,6 +114,10 @@ fun TempoApp(model: TempoViewModel) {
                     // The timetable chip is the only way into the timetable switcher; the overflow
                     // holds history and sharing so they never compete with the content.
                     topBar = { TopAppBar(title = { TimetableChip(timetable.name) { showTimetables = true } }, actions = {
+                        if (timetable.progress == ProgressMode.STREAKS && (destination == Destination.SCHEDULE || destination == Destination.WEEK)) {
+                            val summary = remember(timetable, now.toLocalDate()) { cc.xdan.tempo.schedule.Progress.summary(timetable, now.toLocalDate()) }
+                            StreakChip(summary) { showProgress = true }
+                        }
                         AppOverflowMenu(state.undoLabel, state.redoLabel, state.canUndo, state.canRedo,
                             undo = { model.undo() }, redo = { model.redo() }, shareImage = { showImageExport = true })
                     }) },
@@ -177,6 +182,8 @@ fun TempoApp(model: TempoViewModel) {
             }
             }
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
+            WhatsNewOnUpdate(state.collection)
+            if (showProgress && timetable != null) ProgressSheet(timetable, LocalDate.now()) { showProgress = false }
             if (showImageExport && timetable != null) PngExportSheet(timetable, { showImageExport = false }, model::info)
             if (showTimetables) state.collection?.let { TimetableManager(it, model, files, { showComparison = true }) { showTimetables = false } }
             if (state.fileBusy) Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp), shape = MaterialTheme.shapes.medium) {

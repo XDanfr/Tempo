@@ -98,7 +98,7 @@ fun WeekScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, select
 @Composable
 private fun WeekHeader(monday: LocalDate, thisMonday: LocalDate, move: (Int) -> Unit, thisWeek: () -> Unit) {
     val sunday = monday.plusDays(6)
-    val locale = Locale.getDefault()
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val range = if (monday.month == sunday.month) "${monday.dayOfMonth}–${sunday.dayOfMonth} ${sunday.month.getDisplayName(TextStyle.FULL, locale)}"
         else "${monday.dayOfMonth} ${monday.month.getDisplayName(TextStyle.SHORT, locale)} – ${sunday.dayOfMonth} ${sunday.month.getDisplayName(TextStyle.SHORT, locale)}"
     val title = when (monday) { thisMonday -> "This week"; thisMonday.plusWeeks(1) -> "Next week"; thisMonday.minusWeeks(1) -> "Last week"; else -> "Week" }
@@ -135,7 +135,19 @@ private fun WeekBody(timetable: Timetable, days: List<WeekDay>, now: LocalDateTi
         StatTiles(stats, timetable.sessionWord)
         var hidden by rememberSaveable { mutableStateOf(emptyList<String>()) }
         val shown = people.filter { it.first !in hidden }
-        val shared = remember(timetable, shown, days) { days.associate { it.date to sharedFrees(timetable, shown, it.date) } }
+        val shared = remember(timetable, shown, days, showAhead, now) {
+            days.filter { day -> isWorkingDay(timetable, day.date) }.associate { day ->
+                val frees = sharedFrees(timetable, shown.filter { isWorkingDay(it.second, day.date) }, day.date)
+                // "Still ahead" keeps only the part of each shared free that hasn't happened yet.
+                day.date to if (!showAhead) frees else frees.mapNotNull { free ->
+                    when {
+                        day.date < now.toLocalDate() -> null
+                        day.date > now.toLocalDate() -> free
+                        else -> (now.hour * 60 + now.minute).let { m -> if (free.time.end <= m) null else free.copy(time = TimeSpan(maxOf(free.time.start, m), free.time.end)) }
+                    }
+                }
+            }
+        }
         if (people.isNotEmpty()) SharedFreesCard(people, hidden, { name -> hidden = if (name in hidden) hidden - name else hidden + name }, shared, openDay)
         if (stats.bySubject.isNotEmpty()) SubjectBreakdown(stats)
         Text("Week at a glance", style = MaterialTheme.typography.titleMedium)
@@ -338,4 +350,15 @@ private fun SharedFreesCard(people: List<Pair<String, Timetable>>, hidden: List<
             }
         }
     }
+}
+
+/**
+ * Days switched off in day hours, holidays and closed days don't count for shared frees. A
+ * working day that simply has no sessions does.
+ */
+private fun isWorkingDay(timetable: Timetable, date: LocalDate): Boolean {
+    val exception = timetable.exceptions.firstOrNull { it.date == date.toString() }
+    if (exception != null) return !exception.closed
+    if (timetable.holidays.any { !date.isBefore(LocalDate.parse(it.startDate)) && !date.isAfter(LocalDate.parse(it.endDate)) }) return false
+    return timetable.days.any { it.day == date.dayOfWeek.value }
 }

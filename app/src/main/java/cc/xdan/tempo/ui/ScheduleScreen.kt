@@ -176,7 +176,6 @@ private fun rememberCollapsingHeader(): CollapsingHeader {
 @Composable
 private fun ScheduleHeader(timetable: Timetable, date: LocalDate, today: LocalDate, select: (LocalDate) -> Unit) {
     var choosing by remember { mutableStateOf(false) }
-    var showProgress by remember { mutableStateOf(false) }
     val haptics = rememberTempoHaptics()
     val spokenDate = "${weekdayNames[date.dayOfWeek.value - 1]}, ${friendlyDate(date)}. Choose a date"
     Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
@@ -196,11 +195,6 @@ private fun ScheduleHeader(timetable: Timetable, date: LocalDate, today: LocalDa
                     }
                 }
             }
-            if (timetable.progress == ProgressMode.STREAKS) {
-                val summary = remember(timetable, today) { Progress.summary(timetable, today) }
-                StreakChip(summary) { showProgress = true }
-                Spacer(Modifier.width(8.dp))
-            }
             // "Today" only exists while you are somewhere else.
             AnimatedVisibility(date != today, enter = fadeIn(TempoMotion.effects()) + scaleIn(TempoMotion.fastSpatial()),
                 exit = fadeOut(TempoMotion.exit()) + scaleOut(TempoMotion.exit())) {
@@ -212,7 +206,6 @@ private fun ScheduleHeader(timetable: Timetable, date: LocalDate, today: LocalDa
         WeekStrip(timetable, date, today, select)
     }
     if (choosing) DateSelectionDialog(date, { choosing = false }) { haptics.tick(); select(it) }
-    if (showProgress) ProgressSheet(timetable, today) { showProgress = false }
 }
 
 private fun relativeDayName(date: LocalDate, today: LocalDate): String = when (date) {
@@ -797,7 +790,7 @@ private fun CheckInButton(checked: Boolean, ink: Color, toggle: (Boolean) -> Uni
 
 /** Streak at a glance; opens the progress drawer. */
 @Composable
-private fun StreakChip(summary: Progress.Summary, open: () -> Unit) {
+fun StreakChip(summary: Progress.Summary, open: () -> Unit) {
     val active = summary.streak > 0 && !summary.paused
     Surface(onClick = open, shape = CircleShape, color = if (active) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = if (active) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -813,7 +806,7 @@ private fun StreakChip(summary: Progress.Summary, open: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit) {
+fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit) {
     val summary = remember(timetable, today) { Progress.summary(timetable, today) }
     EditorSheet("Your progress", dismiss) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {

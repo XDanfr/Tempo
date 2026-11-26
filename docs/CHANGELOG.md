@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — redesign foundations and Schedule
+## 0.6.0 — Schedule, Week, setup and frees with friends
 
 - **New setup**: a welcome screen previews Tempo, then asks one question per screen. **What's this timetable for?** (School, College or university, Work or shifts, Personal) sets sensible days, hours and wording. Next come your name and days, then your hours, with alternating weeks behind a single switch. School and college timetables then set up periods. One-tap subject suggestions pick colours and icons automatically. A theme step previews your own week, an optional progress step asks about celebrations, streaks and XP, and a “You're all set” summary finishes it.
 - Wording follows the timetable's purpose: “Add lesson” for school, “Add shift” for work, and so on. Purpose and celebrations can be changed in Settings. Turning celebrations off also turns off day-complete confetti.
@@ -32,7 +32,12 @@
 - In the timetable switcher, tap a timetable to switch to it. Rename, Duplicate, Export and Delete are in each timetable's ⋮ menu. New and Import sit side by side, and Compare appears once you have two timetables.
 - Day and week images are now shared from the ⋮ menu (“Share as image”). The duplicate “Timetables & files” settings page has been removed.
 - Timetables gain optional purpose, progress and setup-step fields, so existing data and files load unchanged. Exported files that use them need this version or newer.
+- **What's new**: people updating from 0.5.2 see a one-time sheet showing where things moved. New timetables now follow the system light or dark theme by default.
 - Shared motion and haptic foundations: confirmations give a light haptic tick, and the timetable chip responds to presses.
+
+### Compatibility
+
+Version code 11. Timetable schema remains 3; new fields (purpose, celebrations, check-ins, setup step, person, period room and colour, profile name) are optional, so existing timetables and files load unchanged. Files exported from 0.6 that use the new fields need 0.6 or newer to import. Existing timetables keep their saved theme mode. Compiled against Android SDK 37.1; still runs on Android 8.0 and newer.
 
 ## 0.5.2
 

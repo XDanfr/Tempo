@@ -50,7 +50,7 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 @Serializable
 data class Appearance(
     val preset: ThemePreset = ThemePreset.FOREST,
-    val mode: ThemeMode = ThemeMode.DARK,
+    val mode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColour: Boolean = false,
     val showIcons: Boolean = true,
     val blockStyle: BlockStyle = BlockStyle.FILLED,

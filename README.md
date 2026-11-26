@@ -18,71 +18,50 @@ Once a public stable release is available, you can check for updates in Settings
 
 ## Plan your week
 
-- **Make schedules that fit your life.** Keep separate timetables for school, college, work or personal activities. Set your own days, periods, session times, breaks and lunch.
-- **Plan alternating weeks and days off.** Anchor a cycle of up to 52 weeks to a date, add holidays, and replace a single date without changing your recurring schedule.
-- **Edit with less repetition.** Duplicate or split sessions, change selected recurring sessions together, and undo or redo saved edits while Tempo remains open.
-- **See the day at a glance.** Check what’s happening now, follow a proportional timeline and fill an open period when plans change.
-- **Compare timetables.** Put schedules side by side or combine several people’s lessons into one agenda to find shared free time.
-- **Make it yours.** Give subjects one of 12 colours, including red, plus locations and optional icons. Choose Forest, Ocean, Amber, Red, Violet, Rose or a wallpaper-based Material You theme, in light, dark or system mode. Recognised new subject names suggest an icon you can change.
-- **Keep your schedule close.** Add a 2×1, 2×2 or 4×2 widget for current and upcoming periods, with subject colours and theme options.
-- **Move your timetable when you need to.** Import during setup or export a `.tempo.json` backup with your subjects, times, breaks, notes, icons and appearance.
-- **Save an image of your plans.** Preview a day or week PNG, choose its width, and decide whether to include names, locations and notes.
+- **See your day, live.** Schedule opens on today with a live countdown, a moving now-line and what's next. Swipe between days, or tap the date to jump anywhere.
+- **Your week at a glance.** The Week tab shows every block on one grid, with totals for sessions, scheduled time, free time and breaks, and a breakdown by subject. Switch between the whole week and what's still ahead.
+- **Find frees with friends.** Add your name, mark a friend's imported timetable as theirs, and Tempo shows when you're both free, on your day and across the week. It all stays on your device.
+- **Set up in a minute.** Tell Tempo what the timetable is for and it suggests your days, hours, periods and breaks, with one-tap subject suggestions.
+- **Make schedules that fit your life.** Keep separate timetables for school, college, work or personal activities, with alternating weeks (up to 52), holidays and one-off changes.
+- **Edit without worry.** Every change can be undone straight from the snackbar. Duplicate or split sessions, and edit selected recurring sessions together.
+- **Celebrate, if you want to.** Confetti when your day's done. Turn on check-ins to earn XP and keep a gentle streak that weekends and holidays never break. It's optional and off whenever you like.
+- **Make it yours.** Twelve subject colours, icons, rooms, and Forest, Ocean, Amber, Red, Violet, Rose or wallpaper-based Material You themes in light, dark or system mode.
+- **Keep your schedule close.** An adaptive home-screen widget shows what's now and next, from a compact countdown to a mini agenda.
+- **Back up and share files.** Export a `.tempo.json` backup, or share a day or week as an image.
 
 ## See Tempo in action
 
 <p align="center">
-  <img src="docs/screenshots/timetable.jpg" width="250" alt="Tempo’s colourful weekly timetable with subjects, breaks and free periods">
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/library.jpg" width="250" alt="Tempo’s subject library with individual colours, icons and locations">
+  <img src="docs/screenshots/schedule.jpg" width="230" alt="Tempo's Schedule showing a finished day, the week strip and a timeline of sessions and breaks">
+  &nbsp;
+  <img src="docs/screenshots/week.jpg" width="230" alt="Tempo's Week tab with XP earned, weekly totals and frees shared with Alex and Sam">
+  &nbsp;
+  <img src="docs/screenshots/setup-periods.jpg" width="230" alt="Tempo's setup asking how many periods there are and how long breaks, lunch and changeovers last">
 </p>
 
-<p align="center"><em>Build a week that looks like yours, then keep its subjects and activities organised in the library.</em></p>
+<p align="center"><em>Your day live, your week at a glance, and setup that suggests the details for you.</em></p>
 
 <details>
-  <summary>Explore the full settings screen</summary>
+  <summary>More screenshots</summary>
 
-  <p align="center"><img src="docs/screenshots/settings-overview.jpg" width="226" alt="Full-height settings screen showing timetable management, themes, day lengths, usual periods, breaks, update controls and sponsorship"></p>
-
-  <p align="center"><em>Theme and block styles, day lengths, usual periods, breaks, update options and support links in one place.</em></p>
+  <p align="center">
+    <img src="docs/screenshots/schedule-checkins.jpg" width="230" alt="Schedule in dark mode with lesson check-ins and the day's XP and streak">
+    &nbsp;
+    <img src="docs/screenshots/setup.jpg" width="230" alt="Setup asking what the timetable is for: school, college or university, work or shifts, or personal">
+  </p>
 </details>
 
 ## Widgets at a glance
 
-<p align="center"><img src="docs/screenshots/widgets-all-done.jpg" width="560" alt="Tempo’s 4×2, 2×2 and 2×1 widgets showing the themed All done state after the final lesson of the week"></p>
-
-<p align="center"><em>Three launcher sizes, with a theme-matched “All done” state when the week’s lessons are finished.</em></p>
-
-## See Tempo in action
-
-<p align="center">
-  <img src="docs/screenshots/timetable.jpg" width="250" alt="Tempo’s colourful weekly timetable with subjects, breaks and free periods">
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/library.jpg" width="250" alt="Tempo’s subject library with individual colours, icons and locations">
-</p>
-
-<p align="center"><em>Build a week that looks like yours, then keep its subjects and activities organised in the library.</em></p>
-
-<details>
-  <summary>Explore the full settings screen</summary>
-
-  <p align="center"><img src="docs/screenshots/settings-overview.jpg" width="226" alt="Full-height settings screen showing timetable management, themes, day lengths, usual periods, breaks, update controls and sponsorship"></p>
-
-  <p align="center"><em>Theme and block styles, day lengths, usual periods, breaks, update options and support links in one place.</em></p>
-</details>
-
-## Widgets at a glance
-
-<p align="center"><img src="docs/screenshots/widgets-all-done.jpg" width="560" alt="Tempo’s 4×2, 2×2 and 2×1 widgets showing the themed All done state after the final lesson of the week"></p>
-
-<p align="center"><em>Three launcher sizes, with a theme-matched “All done” state when the week’s lessons are finished.</em></p>
+<p align="center"><img src="docs/screenshots/widgets-all-done.jpg" width="560" alt="Tempo's widgets showing the themed All done state after the final lesson of the week"></p>
 
 ## Updates and privacy
 
-Your timetable stays on your device unless you export it. Tempo has no accounts or analytics. Update checks contact GitHub; they do not send your timetable. Manual import and export use Android’s file picker.
+Your timetables, check-ins and friends' timetables stay on your device unless you export them. Tempo has no accounts or analytics. Update checks contact GitHub; they do not send your timetable. Manual import and export use Android’s file picker.
 
 ## What’s next
 
-Calendar `.ics` integration, overnight shifts, explicit time zones, free tags, share links and optional homework or assignment tracking with widget due dates are planned. See the [roadmap](docs/ROADMAP.md) for details.
+Encrypted share links that keep friends' timetables up to date, groups for finding shared frees, achievements, calendar `.ics` integration and optional homework tracking are planned. See the [roadmap](docs/ROADMAP.md) for details.
 
 ## Support Tempo
 

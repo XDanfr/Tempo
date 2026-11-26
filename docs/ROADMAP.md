@@ -66,7 +66,7 @@ I’m building Tempo as a timetable maker for college, work and personal schedul
 - [x] Publish the signed 0.5.2 APK and update metadata; add a manually triggered workflow for signed Android App Bundles
 - [x] Record the Widget 2.0 evidence, plus the [Experience Integrity](EXPERIENCE_INTEGRITY.md) plan
 
-## Redesign — one home per action, alive when you tap
+## 0.6 — one home per action, alive when you tap
 
 Agreed November 2026 after a device review of 0.5.2: remove duplicate controls, make prominent surfaces tappable, rebuild onboarding around what the timetable is for, and add opt-in progression. Full spec: [Redesign](REDESIGN.md).
 
