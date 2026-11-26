@@ -79,6 +79,17 @@ Agreed November 2026 after a device review of 0.5.2: remove duplicate controls, 
 - [x] Onboarding rebuild: purpose question (school, college, work, personal) tailoring vocabulary and defaults, one question per screen, subject suggestions, live preview, progress opt-in, finish celebration
 - [ ] Opt-in progression: setup checklist, discovery milestones, lesson check-ins, XP, soft streaks that skip non-scheduled days, day-complete moment, weekly recap and Progress page
 
+## Social Tempo — plan
+
+Optional, end-to-end encrypted and free-tier only. Full plan, privacy rules and Cloudflare budget: [Social](SOCIAL.md).
+
+- [ ] Profile name on device
+- [ ] People and shared-free alerts (“Alex also has a free at 13:10”), including a Week tab overlay
+- [ ] Encrypted share links at `tempo.xdan.cc/t/<id>#<key>` (Worker + D1), app links and a web viewer
+- [ ] Live updates, and removal from other devices when the owner stops sharing
+- [ ] Groups for tracking shared frees
+- [ ] Sync between your own devices
+
 ## Next — interaction feedback and safe recovery
 
 A tightly scoped usability pass, moved from the 0.5.2 candidate slot because 0.5.2 shipped Widget 2.0 and the dropdown fix instead. Detailed behaviour, copy, interaction rules and test matrix: [Experience Integrity](EXPERIENCE_INTEGRITY.md).
@@ -146,7 +157,7 @@ I want Tempo to feel like a polished, expressive utility; any progression is opt
 - [ ] Audit reduced motion, animation scale, TalkBack, large text, contrast, gesture conflicts, performance and system-back behaviour
 - [ ] Consider an optional factual weekly recap (schedule counts and hours, never inferred attendance)
 
-### Sharing and identity (dependent on a hosted service)
+### Sharing and identity (superseded by [Social](SOCIAL.md))
 
 - [ ] Explicit snapshot sharing through validated `xdan.cc/tempo/share/<code>` links, with publication preview, independent imports and revocation; anonymous recipients need no account
 - [ ] Design a secure, **optional creator profile** for attributed public timetables, kept separate from private on-device timetables; no account required to use Tempo

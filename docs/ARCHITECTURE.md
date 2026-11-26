@@ -50,6 +50,8 @@ and no sheet drag gestures; all other editors retain their drag behaviour.
 
 ## Future link sharing
 
+Superseded by [Social](SOCIAL.md): end-to-end encrypted links at `tempo.xdan.cc/t/<id>#<key>`. The notes below describe the earlier design.
+
 The intended route is `https://xdan.cc/tempo/share/<code>`. This milestone does
 not publish links or implement a server. A later service should store the same
 portable envelope and return a code such as `t1_<token>_<check>`: `t1` marks the
