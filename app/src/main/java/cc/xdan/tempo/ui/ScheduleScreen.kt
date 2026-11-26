@@ -9,6 +9,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -573,12 +575,7 @@ private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: Loc
                         Text(title, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
-                Text(nowDetail(state, timetable.appearance.showLocations, minute), style = MaterialTheme.typography.bodyMedium)
-                if (state is NowState.Done && timetable.progress == ProgressMode.STREAKS) {
-                    val summary = remember(timetable, date) { Progress.summary(timetable, date) }
-                    if (summary.xpToday > 0) Text("+${summary.xpToday} XP today" + if (summary.streak > 1) " · ${summary.streak}-day streak" else "",
-                        style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                }
+                nowDetail(state, timetable.appearance.showLocations, minute)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                 // "Alex is free too": the social moment, only while you're actually free.
                 if (state is NowState.During && state.block is ScheduleBlock.Free) shared.filter { minute >= it.time.start && minute < it.time.end }
                     .flatMap { s -> s.people.map { it to s.time.end } }.distinctBy { it.first }.takeIf { it.isNotEmpty() }?.let { free ->
@@ -623,7 +620,7 @@ private fun nowTitle(state: NowState) = when (state) {
 private fun whenLabel(from: LocalDate, day: LocalDate, minute: Int) =
     (if (day == from.plusDays(1)) "tomorrow" else weekdayNames[day.dayOfWeek.value - 1]) + " at ${minuteLabel(minute)}"
 
-private fun nowDetail(state: NowState, showLocations: Boolean, minute: Int) = when (state) {
+private fun nowDetail(state: NowState, showLocations: Boolean, minute: Int): String? = when (state) {
     is NowState.During -> {
         val b = state.block
         val place = if (b is ScheduleBlock.Lesson && showLocations && b.location.isNotBlank()) "${b.location} · " else ""
@@ -633,7 +630,8 @@ private fun nowDetail(state: NowState, showLocations: Boolean, minute: Int) = wh
         val place = if (showLocations && state.next.location.isNotBlank()) " · ${state.next.location}" else ""
         "Starts at ${minuteLabel(state.next.time.start)}$place"
     }
-    is NowState.Done -> "Finished at ${minuteLabel(state.finishedAt)}"
+    // Done for today says just that; what's next follows below.
+    is NowState.Done -> null
     is NowState.Nothing -> {
         val (day, lesson) = state.nextDay
         val place = if (showLocations && lesson.location.isNotBlank()) " · ${lesson.location}" else ""
@@ -794,11 +792,19 @@ fun StreakChip(summary: Progress.Summary, open: () -> Unit) {
     val active = summary.streak > 0 && !summary.paused
     Surface(onClick = open, shape = CircleShape, color = if (active) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = if (active) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.semantics { contentDescription = "${summary.streak}-day streak" + (if (summary.paused) ", paused" else "") + ", level ${summary.level}. Open progress" }) {
+        modifier = Modifier.semantics { contentDescription = "${summary.streak}-day streak" + (if (summary.paused) ", paused" else "") + (if (summary.xpToday > 0) ", ${summary.xpToday} XP today" else "") + ", level ${summary.level}. Open progress" }) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Icon(Icons.Outlined.LocalFireDepartment, null, Modifier.size(18.dp))
             AnimatedContent(summary.streak, label = "streak", transitionSpec = { (slideInVertically { it } + fadeIn()) togetherWith (slideOutVertically { -it } + fadeOut()) }) {
                 Text(it.toString(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            }
+            // Today's progress rides along inside the chip.
+            AnimatedVisibility(summary.xpToday > 0, enter = expandHorizontally(TempoMotion.spatial()) + fadeIn(), exit = shrinkHorizontally(TempoMotion.spatial()) + fadeOut()) {
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.onTertiary, modifier = Modifier.padding(start = 4.dp)) {
+                    AnimatedContent(summary.xpToday, label = "xp today", transitionSpec = { (slideInVertically { it } + fadeIn()) togetherWith (slideOutVertically { -it } + fadeOut()) }) {
+                        Text("+$it XP", Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }
