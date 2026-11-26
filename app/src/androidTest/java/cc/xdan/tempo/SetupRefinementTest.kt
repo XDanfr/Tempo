@@ -98,7 +98,7 @@ class SetupRefinementTest {
         compose.waitUntil(10_000) { value.setupStep == 3 }
         compose.onNodeWithText("Continue").performClick()
         // Work timetables go straight from hours to subjects.
-        compose.waitUntil(10_000) { value.setupStep == 5 }
+        compose.waitUntil(10_000) { value.setupStep == 6 }
         assertEquals(TimeSpan(540, 1050), value.days.first().time)
     }
 

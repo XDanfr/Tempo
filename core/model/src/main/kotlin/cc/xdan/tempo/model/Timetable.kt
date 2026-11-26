@@ -38,7 +38,7 @@ data class Session(
 data class DayHours(val day: Int, val time: TimeSpan) { init { require(day in 1..7) } }
 
 @Serializable
-data class PeriodTemplate(val id: String, val name: String, val time: TimeSpan) {
+data class PeriodTemplate(val id: String, val name: String, val time: TimeSpan, val location: String = "", val colour: Long? = null) {
     init { require(id.isNotBlank() && name.isNotBlank()) }
 }
 
@@ -125,7 +125,7 @@ enum class TimetablePurpose(val label: String, val sessionWord: String, val subj
 enum class ProgressMode { OFF, CELEBRATIONS, STREAKS }
 
 /** Number of screens in the setup flow. */
-const val SETUP_STEPS = 9
+const val SETUP_STEPS = 10
 
 @Serializable
 data class Timetable(
@@ -217,7 +217,7 @@ data class TimetableCollection(
 }
 
 /** Setup position, mapping setups interrupted in older versions (4 steps) onto the current flow. */
-val Timetable.currentSetupStep: Int get() = setupStep ?: when (onboardingStep) { 1 -> 4; 2 -> 5; 3 -> 6; else -> 0 }
+val Timetable.currentSetupStep: Int get() = setupStep ?: when (onboardingStep) { 1 -> 4; 2 -> 6; 3 -> 7; else -> 0 }
 
 /** "lesson", "shift", … for this timetable's purpose. */
 val Timetable.sessionWord: String get() = purpose?.sessionWord ?: "session"

@@ -47,7 +47,7 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 private object Step { const val WELCOME = 0; const val PURPOSE = 1; const val DAYS = 2; const val HOURS = 3; const val PERIODS = 4
-    const val SUBJECTS = 5; const val THEME = 6; const val PROGRESS = 7; const val DONE = 8 }
+    const val PERIOD_TIMES = 5; const val SUBJECTS = 6; const val THEME = 7; const val PROGRESS = 8; const val DONE = 9 }
 
 private fun icon(p: TimetablePurpose): ImageVector = when (p) {
     TimetablePurpose.SCHOOL -> Icons.Outlined.Backpack; TimetablePurpose.COLLEGE -> Icons.Outlined.School
@@ -67,7 +67,8 @@ private fun suggestions(p: TimetablePurpose?) = when (p) {
 }
 
 /** Steps shown for this purpose: work and personal timetables skip periods. */
-private fun stepsFor(p: TimetablePurpose?) = (0 until SETUP_STEPS).filter { it != Step.PERIODS || p == TimetablePurpose.SCHOOL || p == TimetablePurpose.COLLEGE || p == null }
+private fun stepsFor(p: TimetablePurpose?) = (0 until SETUP_STEPS).filter {
+    (it != Step.PERIODS && it != Step.PERIOD_TIMES) || p == TimetablePurpose.SCHOOL || p == TimetablePurpose.COLLEGE || p == null }
 
 /**
  * First-run setup: one question per screen, smart defaults from the timetable's purpose, a live
@@ -88,6 +89,15 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
     var weeks by rememberSaveable { mutableStateOf(timetable.cycle.weeks.coerceAtLeast(2).toString()) }
     var anchor by rememberSaveable { mutableStateOf(timetable.cycle.anchorDate) }
     var subjectEditor by remember { mutableStateOf(false) }
+    var periodCount by rememberSaveable { mutableIntStateOf(4) }
+    var breakLength by rememberSaveable { mutableStateOf<Int?>(20) }
+    var lunchLength by rememberSaveable { mutableStateOf<Int?>(50) }
+    var changeoverLength by rememberSaveable { mutableStateOf<Int?>(10) }
+    val plan = remember(periodCount, breakLength, lunchLength, changeoverLength, timetable.days) {
+        timetable.days.firstOrNull()?.time?.let { day ->
+            cc.xdan.tempo.schedule.PeriodPlanner.plan(day, periodCount, cc.xdan.tempo.schedule.BreakLengths(breakLength, lunchLength, changeoverLength), timetable.days.map { it.day })
+        }
+    }
     var selectedSubject by remember { mutableStateOf<Subject?>(null) }
     val selectedDays = days.split(",").mapNotNull { it.toIntOrNull() }
     val highestWeek = (timetable.sessions.mapNotNull { it.cycleWeek } + timetable.breaks.mapNotNull { it.cycleWeek }).maxOrNull() ?: 1
@@ -100,6 +110,8 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
             Step.DAYS -> update { it.copy(name = name.trim(), days = selectedDays.map { d -> DayHours(d, it.days.firstOrNull()?.time ?: defaultHours(it.purpose)) }) }
             Step.HOURS -> update { t -> t.copy(days = selectedDays.map { d -> DayHours(d, validSpan(start, end)!!) },
                 cycle = if (alternate) WeekCycle(weeks.toInt(), anchor) else WeekCycle(1, anchor)) }
+            // The suggested plan becomes real periods and breaks, editable on the next screen.
+            Step.PERIODS -> plan?.let { p -> update { it.copy(periods = p.periods, breaks = p.breaks) } }
         }
         goTo(steps.getOrElse(index + 1) { Step.DONE })
     }
@@ -121,6 +133,7 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
         Step.PURPOSE -> timetable.purpose != null
         Step.DAYS -> name.isNotBlank() && selectedDays.isNotEmpty()
         Step.HOURS -> validSpan(start, end) != null && cycleValid
+        Step.PERIODS -> plan != null
         else -> true
     }
     Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
@@ -187,7 +200,21 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
                         }
                     }
                     Step.PERIODS -> {
-                        Question("Shape your day", "Usual periods make adding ${timetable.sessionWord}s quicker. Breaks show in your timeline.")
+                        Question("How many periods in a day?", "Tempo will suggest times that fit your day.")
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            (3..8).forEach { count ->
+                                NumberToggle(count.toString(), count == periodCount, if (count == 4) "Suggested" else null, Modifier.weight(1f)) { periodCount = count }
+                            }
+                        }
+                        Text("Breaks between periods", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+                        BreakLengthRow("Break", Icons.Outlined.Coffee, breakLength, listOf(15, 20, 30), 20) { breakLength = it }
+                        BreakLengthRow("Lunch", Icons.Outlined.Restaurant, lunchLength, listOf(30, 45, 50, 60), 50) { lunchLength = it }
+                        BreakLengthRow("Changeover", Icons.Outlined.SwapHoriz, changeoverLength, listOf(5, 10, 15), 10) { changeoverLength = it }
+                        if (plan == null) Text("These don't fit in your day. Try fewer periods or shorter breaks.", color = MaterialTheme.colorScheme.error)
+                        else PlanPreview(plan)
+                    }
+                    Step.PERIOD_TIMES -> {
+                        Question("Your period times", "Tap any period to rename it, change its times, or add a room and colour.")
                         PeriodSetup(timetable, update)
                     }
                     Step.SUBJECTS -> SubjectStep(timetable, update, { selectedSubject = it; subjectEditor = true })
@@ -390,5 +417,63 @@ private fun Finished(timetable: Timetable) {
 private fun SetupDoneBadge(modifier: Modifier) {
     Box(modifier.clip(MaterialShapes.Cookie9Sided.toShape()).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
         Icon(Icons.Outlined.Check, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+    }
+}
+
+@Composable
+private fun NumberToggle(label: String, selected: Boolean, hint: String?, modifier: Modifier, choose: () -> Unit) {
+    val container by animateColorAsState(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh, TempoMotion.effects(), label = "number")
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Surface(onClick = choose, shape = RoundedCornerShape(18.dp), color = container,
+            contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f).semantics { this.selected = selected; role = Role.RadioButton; if (hint != null) contentDescription = "$label, $hint" }) {
+            Box(contentAlignment = Alignment.Center) { Text(label, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+        }
+        // A dot marks the suggested choice; its name is announced instead of squeezed under the number.
+        Box(Modifier.size(6.dp).clip(CircleShape).background(if (hint != null) MaterialTheme.colorScheme.primary else Color.Transparent))
+    }
+}
+
+/** A break type that can be switched off, with suggested lengths. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BreakLengthRow(label: String, icon: ImageVector, value: Int?, options: List<Int>, suggested: Int, change: (Int?) -> Unit) {
+    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth().hapticToggleable(value != null, role = Role.Switch) { change(if (it) suggested else null) },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(icon, null)
+                Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Switch(value != null, null)
+            }
+            AnimatedVisibility(value != null, enter = expandVertically(TempoMotion.spatial()) + fadeIn(), exit = shrinkVertically(TempoMotion.spatial()) + fadeOut()) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    options.forEach { minutes ->
+                        FilterChip(value == minutes, { change(minutes) }, label = { Text(if (minutes == suggested) "$minutes min · suggested" else "$minutes min") })
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlanPreview(plan: cc.xdan.tempo.schedule.PeriodPlanner.Plan) {
+    val rows = (plan.periods.map { Triple(it.name, it.time, null as BreakKind?) } + plan.breaks.map { Triple(it.name, it.time, it.kind) }).sortedBy { it.second.start }
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+        Column(Modifier.fillMaxWidth().padding(16.dp).animateContentSize(TempoMotion.spatial()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Suggested day", style = MaterialTheme.typography.titleMedium)
+            rows.forEach { (name, time, kind) ->
+                val colour = kind?.let(::breakColour)
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                    .background(colour?.compositeOver(MaterialTheme.colorScheme.surface)?.copy(alpha = .9f) ?: MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 12.dp, vertical = if (kind == null) 10.dp else 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(name, Modifier.weight(1f), style = if (kind == null) MaterialTheme.typography.titleSmall else MaterialTheme.typography.labelMedium,
+                        color = if (colour != null) subjectForeground(colour) else MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("${minuteLabel(time.start)}–${minuteLabel(time.end)}", style = MaterialTheme.typography.labelMedium,
+                        color = if (colour != null) subjectForeground(colour) else MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+        }
     }
 }

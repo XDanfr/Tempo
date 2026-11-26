@@ -9,6 +9,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import cc.xdan.tempo.model.*
 import java.util.UUID
 
@@ -24,8 +28,8 @@ fun PeriodSetup(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit
         timetable.periods.sortedBy { it.time.start }.forEach { period ->
             Surface(onClick = { periodId = period.id; showPeriod = true }, modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.medium) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Outlined.Schedule, null)
-                    Column(Modifier.weight(1f)) { Text(period.name, style = MaterialTheme.typography.titleMedium); Text("${minuteLabel(period.time.start)}–${minuteLabel(period.time.end)}", style = MaterialTheme.typography.bodySmall) }
+                    Box(Modifier.size(12.dp, 36.dp).clip(RoundedCornerShape(6.dp)).background(period.colour?.let { androidx.compose.ui.graphics.Color(it) } ?: MaterialTheme.colorScheme.outlineVariant))
+                    Column(Modifier.weight(1f)) { Text(period.name, style = MaterialTheme.typography.titleMedium); Text("${minuteLabel(period.time.start)}–${minuteLabel(period.time.end)}" + if (period.location.isNotBlank()) " · ${period.location}" else "", style = MaterialTheme.typography.bodySmall) }
                     Icon(Icons.Outlined.Edit, "Edit ${period.name}")
                 }
             }
@@ -46,24 +50,44 @@ fun PeriodSetup(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit
     }
     if (showPeriod) PeriodEditor(timetable.periods.firstOrNull { it.id == periodId }, { showPeriod = false },
         { value -> update { it.copy(periods = it.periods.filterNot { p -> p.id == value.id } + value) }; showPeriod = false },
-        { id -> update { it.copy(periods = it.periods.filterNot { p -> p.id == id }) }; showPeriod = false })
+        { id -> update { it.copy(periods = it.periods.filterNot { p -> p.id == id }) }; showPeriod = false }, nextNumber = timetable.periods.size + 1)
     if (showBreak) BreakEditor(timetable, timetable.breaks.firstOrNull { it.id == breakId }, dismiss = { showBreak = false },
         save = { value -> update { it.copy(breaks = it.breaks.filterNot { b -> b.id == value.id } + value) }; showBreak = false },
         delete = { id -> update { it.copy(breaks = it.breaks.filterNot { b -> b.id == id }) }; showBreak = false })
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PeriodEditor(period: PeriodTemplate?, dismiss: () -> Unit, save: (PeriodTemplate) -> Unit, delete: (String) -> Unit) {
+private fun PeriodEditor(period: PeriodTemplate?, dismiss: () -> Unit, save: (PeriodTemplate) -> Unit, delete: (String) -> Unit, nextNumber: Int = 1) {
     val id = rememberSaveable { period?.id ?: UUID.randomUUID().toString() }
-    var name by rememberSaveable { mutableStateOf(period?.name ?: "") }
+    var name by rememberSaveable { mutableStateOf(period?.name ?: "Period $nextNumber") }
     var start by rememberSaveable { mutableStateOf(minuteLabel(period?.time?.start ?: 540)) }
     var end by rememberSaveable { mutableStateOf(minuteLabel(period?.time?.end ?: 630)) }
+    var location by rememberSaveable { mutableStateOf(period?.location ?: "") }
+    var colour by rememberSaveable { mutableStateOf(period?.colour) }
     val time = validSpan(start, end)
-    EditorSheet(if (period == null) "New usual period" else "Edit usual period", dismiss,
-        confirm = { time?.let { save(PeriodTemplate(id, name.trim(), it)) } }, enabled = time != null && name.isNotBlank(), compact = true) {
+    val draft = listOf(name.trim(), time, location.trim(), colour)
+    val initial = remember { draft }
+    EditorSheet(if (period == null) "New period" else "Edit ${period.name}", dismiss,
+        confirm = { time?.let { save(PeriodTemplate(id, name.trim(), it, location.trim(), colour)) } }, enabled = time != null && name.isNotBlank(),
+        dirty = draft != initial) {
         OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         TimeFields(start, end, { start = it }, { end = it })
-        Text("Existing sessions keep their saved times when this shortcut changes.", style = MaterialTheme.typography.bodySmall)
+        OutlinedTextField(location, { location = it }, label = { Text("Room or location") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        Text("Colour", style = MaterialTheme.typography.labelLarge)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Surface(onClick = { colour = null }, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                border = androidx.compose.foundation.BorderStroke(if (colour == null) 3.dp else 1.dp, MaterialTheme.colorScheme.outline), modifier = Modifier.size(44.dp)) {
+                Box(contentAlignment = Alignment.Center) { Icon(Icons.Outlined.FormatColorReset, "No colour", Modifier.size(20.dp)) }
+            }
+            cc.xdan.tempo.design.subjectColours.forEach { option ->
+                Surface(onClick = { colour = option.argb }, shape = CircleShape, color = androidx.compose.ui.graphics.Color(option.argb),
+                    border = if (colour == option.argb) androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.onSurface) else null, modifier = Modifier.size(44.dp)) {
+                    Box(contentAlignment = Alignment.Center) { if (colour == option.argb) Icon(Icons.Outlined.Check, option.name, tint = cc.xdan.tempo.design.subjectForeground(androidx.compose.ui.graphics.Color(option.argb))) }
+                }
+            }
+        }
+        Text("Existing sessions keep their saved times when a period changes. New ones in this period use its room.", style = MaterialTheme.typography.bodySmall)
         if (period != null) DeleteButton("Delete period", { delete(id) })
     }
 }

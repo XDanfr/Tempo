@@ -52,7 +52,7 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
             val selected = timetable.periods.firstOrNull { it.time == time }?.id ?: "custom"
             ChoiceField("Usual period", selected, listOf("custom") + timetable.periods.map { it.id }, { key ->
                 timetable.periods.firstOrNull { it.id == key }?.let { "${it.name} · ${minuteLabel(it.time.start)}–${minuteLabel(it.time.end)}" } ?: "Custom times"
-            }, { key -> timetable.periods.firstOrNull { it.id == key }?.let { start = minuteLabel(it.time.start); end = minuteLabel(it.time.end) } })
+            }, { key -> timetable.periods.firstOrNull { it.id == key }?.let { start = minuteLabel(it.time.start); end = minuteLabel(it.time.end); if (location.isBlank() && it.location.isNotBlank()) location = it.location } })
         }
         TimeFields(start, end, { start = it }, { end = it })
         if (overlapsSession || overlapsBreak) Text("Overlaps another session or break. Keep it if intentional.", color = MaterialTheme.colorScheme.error)
