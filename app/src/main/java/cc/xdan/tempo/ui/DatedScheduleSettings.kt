@@ -27,7 +27,7 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
     Column {
         SettingsHeader("Weeks")
         SettingsRow(Icons.Outlined.Autorenew, "Week cycle", if (timetable.cycle.weeks == 1) "Every week is the same" else "${timetable.cycle.weeks} weeks · from ${friendlyDate(timetable.cycle.anchorDate)}") { cycleEditor = true }
-        SettingsRow(Icons.Outlined.EditCalendar, "Edit several sessions", enabled = timetable.sessions.isNotEmpty()) { batchEditor = true }
+        SettingsRow(Icons.Outlined.EditCalendar, "Your week") { batchEditor = true }
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         SettingsHeader("Holidays")
         timetable.holidays.forEach { item ->
@@ -104,5 +104,5 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
             })
         }
     }
-    if (batchEditor) BatchSessionEditor(timetable, update) { batchEditor = false }
+    if (batchEditor) EditorSheet("Your week", { batchEditor = false }) { WeekBuilder(timetable, update, tapToEdit = true) }
 }
