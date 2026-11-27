@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.7.0 — Home, achievements and share links
+
 - **Your week** in Settings › Dates and weeks replaces Edit several sessions: pick a day at the top, then tap a period to edit what's in it, or tap an empty one to choose a subject.
 - **Last week**: from Monday to Wednesday, Home shows how many sessions you checked in to last week, the XP you earned and your best day. Hide it once you've seen it.
 - The streak chip at the top is now just your flame and streak, leaving room for the timetable name. Today's XP is on Home and in the progress sheet.

@@ -80,12 +80,18 @@ Agreed November 2026 after a device review of 0.5.2: remove duplicate controls, 
 - [x] Opt-in check-ins, XP, soft streaks that skip non-scheduled days, day-complete moment and Progress drawer
 - [ ] Achievements that encourage exploring the app, setup checklist and weekly recap (after the social features settle)
 
-## Redesign — still to plan
+## 0.7 — Home, achievements and share links
 
-- [ ] Widget redesign for streaks and progress: today's check-ins, streak and XP on larger widgets, and a check-in action where hosts allow it
-- [ ] Full redesign of every Settings page (grouped rows with current values, one action per row)
-- [ ] Replace short dropdowns with buttons or segmented choices, as with free gaps and break types
-- [ ] Add session opens a quick subject picker first, then the full editor with that subject chosen
+- [x] Home, profile and 16 achievements that grant XP, with level-up and XP notices
+- [x] Streak bonus with freezes; app-wide celebrations; weekly recap
+- [x] Encrypted share links that stay up to date; linked timetables are view-only
+- [x] Settings redesign, quick Add session, Your week editor, streak on widgets
+- [x] Same-lesson and shared-free details with friends
+
+## Redesign — still open
+
+- [ ] Check-in action on widgets where hosts allow it
+- [ ] Replace remaining short dropdowns with buttons or segmented choices
 
 ## Home — planned
 
@@ -99,7 +105,7 @@ Optional, end-to-end encrypted and free-tier only. Full plan, privacy rules and 
 - [x] Profile name on device
 - [x] People (timetables marked as someone else's) and shared frees on Schedule and the Week tab
 - [ ] Optional “Alex also has a free at 13:10” notification before a shared free
-- [x] Encrypted share links at `tempo.xdan.cc/t/<id>#<key>` (Worker + D1), app links and a web viewer — service live; app support in the next release
+- [x] Encrypted share links at `tempo.xdan.cc/t/<id>#<key>` (Worker + D1), app links and a web viewer — service live; app support shipped in 0.7
 - [x] Live updates, and removal from other devices when the owner stops sharing
 - [ ] Optional accounts (passkey sign-in): profile, account-owned links, friends and one-tap delete account
 - [ ] Groups for tracking shared frees (account-owned)

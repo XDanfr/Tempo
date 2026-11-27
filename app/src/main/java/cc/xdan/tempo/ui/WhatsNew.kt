@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.TimetableCollection
 
 /** Version code whose changes the sheet describes; bump it when a release moves things around. */
-private const val WHATS_NEW_VERSION = 11
+private const val WHATS_NEW_VERSION = 12
 
 /**
  * Shows "What's new" once to people updating from an older version, pointing to where familiar
@@ -31,7 +31,7 @@ fun WhatsNewOnUpdate(collection: TimetableCollection?) {
         if (collection.timetables.any { it.timetable.onboarded }) show = true
         else prefs.edit().putInt("whatsNewSeen", WHATS_NEW_VERSION).apply()
     }
-    if (show) EditorSheet("What's new in Tempo 0.6", { prefs.edit().putInt("whatsNewSeen", WHATS_NEW_VERSION).apply(); show = false }) {
+    if (show) EditorSheet("What's new in Tempo 0.7", { prefs.edit().putInt("whatsNewSeen", WHATS_NEW_VERSION).apply(); show = false }) {
         WhatsNewItems()
         Button(onClick = { prefs.edit().putInt("whatsNewSeen", WHATS_NEW_VERSION).apply(); show = false }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Got it") }
     }
@@ -40,14 +40,11 @@ fun WhatsNewOnUpdate(collection: TimetableCollection?) {
 /** The list of changes, shared by the sheet and screenshots. */
 @Composable
 fun WhatsNewItems() {
-        Item(Icons.Outlined.CalendarToday, "One Schedule", "Today and Timetable are now one tab. Swipe between days, tap the date to jump, or use the week strip.")
-        Item(Icons.Outlined.ViewWeek, "New Week tab", "Your week at a glance, with totals, subjects and frees you share with others.")
-        Item(Icons.Outlined.ExpandMore, "Timetables, import and export", "Tap your timetable's name at the top. The calendar button and the Timetables & files settings page have gone.")
-        Item(Icons.Outlined.Undo, "Undo after every change", "A snackbar offers Undo, then Redo. Both are also in the ⋮ menu, along with Share as image.")
-        Item(Icons.Outlined.Delete, "Deleting is instant", "Sessions, breaks and subjects delete straight away. Undo brings them back.")
-        Item(Icons.Outlined.Celebration, "Celebrations and streaks", "Confetti when your day is done. Turn on check-ins, XP and streaks in Settings › Appearance › Celebrations.")
-        Item(Icons.Outlined.SystemUpdate, "Easier updates", "Tempo now checks for updates and tells you when one is ready. Tap Update, watch it download, then install.")
-        Item(Icons.Outlined.Group, "Frees with friends", "Add your name in Settings, then mark a friend's imported timetable as theirs to see when you're both free.")
+        Item(Icons.Outlined.Home, "Home", "Tempo opens on Home: what's next, who's free with you, your progress and achievements.")
+        Item(Icons.Outlined.EmojiEvents, "Achievements", "16 to find, each worth XP. Tap your profile to see them all.")
+        Item(Icons.Outlined.LocalFireDepartment, "Streak bonus", "Each streak day adds 10% XP, up to double. Ill or away? Freeze the day.")
+        Item(Icons.Outlined.Link, "Share links", "Share a timetable from its ⋮ menu. It's encrypted and stays up to date for friends.")
+        Item(Icons.Outlined.Settings, "New Settings", "Simpler pages. Your week lets you fill in each period by tapping it.")
 }
 
 @Composable
