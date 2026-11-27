@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
-        intent.dataString?.let { shareIntent = it }
+        shareLinkOf(intent)?.let { shareIntent = it }
     }
 
     override fun onStop() {
@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val repository = TimetableRepository(applicationContext)
-        if (savedInstanceState == null) intent?.dataString?.let { shareIntent = it }
+        if (savedInstanceState == null) intent?.let(::shareLinkOf)?.let { shareIntent = it }
         setContent {
             val model: TempoViewModel = viewModel(factory = object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -52,3 +52,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+/** Only real Tempo share links count; widget taps carry their own internal address, which isn't one. */
+private fun shareLinkOf(intent: android.content.Intent): String? = intent.data?.takeIf {
+    (it.scheme == "https" && it.host == "tempo.xdan.cc" && it.path?.startsWith("/t/") == true) || (it.scheme == "tempo" && it.host == "t")
+}?.toString()
