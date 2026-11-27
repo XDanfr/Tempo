@@ -674,7 +674,7 @@ private fun CountdownText(secondsLeft: Int, suffix: String, content: Color) {
     val minutes = secondsLeft / 60
     val headline = when {
         secondsLeft < 60 -> "${secondsLeft}s"
-        minutes >= 60 -> "${minutes / 60}h ${"%02d".format(minutes % 60)}m"
+        minutes >= 60 -> "${minutes / 60}h ${minutes % 60}m"
         else -> "${minutes + 1}m"
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
