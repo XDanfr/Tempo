@@ -35,17 +35,6 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
     key(currentPage) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (currentPage == null) {
-        item {
-            // Your name is shown to people when frees line up and, later, on timetables you share.
-            var name by rememberSaveable(profileName) { mutableStateOf(profileName) }
-            val focus = androidx.compose.ui.platform.LocalFocusManager.current
-            OutlinedTextField(name, { name = it.take(40) }, label = { Text("Your name") }, singleLine = true, modifier = Modifier.fillMaxWidth()
-                .onFocusChanged { if (!it.isFocused && name.trim() != profileName) setProfileName(name) },
-                supportingText = { Text("Shown to people you compare frees with. Stays on this device.") },
-                leadingIcon = { Icon(Icons.Outlined.Person, null) },
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
-                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { setProfileName(name); focus.clearFocus() }))
-        }
         items(SettingsPage.entries) { section ->
             ElevatedCard(onClick = { page = section }, modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {

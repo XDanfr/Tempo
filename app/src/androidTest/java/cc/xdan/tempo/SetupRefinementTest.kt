@@ -58,7 +58,7 @@ class SetupRefinementTest {
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.dispatchOnBackStarted(BackEventCompat(0f, 100f, 0f, BackEventCompat.EDGE_LEFT)) }
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.dispatchOnBackProgressed(BackEventCompat(200f, 100f, .8f, BackEventCompat.EDGE_LEFT)) }
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
-        compose.onNodeWithText("Your Tempo").assertIsDisplayed()
+        compose.onNodeWithText("Updates").assertIsDisplayed()
     }
 
     @Test fun onboardingEditsTheExistingSubjectAndKeepsItsIdentity() {

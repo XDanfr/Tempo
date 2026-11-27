@@ -65,7 +65,7 @@ Each idea can ship on its own, in this order. Later ones build on earlier ones.
 Accounts make the social side feel integrated: one identity for links, friends and groups, and one place to delete everything. They're **always optional**. Without an account, Tempo works exactly as it does now, share links included.
 
 **What an account is**
-- An identity (Sign in with Google via Android Credential Manager, or a passkey; more SSO providers later) plus a **profile**: display name, avatar colour/emoji, level and achievements you choose to show.
+- An identity based on a **passkey** (decided November 2026: free, no third party, nothing to remember; Google sign-in may be added later as an optional second button) plus a **profile**: display name, avatar colour/emoji, level and achievements you choose to show.
 - **Ownership of your links**: links created while signed in belong to the account, so you can manage, update or delete them from any of your devices.
 - **Friends**: when you add someone's link while signed in, you can send a friend request; friends see each other's profile and shared frees without passing links around again.
 - **Groups**: an account-owned group with members, invites by link or code, and "everyone free" times (idea 5 becomes simpler: membership lives on the server, timetables stay encrypted).
@@ -78,7 +78,7 @@ Accounts make the social side feel integrated: one identity for links, friends a
 
 **Server additions (same Worker + D1, free tier)**
 - Tables: `accounts` (id, provider subject hash, created_at), `profiles`, `sessions` (hashed tokens, expiry), `devices` (public keys), `friendships`, `groups`, `group_members`, `wrapped_keys` (link id → recipient device → wrapped key).
-- Sign-in: the app sends Google's ID token; the Worker verifies it against Google's published keys with WebCrypto and issues a session token (stored hashed). Passkeys follow the same session model.
+- Sign-in: passkeys through Android Credential Manager (WebAuthn). The Worker stores only each passkey's public key, verifies sign-in assertions with WebCrypto and issues a session token (stored hashed). Email or SMS codes are ruled out for now: they need a paid sending quota.
 - Deletion and retention follow the existing rules: immediate deletion, 30-day tombstones, nothing kept after.
 
 **App changes**
@@ -86,7 +86,7 @@ Accounts make the social side feel integrated: one identity for links, friends a
 - Link sharing stays where it is; when signed in, new links are account-owned automatically.
 
 **Before building**
-- Needs a Google Cloud OAuth client for `cc.xdan.tempo` with the release certificate's SHA-1, created by the app owner. Passkeys need the same `assetlinks.json` already published at `tempo.xdan.cc`.
+- Passkeys need the `assetlinks.json` already published at `tempo.xdan.cc` (relying party `tempo.xdan.cc`). Nothing else to set up.
 - Order: sign-in + profile + account-owned links + delete account → friends → groups → device-to-device key wrapping and sync.
 
 ## Architecture

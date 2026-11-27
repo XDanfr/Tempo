@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ViewWeek
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,7 +35,11 @@ import cc.xdan.tempo.schedule.*
 import kotlinx.coroutines.delay
 
 /** Bottom-bar destinations. Today and Timetable were merged into the single day-first Schedule. */
-enum class Destination(val label: String) { SCHEDULE("Schedule"), WEEK("Week"), LIBRARY("Library"), SETTINGS("Settings") }
+enum class Destination(val label: String, val inBar: Boolean = true) {
+    HOME("Home"), SCHEDULE("Schedule"), WEEK("Week"), LIBRARY("Library"), PROFILE("Profile", false), SETTINGS("Settings", false);
+    /** Where Back goes: Settings returns to Profile, everything else to Home. */
+    val parent: Destination? get() = when (this) { HOME -> null; SETTINGS -> PROFILE; else -> HOME }
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -72,7 +77,7 @@ fun TempoApp(model: TempoViewModel) {
             } else if (!timetable.onboarded) {
                 Onboarding(timetable, model::update, files.import, if ((state.collection?.timetables?.size ?: 0) > 1) ({ showTimetables = true }) else null)
             } else {
-                var destination by rememberSaveable { mutableStateOf(Destination.SCHEDULE) }
+                var destination by rememberSaveable { mutableStateOf(Destination.HOME) }
                 var fabExpanded by remember { mutableStateOf(true) }
                 val navHaptics = rememberTempoHaptics()
                 // Other people's timetables saved on this device, for shared frees.
@@ -109,29 +114,40 @@ fun TempoApp(model: TempoViewModel) {
                 }
                 val editFree: (Int, TimeSpan) -> Unit = { d, time -> beginEdit(); slotDay = d; initialStart = time.start; initialEnd = time.end; showFree = true }
                 val editPause: (ScheduledBreak) -> Unit = { pause -> beginEdit(); breakId = pause.id; initialStart = null; initialEnd = null; showBreak = true }
+                val achievementContext = androidx.compose.ui.platform.LocalContext.current
+                LaunchedEffect(destination) { if (destination == Destination.WEEK) Achievements.mark(achievementContext, Achievement.WEEK_AT_A_GLANCE) }
+                LaunchedEffect(state.feedback) {
+                    when (val f = state.feedback) {
+                        is cc.xdan.tempo.Feedback.Undone -> Achievements.mark(achievementContext, Achievement.SECOND_THOUGHTS)
+                        is cc.xdan.tempo.Feedback.Info -> if (f.text.startsWith("Exported")) Achievements.mark(achievementContext, Achievement.SAFE_KEEPING)
+                        else -> Unit
+                    }
+                }
                 // Minute-aligned clock: past blocks dim and the now-line moves exactly on the minute.
                 LaunchedEffect(Unit) { while (true) { now = LocalDateTime.now(); delay(60_000L - System.currentTimeMillis() % 60_000L) } }
                 Scaffold(
                     // The timetable chip is the only way into the timetable switcher; the overflow
                     // holds history and sharing so they never compete with the content.
                     topBar = { TopAppBar(title = { TimetableChip(timetable.name) { showTimetables = true } }, actions = {
-                        if (timetable.progress == ProgressMode.STREAKS && (destination == Destination.SCHEDULE || destination == Destination.WEEK)) {
+                        if (timetable.progress == ProgressMode.STREAKS && destination in listOf(Destination.HOME, Destination.SCHEDULE, Destination.WEEK)) {
                             val summary = remember(timetable, now.toLocalDate()) { cc.xdan.tempo.schedule.Progress.summary(timetable, now.toLocalDate()) }
                             StreakChip(summary) { showProgress = true }
                         }
                         AppOverflowMenu(state.undoLabel, state.redoLabel, state.canUndo, state.canRedo,
                             undo = { model.undo() }, redo = { model.redo() }, shareImage = { showImageExport = true })
+                        IconButton(onClick = { destination = Destination.PROFILE }) { ProfileAvatar(state.collection?.profileName ?: "", 32.dp) }
                     }) },
                     snackbarHost = { feedbackHost(Modifier) },
                     bottomBar = { NavigationBar {
-                        Destination.entries.forEach { item ->
+                        Destination.entries.filter { it.inBar }.forEach { item ->
                             val selected = destination == item
                             NavigationBarItem(selected = selected, onClick = { if (!selected) { navHaptics.tick(); destination = item } },
                                 icon = { Icon(when (item) {
+                                    Destination.HOME -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
                                     Destination.SCHEDULE -> if (selected) Icons.Filled.CalendarToday else Icons.Outlined.CalendarToday
                                     Destination.WEEK -> if (selected) Icons.Filled.ViewWeek else Icons.Outlined.ViewWeek
                                     Destination.LIBRARY -> if (selected) Icons.Filled.CollectionsBookmark else Icons.Outlined.CollectionsBookmark
-                                    Destination.SETTINGS -> if (selected) Icons.Filled.Settings else Icons.Outlined.Settings
+                                    else -> Icons.Outlined.Settings
                                 }, null) }, label = { Text(item.label, maxLines = 1) })
                         }
                     } },
@@ -159,6 +175,12 @@ fun TempoApp(model: TempoViewModel) {
                             Destination.WEEK -> WeekScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
                                 { day -> selectedDate = day.toString(); destination = Destination.SCHEDULE }, people)
                             Destination.LIBRARY -> LibraryScreen(timetable) { label, change -> model.update(label, change) }
+                            Destination.HOME -> HomeScreen(timetable, now, state.collection?.profileName ?: "", people,
+                                { day -> day?.let { selectedDate = it.toString() }; destination = Destination.SCHEDULE }, { destination = Destination.WEEK },
+                                { destination = Destination.PROFILE }, { showTimetables = true },
+                                { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true },
+                                { time -> editFree(now.dayOfWeek.value, time) }, editPause)
+                            Destination.PROFILE -> ProfileScreen(timetable, state.collection?.profileName ?: "", model::setProfileName) { destination = Destination.SETTINGS }
                             Destination.SETTINGS -> SettingsScreen(timetable, model::update, state.collection?.profileName ?: "", model::setProfileName) { forceUpdatePrompt = true }
                         }
                         }
@@ -184,6 +206,9 @@ fun TempoApp(model: TempoViewModel) {
             }
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
             WhatsNewOnUpdate(state.collection)
+            val (achievementQueue, consumeAchievement) = rememberAchievementQueue(state.collection.takeIf { timetable?.onboarded == true },
+                celebrate = timetable?.progress != ProgressMode.OFF)
+            AchievementNotices(achievementQueue, consumeAchievement, Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp))
             val shareContext = androidx.compose.ui.platform.LocalContext.current
             state.sharePreview?.let { SharePreviewDialog(it, {
                 model.acceptShare(true) { id, link -> cc.xdan.tempo.share.ShareStore.follow(shareContext, id, link); cc.xdan.tempo.share.ShareSync.ensureScheduled(shareContext) }

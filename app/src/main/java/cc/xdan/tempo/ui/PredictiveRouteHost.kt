@@ -19,7 +19,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 
-/** Top-level Back returns to Today; Today leaves system back-to-home unconsumed. */
+/** Back returns to the destination's parent (Settings → Profile, everything else → Home); Home leaves system back unconsumed. */
 @Composable
 fun PredictiveRouteHost(route: Destination, enabled: Boolean, navigate: (Destination) -> Unit, screen: @Composable (Destination) -> Unit) {
     val progress = remember { Animatable(0f) }
@@ -28,11 +28,12 @@ fun PredictiveRouteHost(route: Destination, enabled: Boolean, navigate: (Destina
     val holder = rememberSaveableStateHolder()
     val shift = with(LocalDensity.current) { 36.dp.toPx() }
     val latestNavigate by rememberUpdatedState(navigate)
-    PredictiveBackHandler(enabled = enabled && route != Destination.SCHEDULE) { events ->
+    val parent = route.parent
+    PredictiveBackHandler(enabled = enabled && parent != null) { events ->
         try {
             events.collect { event -> edge = event.swipeEdge; progress.snapTo(event.progress) }
             committed = true
-            latestNavigate(Destination.SCHEDULE)
+            parent?.let { latestNavigate(it) }
             progress.snapTo(0f)
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) { progress.animateTo(0f, spring(dampingRatio = .85f, stiffness = 550f)) }
@@ -40,8 +41,8 @@ fun PredictiveRouteHost(route: Destination, enabled: Boolean, navigate: (Destina
     }
     LaunchedEffect(route) { withFrameNanos { }; committed = false }
     Box(Modifier.fillMaxSize()) {
-        if (progress.value > 0f && route != Destination.SCHEDULE) {
-            Box(Modifier.fillMaxSize().clearAndSetSemantics { }) { screen(Destination.SCHEDULE) }
+        if (progress.value > 0f && parent != null) {
+            Box(Modifier.fillMaxSize().clearAndSetSemantics { }) { screen(parent) }
         }
         Surface(Modifier.fillMaxSize().graphicsLayer {
             scaleX = 1f - .07f * progress.value

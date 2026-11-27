@@ -522,7 +522,7 @@ private fun firstLessonAfter(timetable: Timetable, date: LocalDate): Pair<LocalD
  * current block and opens whatever it is about when tapped.
  */
 @Composable
-private fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: LocalDate,
+internal fun NowCard(timetable: Timetable, blocks: List<ScheduleBlock>, date: LocalDate,
     edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit, selectDate: (LocalDate) -> Unit,
     shared: List<SharedFree> = emptyList()) {
     val clock by produceState(LocalDateTime.now()) {

@@ -89,8 +89,8 @@ Agreed November 2026 after a device review of 0.5.2: remove duplicate controls, 
 
 ## Home — planned
 
-- [ ] Home screen with Up next, who's free when, progress and a profile page; Schedule opens from Home
-- [ ] Achievements designed around Home
+- [x] Home screen with Up next, who's free when, progress and a profile page; Schedule opens from Home
+- [x] Achievements designed around Home
 
 ## Social Tempo — plan
 
@@ -101,7 +101,7 @@ Optional, end-to-end encrypted and free-tier only. Full plan, privacy rules and 
 - [ ] Optional “Alex also has a free at 13:10” notification before a shared free
 - [x] Encrypted share links at `tempo.xdan.cc/t/<id>#<key>` (Worker + D1), app links and a web viewer — service live; app support in the next release
 - [x] Live updates, and removal from other devices when the owner stops sharing
-- [ ] Optional accounts (Google sign-in or passkey): profile, account-owned links, friends and one-tap delete account
+- [ ] Optional accounts (passkey sign-in): profile, account-owned links, friends and one-tap delete account
 - [ ] Groups for tracking shared frees (account-owned)
 - [ ] Sync between your own devices
 
