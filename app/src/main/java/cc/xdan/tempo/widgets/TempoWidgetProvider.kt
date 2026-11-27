@@ -153,7 +153,7 @@ internal suspend fun refreshWidgets(context: Context, requestedIds: IntArray? = 
                 if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             } else presetColorScheme(selected, dark)
             val options = manager.getAppWidgetOptions(id)
-            val presentation = widgetPresentation(timetable, settings, now)
+            val presentation = widgetPresentation(timetable, settings, now, collection.progressMode == ProgressMode.STREAKS)
             presentation.nextRefreshMillis(now.toInstant().toEpochMilli())?.let { nextRefresh = minOf(nextRefresh, it) }
             suspend fun render(size: SizeF): RemoteViews = adaptiveWidgetViews(
                 context, presentation, WidgetSizing(size.width, size.height, context.resources.configuration.fontScale),

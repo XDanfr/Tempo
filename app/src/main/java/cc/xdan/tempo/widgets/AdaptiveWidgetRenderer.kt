@@ -7,6 +7,7 @@ import android.widget.RemoteViews
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -120,6 +121,29 @@ private class AdaptiveWidgetSnapshot(
         }
     }
 
+    /** Flame, days and any bonus in a small pill. Filled once you've checked in today. */
+    @Composable private fun Streak(small: Boolean = false) {
+        val streak = p.streak ?: return
+        val (fill, ink) = when {
+            streak.paused -> scheme.surfaceContainerHighest to scheme.onSurfaceVariant
+            streak.checkedToday -> scheme.tertiary to scheme.onTertiary
+            else -> scheme.tertiaryContainer to scheme.onTertiaryContainer
+        }
+        // Fixed footprint so the pill shape hugs its content instead of filling the parent.
+        val bonus = !small && streak.multiplier > 1f
+        val chipWidth = (if (small) 14 else 18) + (if (small) 12 else 14) + 3 + streak.days.toString().length * (if (small) 7 else 8) + (if (bonus) 28 else 0)
+        Box(GlanceModifier.width((chipWidth * unit).dp).height(((if (small) 18 else 24) * unit).dp), contentAlignment = Alignment.Center) {
+        Image(ImageProvider(R.drawable.widget_shape_pill), null, GlanceModifier.fillMaxSize(), contentScale = ContentScale.FillBounds,
+            colorFilter = ColorFilter.tint(ColorProvider(fill)))
+        Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+            Image(ImageProvider(widgetIcon(Icons.Outlined.LocalFireDepartment, ink.toArgb())), null, GlanceModifier.size(((if (small) 12 else 14) * unit).dp))
+            Spacer(GlanceModifier.width(3.dp))
+            Label(streak.days.toString(), ink, if (small) 11 else 12, true)
+            if (bonus) Label(" ×${"%.1f".format(streak.multiplier)}", ink, 11)
+        }
+        }
+    }
+
     @Composable private fun Compact(context: Context, modifier: GlanceModifier) {
         val ink = widgetForeground(heroColour)
         val height = size.height.toFloat()
@@ -130,7 +154,10 @@ private class AdaptiveWidgetSnapshot(
             Row(modifier) {
                 Surface(context, heroColour, GlanceModifier.defaultWeight().fillMaxHeight(), edge = 1) {
                     Column(GlanceModifier.fillMaxSize().padding(inset.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
-                        Label(status, ink, 11)
+                        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Vertical.CenterVertically) {
+                            Label(status, ink, 11, modifier = GlanceModifier.defaultWeight())
+                            if (height >= 64) Streak(small = true)
+                        }
                         Label(p.title, ink, 18, true, if (height >= 76) 2 else 1)
                         if (height >= 100 && p.location != null) Label(p.location, ink)
                     }
@@ -146,7 +173,8 @@ private class AdaptiveWidgetSnapshot(
                 }
             }
         } else Surface(context, heroColour, modifier, root = true) {
-            Column(GlanceModifier.fillMaxSize().padding(horizontal = inset.dp, vertical = 4.dp),
+            Row(GlanceModifier.fillMaxSize().padding(end = if (p.streak != null && size.width >= 170) inset.dp else 0.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
+            Column(GlanceModifier.defaultWeight().fillMaxHeight().padding(horizontal = inset.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.Vertical.CenterVertically) {
                 Label(p.title, ink, if (height < 48) 12 else if (height >= 68) 18 else 16, true, if (!ticking && height >= 68) 2 else 1)
                 if (ticking) Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
@@ -163,6 +191,8 @@ private class AdaptiveWidgetSnapshot(
                         Label("left", ink, 11)
                     }
                 } else if (height >= 90) Label(detail, ink, 11)
+            }
+            if (size.width >= 170) Streak(small = height < 56)
             }
         }
     }
@@ -209,11 +239,12 @@ private class AdaptiveWidgetSnapshot(
                     }
                     Label(detail, ink, 12, lines = 2)
                 }
+                if (p.streak != null && size.height >= 190) { Spacer(GlanceModifier.height(10.dp)); Streak() }
             }
         }
     }
 
-    @Composable private fun Hero(context: Context, modifier: GlanceModifier, height: Int) {
+    @Composable private fun Hero(context: Context, modifier: GlanceModifier, height: Int, streakHere: Boolean = false) {
         val ink = widgetForeground(heroColour)
         val timerWidth = ((size.width - 36) * .43f).coerceAtLeast(74f)
         Row(modifier) {
@@ -223,7 +254,8 @@ private class AdaptiveWidgetSnapshot(
                         if (icons && height >= 130 && size.width >= 310 && p.block?.symbol() != null) {
                             Icon(ink, 20); Spacer(GlanceModifier.width(6.dp))
                         }
-                        Label(status, ink, 12, true)
+                        Label(status, ink, 12, true, modifier = GlanceModifier.defaultWeight())
+                        if (streakHere) Streak(small = true)
                     }
                     Spacer(GlanceModifier.height(6.dp))
                     Label(p.title, ink, if (size.width >= 350) 26 else 22, true, 2)
@@ -253,7 +285,7 @@ private class AdaptiveWidgetSnapshot(
     @Composable private fun Wide(context: Context, modifier: GlanceModifier) {
         Surface(context, scheme.surfaceContainer, modifier, outline = settings.outerOutline, root = true) {
             Column(GlanceModifier.fillMaxSize().padding(8.dp)) {
-                Hero(context, GlanceModifier.fillMaxWidth().defaultWeight(), size.height - if (plan.wideContext) 60 else 16)
+                Hero(context, GlanceModifier.fillMaxWidth().defaultWeight(), size.height - if (plan.wideContext) 60 else 16, streakHere = !plan.wideContext)
                 if (plan.wideContext) {
                     val next = p.plan?.later?.firstOrNull()
                     Row(GlanceModifier.fillMaxWidth().height(44.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
@@ -261,6 +293,7 @@ private class AdaptiveWidgetSnapshot(
                         Spacer(GlanceModifier.width(8.dp))
                         Label(next?.title() ?: p.plan?.let { minuteLabel(it.finish) } ?: detail,
                             scheme.onSurface, 12, modifier = GlanceModifier.defaultWeight())
+                        Streak()
                     }
                 }
             }
@@ -294,7 +327,8 @@ private class AdaptiveWidgetSnapshot(
                     Label(if (p.plan != null) "Finish ${minuteLabel(p.plan.finish)}" else status, scheme.primary, 11, true,
                         modifier = GlanceModifier.defaultWeight())
                     val hidden = later.size - rows.size
-                    if (hidden > 0) Label("+$hidden more", scheme.onSurface, 11)
+                    if (hidden > 0) { Label("+$hidden more", scheme.onSurface, 11); Spacer(GlanceModifier.width(8.dp)) }
+                    Streak()
                 }
                 rows.forEachIndexed { index, block ->
                     val fill = widgetLessonBackground(scheme, block.accent(scheme.primaryFixed), dark, settings.themedLessons, false)

@@ -18,13 +18,17 @@ internal data class WidgetPresentation(
     val progress: Float?,
     val location: String?,
     val plan: WidgetDayPlan?,
+    val streak: WidgetStreak? = null,
 ) {
     val block: ScheduleBlock? get() = summary?.block
     val current: Boolean get() = summary?.status == WeekStatus.CURRENT
 }
 
+/** Streak at a glance: [checkedToday] fills the chip; an unchecked day is still at risk. */
+internal data class WidgetStreak(val days: Int, val multiplier: Float, val checkedToday: Boolean, val paused: Boolean)
+
 /** Resolve once per widget update, before rendering each host-reported size. */
-internal fun widgetPresentation(timetable: Timetable?, settings: WidgetSettings, now: ZonedDateTime): WidgetPresentation {
+internal fun widgetPresentation(timetable: Timetable?, settings: WidgetSettings, now: ZonedDateTime, streaks: Boolean = false): WidgetPresentation {
     val local = now.toLocalDateTime()
     val summary = timetable?.takeIf { it.onboarded }?.let { weekOverview(it, local) }
     val complete = timetable != null && summary != null && widgetDayComplete(timetable, local, summary)
@@ -60,5 +64,7 @@ internal fun widgetPresentation(timetable: Timetable?, settings: WidgetSettings,
         summary?.boundary?.atZone(now.zone)?.toInstant()?.toEpochMilli(),
         if (current && block != null && elapsed != null) (elapsed / block.time.minutes).coerceIn(0f, 1f) else null,
         (block as? ScheduleBlock.Lesson)?.location?.takeIf { settings.showsLocations(timetable.appearance) && it.isNotBlank() },
-        if (!terminal && !complete && timetable != null && summary != null) widgetDayPlan(timetable, local, summary) else null)
+        if (!terminal && !complete && timetable != null && summary != null) widgetDayPlan(timetable, local, summary) else null,
+        timetable?.takeIf { streaks && it.onboarded && it.person == null }?.let { Progress.summary(it, local.toLocalDate()) }
+            ?.takeIf { it.streak > 0 }?.let { WidgetStreak(it.streak, it.multiplier, it.checkedInToday > 0, it.paused) })
 }
