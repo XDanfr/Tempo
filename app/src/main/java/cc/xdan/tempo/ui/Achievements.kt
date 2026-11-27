@@ -194,7 +194,7 @@ fun rememberAchievementQueue(collection: TimetableCollection?, celebrate: Boolea
 }
 
 /**
- * A short (about 2.4 s) fall of Material Expressive shapes, released over the first half, clipped to its container and drawn
+ * A short fall of Material Expressive shapes (about 2–3 s), released over the first half and falling at different speeds, clipped to its container and drawn
  * behind content. Skipped when system animations are off.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -211,38 +211,39 @@ fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier:
             // Each piece falls at its own speed, like real confetti: some flutter down, some drop quickly.
             0.55f + random.nextFloat() * 0.95f) }
     }
+    // Pieces are released over the first part, each falls at its own speed, and the animation lasts
+    // exactly until the slowest piece has left the bottom, so nothing vanishes mid-air.
+    val releaseMillis = durationMillis * .5f
+    val baseFallMillis = durationMillis * .5f
+    val totalMillis = remember(pieces) { pieces.maxOf { it[4] * releaseMillis / .55f + baseFallMillis / it[8] } }
     val progress = remember { androidx.compose.animation.core.Animatable(0f) }
-    LaunchedEffect(Unit) { progress.animateTo(1f, androidx.compose.animation.core.tween(durationMillis, easing = androidx.compose.animation.core.LinearEasing)) }
+    LaunchedEffect(Unit) { progress.animateTo(1f, androidx.compose.animation.core.tween(totalMillis.toInt(), easing = androidx.compose.animation.core.LinearEasing)) }
     val layout = androidx.compose.ui.platform.LocalLayoutDirection.current
     val density = androidx.compose.ui.platform.LocalDensity.current
     androidx.compose.foundation.Canvas(modifier) {
-        val t = progress.value
-        if (t <= 0f || t >= 1f) return@Canvas
+        val elapsed = progress.value * totalMillis
+        if (progress.value <= 0f || progress.value >= 1f) return@Canvas
         // Clip to the pill in the drawing itself, so pieces never spill outside the notice.
         val pill = androidx.compose.ui.graphics.Path().apply {
             addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, size.width, size.height, androidx.compose.ui.geometry.CornerRadius(size.height / 2)))
         }
         clipPath(pill) {
-        pieces.forEach { piece ->
-            val (x, startY, sizeDp, spin, delay, shapeIndex, colourIndex, drift) = piece
-            val speed = piece[8]
-            val local = ((t - delay) / (1f - delay) * speed).coerceIn(0f, 1f)
-            if (local <= 0f) return@forEach
-            val side = sizeDp.dp.toPx()
-            // Each piece falls the full height, easing in like gravity, with a gentle sway.
-            val px = size.width * x + kotlin.math.sin((local + startY) * 6.3f) * side * (1.5f + drift * 10f)
-            val py = -side + (size.height + side * 2) * (local * (0.35f + 0.65f * local))
-            val outline = shapes[shapeIndex.toInt()].createOutline(androidx.compose.ui.geometry.Size(side, side), layout, density)
-            drawContext.canvas.save()
-            drawContext.transform.translate(px - side / 2, py)
-            drawContext.transform.rotate(spin * local, androidx.compose.ui.geometry.Offset(side / 2, side / 2))
-            drawOutline(outline, colours[colourIndex.toInt()], alpha = if (local > .75f) (1f - local) / .25f else 1f)
-            drawContext.canvas.restore()
-        }
+            pieces.forEach { piece ->
+                val start = piece[4] * releaseMillis / .55f
+                val local = ((elapsed - start) / (baseFallMillis / piece[8])).coerceIn(0f, 1f)
+                if (local <= 0f || local >= 1f) return@forEach
+                val side = piece[2].dp.toPx()
+                // Straight down, easing in like gravity, from above the top edge to below the bottom.
+                val px = size.width * piece[0]
+                val py = -side + (size.height + side * 2) * (local * (0.35f + 0.65f * local))
+                val outline = shapes[piece[5].toInt()].createOutline(androidx.compose.ui.geometry.Size(side, side), layout, density)
+                drawContext.canvas.save()
+                drawContext.transform.translate(px - side / 2, py)
+                drawContext.transform.rotate(piece[3] * local, androidx.compose.ui.geometry.Offset(side / 2, side / 2))
+                drawOutline(outline, colours[piece[6].toInt()])
+                drawContext.canvas.restore()
+            }
         }
     }
 }
 
-private operator fun <T> List<T>.component6() = this[5]
-private operator fun <T> List<T>.component7() = this[6]
-private operator fun <T> List<T>.component8() = this[7]
