@@ -207,7 +207,9 @@ fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier:
     val pieces = remember {
         val random = kotlin.random.Random(System.nanoTime())
         List(44) { listOf(random.nextFloat(), random.nextFloat() * .6f, 6f + random.nextFloat() * 6f, (random.nextFloat() - .5f) * 540f, random.nextFloat() * .55f,
-            random.nextInt(shapes.size).toFloat(), random.nextInt(colours.size).toFloat(), (random.nextFloat() - .5f) * .2f) }
+            random.nextInt(shapes.size).toFloat(), random.nextInt(colours.size).toFloat(), (random.nextFloat() - .5f) * .2f,
+            // Each piece falls at its own speed, like real confetti: some flutter down, some drop quickly.
+            0.55f + random.nextFloat() * 0.95f) }
     }
     val progress = remember { androidx.compose.animation.core.Animatable(0f) }
     LaunchedEffect(Unit) { progress.animateTo(1f, androidx.compose.animation.core.tween(durationMillis, easing = androidx.compose.animation.core.LinearEasing)) }
@@ -221,8 +223,10 @@ fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier:
             addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, size.width, size.height, androidx.compose.ui.geometry.CornerRadius(size.height / 2)))
         }
         clipPath(pill) {
-        pieces.forEach { (x, startY, sizeDp, spin, delay, shapeIndex, colourIndex, drift) ->
-            val local = ((t - delay) / (1f - delay)).coerceIn(0f, 1f)
+        pieces.forEach { piece ->
+            val (x, startY, sizeDp, spin, delay, shapeIndex, colourIndex, drift) = piece
+            val speed = piece[8]
+            val local = ((t - delay) / (1f - delay) * speed).coerceIn(0f, 1f)
             if (local <= 0f) return@forEach
             val side = sizeDp.dp.toPx()
             // Each piece falls the full height, easing in like gravity, with a gentle sway.
