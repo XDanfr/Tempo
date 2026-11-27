@@ -79,6 +79,10 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
             collection.add(UUID.randomUUID().toString(), timetable.copy(name = uniqueName(timetable.name + " copy", collection)))
         }
     }
+    /** App-wide celebrations, XP and streaks. */
+    fun setProgress(mode: ProgressMode) = save { changeCollection(null) { it.copy(progress = mode) } }
+    /** App-wide achievement notices. */
+    fun setAchievements(on: Boolean) = save { changeCollection(null) { it.copy(achievements = on) } }
     fun setProfileName(name: String) = save { changeCollection(null) { it.copy(profileName = name.trim().take(40)) } }
     /** Marks a saved timetable as someone else's ([name]) or as yours (null). */
     fun setPerson(id: String, name: String?) = save {

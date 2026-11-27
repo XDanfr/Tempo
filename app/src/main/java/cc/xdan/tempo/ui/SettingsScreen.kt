@@ -27,7 +27,8 @@ private enum class SettingsPage(val label: String, val detail: String) {
 }
 
 @Composable
-fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, profileName: String = "", setProfileName: (String) -> Unit = {}, openUpdate: () -> Unit = {}) {
+fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, profileName: String = "", setProfileName: (String) -> Unit = {}, openUpdate: () -> Unit = {},
+    progress: ProgressMode = ProgressMode.CELEBRATIONS, setProgress: (ProgressMode) -> Unit = {}, achievements: Boolean = true, setAchievements: (Boolean) -> Unit = {}) {
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
     var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
     PredictiveSettingsHost(page?.name, { page = null }) { shownPage ->
@@ -56,9 +57,19 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
         }
         if (currentPage == SettingsPage.APPEARANCE) item { AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } } }
         if (currentPage == SettingsPage.APPEARANCE) item {
-            ChoiceField("Celebrations", timetable.progress, ProgressMode.entries, { when (it) {
+            // App-wide: the same for every timetable.
+            ChoiceField("Celebrations", progress, ProgressMode.entries, { when (it) {
                 ProgressMode.OFF -> "Off"; ProgressMode.CELEBRATIONS -> "Celebrations"; ProgressMode.STREAKS -> "Celebrations, streaks and XP" } },
-                { mode -> update { it.copy(progress = mode) } })
+                setProgress)
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp).hapticToggleable(achievements, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = setAchievements),
+                verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Achievement notices", style = MaterialTheme.typography.bodyLarge)
+                    Text("Show a notice when you unlock one. They're always on your profile.", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(achievements, null)
+            }
         }
         if (currentPage == SettingsPage.SCHEDULE) {
         item {

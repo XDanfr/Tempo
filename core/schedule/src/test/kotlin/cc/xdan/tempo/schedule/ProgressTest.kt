@@ -17,8 +17,10 @@ class ProgressTest {
 
     @Test fun xpCountsCheckInsAndFullDayBonus() {
         val s = Progress.summary(table.copy(checkIns = checks(0) + checks(1, both = true)), monday.plusDays(1))
-        assertEquals(10 + 20 + 5, s.xp)
-        assertEquals(25, s.xpToday)
+        // Day 1: 10 XP. Day 2: (20 + 5) × 1.1 for a 1-day streak going in = 28.
+        assertEquals(10 + 28, s.xp)
+        assertEquals(28, s.xpToday)
+        assertEquals(1.1f, s.multiplier, 0.001f)
     }
     @Test fun weekendsDoNotBreakStreaks() {
         // Thu, Fri, then Mon: the weekend has no lessons.
@@ -38,5 +40,18 @@ class ProgressTest {
     }
     @Test fun levelsNeedGrowingXp() {
         assertEquals(100, Progress.levelGoal(1)); assertEquals(150, Progress.levelGoal(2))
+    }
+    @Test fun streakBonusCapsAtDouble() {
+        assertEquals(2f, Progress.multiplierFor(25), 0.001f)
+        assertEquals(1f, Progress.multiplierFor(0), 0.001f)
+    }
+    @Test fun missedDayResetsBonusButFreezeProtectsIt() {
+        // Mon, Tue checked in; Wed missed; Thu checked in → Thu has no bonus.
+        val missed = Progress.summary(table.copy(checkIns = checks(0, 1, 3)), monday.plusDays(3))
+        assertEquals(1f, missed.multiplier, 0.001f)
+        // Same, but Wednesday frozen → Thursday keeps a 2-day bonus and the streak carries on.
+        val frozen = Progress.summary(table.copy(checkIns = checks(0, 1, 3), frozenDays = listOf(monday.plusDays(2).toString())), monday.plusDays(3))
+        assertEquals(1.2f, frozen.multiplier, 0.001f)
+        assertEquals(3, frozen.streak)
     }
 }

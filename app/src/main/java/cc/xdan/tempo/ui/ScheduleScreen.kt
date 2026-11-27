@@ -296,8 +296,10 @@ private fun DayTimeline(timetable: Timetable, date: LocalDate, now: LocalDateTim
     val conflicts = remember(timetable, date) { ScheduleResolver.blockConflicts(ScheduleResolver.resolvedTemplate(timetable, date), date.dayOfWeek.value).isNotEmpty() }
     val shared = remember(timetable, people, date) { if (people.isEmpty()) emptyList() else sharedFrees(timetable, people, date) }
     val list = rememberLazyListState()
+    val streakBonus = remember(timetable, today) { if (timetable.progress == ProgressMode.STREAKS) Progress.summary(timetable, today).multiplier else 1f }
     val latestTop by rememberUpdatedState(onTopChanged)
     LaunchedEffect(list) { snapshotFlow { list.firstVisibleItemIndex == 0 && list.firstVisibleItemScrollOffset < 24 }.collect { latestTop(it) } }
+    CompositionLocalProvider(LocalStreakBonus provides streakBonus) {
     LazyColumn(Modifier.fillMaxSize(), state = list,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item(key = "summary") { DaySummary(timetable, date, lessons) }
@@ -328,7 +330,11 @@ private fun DayTimeline(timetable: Timetable, date: LocalDate, now: LocalDateTim
         }
         if (afterDay) item(key = "now-line-end") { NowLine(minute) }
     }
+    }
 }
+
+/** Today's streak bonus, so a check-in shows the XP it really earns. */
+val LocalStreakBonus = staticCompositionLocalOf { 1f }
 
 private fun blockKey(block: ScheduleBlock) = when (block) {
     is ScheduleBlock.Lesson -> "session-${block.session.id}"
@@ -781,7 +787,7 @@ private fun CheckInButton(checked: Boolean, ink: Color, toggle: (Boolean) -> Uni
         if (burst > 0) key(burst) {
             val rise = remember { androidx.compose.animation.core.Animatable(0f) }
             LaunchedEffect(Unit) { rise.animateTo(1f, androidx.compose.animation.core.tween(900)) }
-            Text("+${Progress.XP_PER_CHECK_IN} XP", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = ink,
+            Text("+${kotlin.math.round(Progress.XP_PER_CHECK_IN * LocalStreakBonus.current).toInt()} XP", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = ink,
                 modifier = Modifier.graphicsLayer { translationY = -rise.value * 90f; alpha = 1f - rise.value; scaleX = 1f + rise.value * .2f; scaleY = scaleX })
         }
     }
@@ -813,7 +819,7 @@ fun StreakChip(summary: Progress.Summary, open: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit) {
+fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit, freezeToday: ((Boolean) -> Unit)? = null) {
     val summary = remember(timetable, today) { Progress.summary(timetable, today) }
     EditorSheet("Your progress", dismiss) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -828,7 +834,8 @@ fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit) {
                 val fraction by animateFloatAsState(summary.levelXp.toFloat() / summary.levelGoal, TempoMotion.spatial(), label = "level")
                 // Still waves: the bar only moves when XP actually changes.
                 LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth(), waveSpeed = 0.dp)
-                Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodySmall,
+                Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}" +
+                    (if (summary.multiplier > 1f) " · ×${"%.1f".format(summary.multiplier)} streak bonus" else ""), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -843,11 +850,24 @@ fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit) {
                 }
             }
         }
+        // Freeze: for illness or a day you can't make. The day counts as if nothing was scheduled.
+        val frozenToday = today.toString() in timetable.frozenDays
+        val lessonsToday = remember(timetable, today) { ScheduleResolver.resolve(timetable, today).any { it is ScheduleBlock.Lesson } }
+        if (freezeToday != null && (lessonsToday || frozenToday) && summary.checkedInToday == 0) {
+            if (frozenToday) OutlinedButton(onClick = { freezeToday(false) }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Outlined.AcUnit, null); Spacer(Modifier.width(8.dp)); Text("Unfreeze today")
+            } else FilledTonalButton(onClick = { freezeToday(true) }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Outlined.AcUnit, null); Spacer(Modifier.width(8.dp)); Text("Freeze today")
+            }
+            Text(if (frozenToday) "Today won't count against your streak or bonus." else "Off sick or can't make it? Freezing keeps your streak and bonus safe.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         if (summary.paused) Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
             Text("Your streak is paused after a missed day. Check in on your next ${timetable.sessionWord} day to keep it going.", Modifier.padding(14.dp))
         }
         Text("How it works", style = MaterialTheme.typography.titleMedium)
         Text("Tap the check on a ${timetable.sessionWord} you attended to earn ${Progress.XP_PER_CHECK_IN} XP, plus ${Progress.FULL_DAY_BONUS} for checking in to a whole day. " +
+            "Each streak day adds 10% more XP, up to double at ${Progress.MAX_BONUS_DAYS} days; missing a day resets the bonus unless you freeze it. " +
             "Streaks count days that have ${timetable.sessionWord}s, so weekends and holidays never break them, and one missed day only pauses it. " +
             "Levels are just for fun and never lock anything. Turn this off in Settings › Appearance › Celebrations.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

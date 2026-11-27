@@ -55,7 +55,7 @@ class SetupStepTest {
         assertEquals(0, Timetable().currentSetupStep)
         assertEquals(4, Timetable(onboardingStep = 1).currentSetupStep)
         assertEquals(6, Timetable(onboardingStep = 2).currentSetupStep)
-        assertEquals(7, Timetable(onboardingStep = 3).currentSetupStep)
+        assertEquals(8, Timetable(onboardingStep = 3).currentSetupStep)
         assertEquals(7, Timetable(onboardingStep = 2, setupStep = 7).currentSetupStep)
     }
     @Test fun purposeChoosesWords() {

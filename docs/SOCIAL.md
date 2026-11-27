@@ -76,6 +76,9 @@ Accounts make the social side feel integrated: one identity for links, friends a
 - Keys reach friends through the existing link fragment, or wrapped to a friend's public key (each account device generates an X25519 key pair; the private key never leaves the device).
 - No public directory, search, feeds or follower counts. You can only find people you already share with.
 
+**Check-ins with friends (later)**
+- Once accounts exist, friends can see your check-ins and streak (read-only: only you can change your own), which opens the door to a gentle "nudge" later. Frozen days stay private; friends only see that a day didn't count.
+
 **Server additions (same Worker + D1, free tier)**
 - Tables: `accounts` (id, provider subject hash, created_at), `profiles`, `sessions` (hashed tokens, expiry), `devices` (public keys), `friendships`, `groups`, `group_members`, `wrapped_keys` (link id → recipient device → wrapped key).
 - Sign-in: passkeys through Android Credential Manager (WebAuthn). The Worker stores only each passkey's public key, verifies sign-in assertions with WebCrypto and issues a session token (stored hashed). Email or SMS codes are ruled out for now: they need a paid sending quota.

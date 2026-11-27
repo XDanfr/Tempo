@@ -47,7 +47,7 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 private object Step { const val WELCOME = 0; const val PURPOSE = 1; const val DAYS = 2; const val HOURS = 3; const val PERIODS = 4
-    const val PERIOD_TIMES = 5; const val SUBJECTS = 6; const val THEME = 7; const val PROGRESS = 8; const val DONE = 9 }
+    const val PERIOD_TIMES = 5; const val SUBJECTS = 6; const val WEEK = 7; const val THEME = 8; const val PROGRESS = 9; const val DONE = 10 }
 
 private fun icon(p: TimetablePurpose): ImageVector = when (p) {
     TimetablePurpose.SCHOOL -> Icons.Outlined.Backpack; TimetablePurpose.COLLEGE -> Icons.Outlined.School
@@ -75,7 +75,9 @@ private fun stepsFor(p: TimetablePurpose?) = (0 until SETUP_STEPS).filter {
  * preview of the person's own week and a short celebration at the end.
  */
 @Composable
-fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, importTimetable: () -> Unit, manageTimetables: (() -> Unit)? = null) {
+fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, importTimetable: () -> Unit, manageTimetables: (() -> Unit)? = null,
+    progress: ProgressMode = timetable.progress, setProgress: (ProgressMode) -> Unit = { mode -> update { it.copy(progress = mode) } },
+    achievements: Boolean = true, setAchievements: (Boolean) -> Unit = {}) {
     val step = timetable.currentSetupStep
     val steps = stepsFor(timetable.purpose)
     val focus = LocalFocusManager.current
@@ -113,7 +115,9 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
             // The suggested plan becomes real periods and breaks, editable on the next screen.
             Step.PERIODS -> plan?.let { p -> update { it.copy(periods = p.periods, breaks = p.breaks) } }
         }
-        goTo(steps.getOrElse(index + 1) { Step.DONE })
+        val following = steps.getOrElse(index + 1) { Step.DONE }
+        // Nothing to place yet: skip filling in the week (Home offers it later).
+        goTo(if (following == Step.WEEK && timetable.subjects.isEmpty()) steps.getOrElse(index + 2) { Step.DONE } else following)
     }
     fun back() { steps.getOrNull(steps.indexOf(step) - 1)?.let { goTo(it) } }
 
@@ -218,6 +222,11 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
                         PeriodSetup(timetable, update)
                     }
                     Step.SUBJECTS -> SubjectStep(timetable, update, { selectedSubject = it; subjectEditor = true })
+                    Step.WEEK -> {
+                        Question("Fill in your week", if (timetable.periods.isNotEmpty()) "Pick a day, then choose what's on in each period. You can always change it later."
+                            else "Pick a day and add what's on. You can always change it later.")
+                        WeekBuilder(timetable, update)
+                    }
                     Step.THEME -> {
                         Question("Make it yours", "Pick colours. This is your week with them.")
                         WeekPreview(timetable)
@@ -225,13 +234,25 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
                     }
                     Step.PROGRESS -> {
                         Question("Celebrate your progress?", "Optional, and you can change it any time in Settings.")
-                        OptionCard(Icons.Outlined.DoNotDisturbOn, "Keep it simple", "Just your timetable", timetable.progress == ProgressMode.OFF) {
-                            update { it.copy(progress = ProgressMode.OFF) } }
-                        OptionCard(Icons.Outlined.Celebration, "Celebrations", "Confetti when your day is done, and milestones", timetable.progress == ProgressMode.CELEBRATIONS) {
-                            update { it.copy(progress = ProgressMode.CELEBRATIONS) } }
+                        OptionCard(Icons.Outlined.DoNotDisturbOn, "Keep it simple", "Just your timetable", progress == ProgressMode.OFF) {
+                            setProgress(ProgressMode.OFF) }
+                        OptionCard(Icons.Outlined.Celebration, "Celebrations", "Confetti when your day is done, and milestones", progress == ProgressMode.CELEBRATIONS) {
+                            setProgress(ProgressMode.CELEBRATIONS) }
                         OptionCard(Icons.Outlined.LocalFireDepartment, "Celebrations, streaks and XP",
-                            "Check in to ${timetable.sessionWord}s to earn XP and keep a gentle streak. Days off never break it.", timetable.progress == ProgressMode.STREAKS) {
-                            update { it.copy(progress = ProgressMode.STREAKS) } }
+                            "Check in to ${timetable.sessionWord}s to earn XP and keep a gentle streak. Days off never break it.", progress == ProgressMode.STREAKS) {
+                            setProgress(ProgressMode.STREAKS) }
+                        AnimatedVisibility(progress != ProgressMode.OFF) {
+                            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).hapticToggleable(achievements, role = Role.Switch, onValueChange = setAchievements)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.EmojiEvents, null); Spacer(Modifier.width(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("Achievements", style = MaterialTheme.typography.titleMedium)
+                                    Text("A notice when you discover something new in Tempo", style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(achievements, null)
+                            }
+                        }
                     }
                     Step.DONE -> Finished(timetable)
                 }
@@ -240,6 +261,7 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
         val label = when (step) {
             Step.WELCOME -> "Get started"
             Step.SUBJECTS -> if (timetable.subjects.isEmpty()) "Skip for now" else "Continue"
+            Step.WEEK -> if (timetable.sessions.isEmpty()) "Do this later" else "Continue"
             Step.DONE -> "Open my schedule"
             else -> "Continue"
         }

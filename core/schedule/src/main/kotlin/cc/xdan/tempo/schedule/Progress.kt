@@ -6,7 +6,10 @@ import java.time.LocalDate
 /**
  * Opt-in progression from explicit check-ins only.
  *
- * XP: 10 per attended session, plus 5 when every session that day is checked in. Levels are
+ * XP: 10 per attended session, plus 5 when every session that day is checked in, multiplied by a
+ * streak bonus of +10% per streak day going into that day (up to ×2 at 10 days). Missing a day
+ * resets the bonus straight away, even though the streak itself only pauses; frozen days (illness,
+ * a day you couldn't make) count as if nothing was scheduled, so they protect both. Levels are
  * cosmetic and need 100, 150, 200 … XP each. Streaks count *scheduled* days (days with at least
  * one session) that have a check-in; days without sessions never break a streak. One missed
  * scheduled day pauses the streak; a second missed day in a row ends it. Today never breaks it.
@@ -16,7 +19,12 @@ object Progress {
     const val FULL_DAY_BONUS = 5
 
     data class Summary(val xp: Int, val level: Int, val levelXp: Int, val levelGoal: Int,
-        val streak: Int, val bestStreak: Int, val paused: Boolean, val checkedInToday: Int, val xpToday: Int)
+        val streak: Int, val bestStreak: Int, val paused: Boolean, val checkedInToday: Int, val xpToday: Int,
+        /** Today's streak bonus, e.g. 1.4 for a 4-day streak going into today. */
+        val multiplier: Float = 1f)
+
+    const val MAX_BONUS_DAYS = 10
+    fun multiplierFor(streakBefore: Int) = 1f + 0.1f * streakBefore.coerceIn(0, MAX_BONUS_DAYS)
 
     fun levelGoal(level: Int) = 100 + 50 * (level - 1)
 
@@ -31,10 +39,29 @@ object Progress {
     fun summary(timetable: Timetable, today: LocalDate): Summary {
         val byDate = timetable.checkIns.groupBy { it.date }
         val dates = byDate.keys.mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() }.sorted()
-        val xp = dates.sumOf { xpForDay(timetable, it) }
+        val frozen = timetable.frozenDays.toSet()
+        val scheduledDay = { day: LocalDate -> day.toString() !in frozen && ScheduleResolver.resolve(timetable, day).any { it is ScheduleBlock.Lesson } }
+        // Walk forward once, tracking the streak going into each day, so each day's XP gets the bonus it earned then.
+        var xp = 0; var running = 0; var todayMultiplier = 1f; var xpToday = 0
+        if (dates.isNotEmpty()) {
+            var walk = dates.first()
+            while (!walk.isAfter(today)) {
+                if (scheduledDay(walk)) {
+                    val base = xpForDay(timetable, walk)
+                    val multiplier = multiplierFor(running)
+                    if (walk == today) todayMultiplier = multiplier
+                    if (base > 0) {
+                        val earned = kotlin.math.round(base * multiplier).toInt()
+                        xp += earned; if (walk == today) xpToday = earned
+                        running++
+                    } else if (walk != today) { running = 0 } // A missed day resets the bonus.
+                }
+                walk = walk.plusDays(1)
+            }
+        }
         var level = 1; var remaining = xp
         while (remaining >= levelGoal(level)) { remaining -= levelGoal(level); level++ }
-        val scheduled = { day: LocalDate -> ScheduleResolver.resolve(timetable, day).any { it is ScheduleBlock.Lesson } }
+        val scheduled = scheduledDay
         val attended = { day: LocalDate -> byDate[day.toString()].orEmpty().isNotEmpty() }
 
         // Current streak, walking back from today over scheduled days.
@@ -62,6 +89,6 @@ object Progress {
             day = day.plusDays(1)
         }
         return Summary(xp, level, remaining, levelGoal(level), streak, maxOf(best, streak), paused,
-            byDate[today.toString()].orEmpty().size, xpForDay(timetable, today))
+            byDate[today.toString()].orEmpty().size, xpToday, if (dates.isEmpty()) 1f else todayMultiplier)
     }
 }

@@ -33,7 +33,8 @@ import java.time.LocalDateTime
 @Composable
 fun HomeScreen(timetable: Timetable, now: LocalDateTime, profileName: String, people: List<Pair<String, Timetable>>,
     openSchedule: (LocalDate?) -> Unit, openWeek: () -> Unit, openProfile: () -> Unit, openTimetables: () -> Unit,
-    edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit) {
+    edit: (Session) -> Unit, editFree: (TimeSpan) -> Unit, editBreak: (ScheduledBreak) -> Unit,
+    update: ((Timetable) -> Timetable) -> Unit = {}) {
     val context = LocalContext.current
     val today = now.toLocalDate()
     val minute = now.hour * 60 + now.minute
@@ -55,6 +56,20 @@ fun HomeScreen(timetable: Timetable, now: LocalDateTime, profileName: String, pe
                     style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
                 Text(friendlyDate(today), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+        }
+        if (timetable.sessions.isEmpty() && timetable.person == null) item(key = "build") {
+            var building by remember { mutableStateOf(false) }
+            Surface(onClick = { building = true }, shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
+                Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    SpinningShapeBadge(Icons.Outlined.EditCalendar)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Build your timetable", style = MaterialTheme.typography.titleLarge)
+                        Text("Add your ${timetable.sessionWord}s to see what's next, your week and who's free with you.", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+            if (building) EditorSheet("Build your timetable", { building = false }) { WeekBuilder(timetable, update) }
         }
         item(key = "now") { NowCard(timetable, blocks, today, edit, editFree, editBreak, { openSchedule(it) }, shared) }
         item(key = "today") { RestOfToday(timetable, blocks, minute) { openSchedule(today) } }
@@ -149,7 +164,8 @@ private fun ProgressCard(timetable: Timetable, today: LocalDate, openProfile: ()
         }
         val fraction by androidx.compose.animation.core.animateFloatAsState(summary.levelXp.toFloat() / summary.levelGoal, TempoMotion.spatial(), label = "level")
         LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth(), waveSpeed = 0.dp)
-        Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodySmall,
+        Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}" +
+            (if (summary.multiplier > 1f) " · ×${"%.1f".format(summary.multiplier)} streak bonus" else ""), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

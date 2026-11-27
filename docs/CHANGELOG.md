@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Streak bonus**: each day of your streak adds 10% to check-in XP, up to double at 10 days. Missing a scheduled day resets the bonus. If you're ill or away, **Freeze today** in the progress sheet protects your streak and bonus.
+- **Fill in your week**: setup now asks what's on in each period (or lets you add sessions day by day). If you skip it, Home shows a **Build your timetable** card until you've added some.
+- Celebrations, streaks and XP are now app-wide settings, with a new **Achievement notices** switch. They're no longer saved into a timetable or exported with it, and viewing someone else's timetable keeps your own theme and progress.
 - **Share links**: share any of your timetables from its ⋮ menu. Tempo encrypts it on your phone and creates a link at tempo.xdan.cc. The key is part of the link and never reaches the server. Rooms and notes are left out unless you include them, and check-ins are never shared. Copy or share the link, update the shared copy, or stop sharing at any time. Opening a link shows a preview: **Add [name]** to compare frees, or **Import as my own**. You can also paste a link with **Add from link** in the timetable switcher. Without Tempo, the link opens a private read-only web view.
 - **Home**: Tempo now opens on Home. It shows a greeting, the live Now card, what's later today, who's free with you (today, or the next day with a shared free), your progress, and your latest and next achievements. Navigation is Home · Schedule · Week · Library. Your **profile** (the avatar, top right) shows your name, level, streak and every achievement, and opens Settings.
 - Shared frees are named by period when they line up exactly, such as “Period 2” or “Periods 2–3”, instead of a time range, on Home and the Week tab.

@@ -129,7 +129,7 @@ data class CheckIn(val date: String, val sessionId: String)
 enum class ProgressMode { OFF, CELEBRATIONS, STREAKS }
 
 /** Number of screens in the setup flow. */
-const val SETUP_STEPS = 10
+const val SETUP_STEPS = 11
 
 @Serializable
 data class Timetable(
@@ -153,12 +153,14 @@ data class Timetable(
     val exceptions: List<DatedException> = emptyList(),
     /** What the timetable is for; tailors wording and defaults, never hides features. */
     val purpose: TimetablePurpose? = null,
-    /** Optional celebrations and progression, chosen during setup. */
+    /** Legacy per-timetable copy of the app-wide setting; read [TimetableCollection.progressMode] instead. */
     val progress: ProgressMode = ProgressMode.CELEBRATIONS,
     /** Step in the current setup flow; null for timetables from older versions, see [currentSetupStep]. */
     val setupStep: Int? = null,
     /** Sessions the person marked as attended; only used when [progress] is STREAKS. */
     val checkIns: List<CheckIn> = emptyList(),
+    /** Days the person froze their streak (illness, a day they couldn't make); treated as if nothing was scheduled. */
+    val frozenDays: List<String> = emptyList(),
     /** Set when this is someone else's timetable saved on this device, e.g. "Alex". */
     val person: String? = null,
 ) {
@@ -203,6 +205,10 @@ data class TimetableCollection(
     val timetables: List<SavedTimetable> = listOf(SavedTimetable("local", Timetable())),
     /** Your display name, shown to others when you share. Stored on this device. */
     val profileName: String = "",
+    /** App-wide celebrations, XP and streaks; null on collections from before this was app-wide. */
+    val progress: ProgressMode? = null,
+    /** App-wide: whether achievement notices appear. */
+    val achievements: Boolean = true,
 ) {
     init {
         require(format == "cc.xdan.tempo.library" && formatVersion == 1) { "Unsupported timetable collection" }
@@ -227,10 +233,18 @@ data class TimetableCollection(
 }
 
 /** Setup position, mapping setups interrupted in older versions (4 steps) onto the current flow. */
-val Timetable.currentSetupStep: Int get() = setupStep ?: when (onboardingStep) { 1 -> 4; 2 -> 6; 3 -> 7; else -> 0 }
+val Timetable.currentSetupStep: Int get() = setupStep ?: when (onboardingStep) { 1 -> 4; 2 -> 6; 3 -> 8; else -> 0 }
 
 /** "lesson", "shift", … for this timetable's purpose. */
 val Timetable.sessionWord: String get() = purpose?.sessionWord ?: "session"
 
 /** "subject", "module", "activity", … for this timetable's purpose. */
 val Timetable.subjectWord: String get() = purpose?.subjectWord ?: "subject"
+
+/** The app-wide progress setting, falling back to your first timetable's older per-timetable choice. */
+val TimetableCollection.progressMode: ProgressMode get() = progress
+    ?: timetables.firstOrNull { it.timetable.onboarded && it.timetable.person == null }?.timetable?.progress ?: ProgressMode.CELEBRATIONS
+
+/** Your own theme for the app; someone else's timetable never recolours it. */
+val TimetableCollection.ownAppearance: Appearance get() =
+    if (active.person == null) active.appearance else timetables.firstOrNull { it.timetable.person == null }?.timetable?.appearance ?: Appearance()

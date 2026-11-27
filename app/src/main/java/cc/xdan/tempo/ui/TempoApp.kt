@@ -45,8 +45,11 @@ enum class Destination(val label: String, val inBar: Boolean = true) {
 @Composable
 fun TempoApp(model: TempoViewModel) {
     val state by model.state.collectAsStateWithLifecycle()
-    val timetable = state.timetable
-    TempoTheme(timetable?.appearance ?: Appearance()) {
+    // Celebrations and streaks are app-wide, and never apply to someone else's timetable.
+    val timetable = state.timetable?.let { t ->
+        t.copy(progress = if (t.person != null) ProgressMode.OFF else state.collection?.progressMode ?: t.progress)
+    }
+    TempoTheme(state.collection?.ownAppearance ?: timetable?.appearance ?: Appearance()) {
         val view = LocalView.current
         val lightBars = MaterialTheme.colorScheme.background.luminance() > .5f
         SideEffect {
@@ -75,7 +78,7 @@ fun TempoApp(model: TempoViewModel) {
                     else LoadingIndicator()
                 }
             } else if (!timetable.onboarded) {
-                Onboarding(timetable, model::update, files.import, if ((state.collection?.timetables?.size ?: 0) > 1) ({ showTimetables = true }) else null)
+                Onboarding(timetable, model::update, files.import, if ((state.collection?.timetables?.size ?: 0) > 1) ({ showTimetables = true }) else null, progress = state.collection?.progressMode ?: ProgressMode.CELEBRATIONS, setProgress = model::setProgress, achievements = state.collection?.achievements != false, setAchievements = model::setAchievements)
             } else {
                 var destination by rememberSaveable { mutableStateOf(Destination.HOME) }
                 var fabExpanded by remember { mutableStateOf(true) }
@@ -179,9 +182,11 @@ fun TempoApp(model: TempoViewModel) {
                                 { day -> day?.let { selectedDate = it.toString() }; destination = Destination.SCHEDULE }, { destination = Destination.WEEK },
                                 { destination = Destination.PROFILE }, { showTimetables = true },
                                 { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true },
-                                { time -> editFree(now.dayOfWeek.value, time) }, editPause)
+                                { time -> editFree(now.dayOfWeek.value, time) }, editPause, model::update)
                             Destination.PROFILE -> ProfileScreen(timetable, state.collection?.profileName ?: "", model::setProfileName) { destination = Destination.SETTINGS }
-                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, state.collection?.profileName ?: "", model::setProfileName) { forceUpdatePrompt = true }
+                            Destination.SETTINGS -> SettingsScreen(timetable, model::update, state.collection?.profileName ?: "", model::setProfileName,
+                                progress = state.collection?.progressMode ?: ProgressMode.CELEBRATIONS, setProgress = model::setProgress,
+                                achievements = state.collection?.achievements != false, setAchievements = model::setAchievements, openUpdate = { forceUpdatePrompt = true })
                         }
                         }
                     }
@@ -207,7 +212,7 @@ fun TempoApp(model: TempoViewModel) {
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
             WhatsNewOnUpdate(state.collection)
             val (achievementQueue, consumeAchievement) = rememberAchievementQueue(state.collection.takeIf { timetable?.onboarded == true },
-                celebrate = timetable?.progress != ProgressMode.OFF)
+                celebrate = state.collection?.achievements != false && state.collection?.progressMode != ProgressMode.OFF)
             AchievementNotices(achievementQueue, consumeAchievement, Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp))
             val shareContext = androidx.compose.ui.platform.LocalContext.current
             state.sharePreview?.let { SharePreviewDialog(it, {
@@ -230,7 +235,12 @@ fun TempoApp(model: TempoViewModel) {
             }
             // The updater waits until setup is finished, and never shows over the What's new sheet's first launch.
             if (timetable?.onboarded == true) UpdatePrompt(forceUpdatePrompt) { forceUpdatePrompt = false }
-            if (showProgress && timetable != null) ProgressSheet(timetable, LocalDate.now()) { showProgress = false }
+            if (showProgress && timetable != null) ProgressSheet(timetable, LocalDate.now(), { showProgress = false }) { freeze ->
+                val today = LocalDate.now().toString()
+                model.update(if (freeze) "Froze today's streak" else "Unfroze today") { t ->
+                    t.copy(frozenDays = if (freeze) (t.frozenDays + today).distinct() else t.frozenDays - today)
+                }
+            }
             if (showImageExport && timetable != null) PngExportSheet(timetable, { showImageExport = false }, model::info)
             if (showTimetables) state.collection?.let { TimetableManager(it, model, files, { showComparison = true }) { showTimetables = false } }
             if (state.fileBusy) Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp), shape = MaterialTheme.shapes.medium) {

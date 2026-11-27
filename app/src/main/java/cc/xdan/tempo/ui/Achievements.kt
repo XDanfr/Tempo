@@ -83,7 +83,7 @@ object Achievements {
         val people = collection.timetables.filter { it.id != collection.activeId && it.timetable.person != null }
             .map { it.timetable.person!! to it.timetable }
         val today = LocalDate.now()
-        val summary = if (active.progress == ProgressMode.STREAKS) Progress.summary(active, today) else null
+        val summary = if (collection.progressMode == ProgressMode.STREAKS && active.person == null) Progress.summary(active, today) else null
         return buildSet {
             if (mine.any { it.onboarded }) add(Achievement.FIRST_TIMETABLE)
             if (mine.any { it.sessions.isNotEmpty() }) add(Achievement.FIRST_SESSION)

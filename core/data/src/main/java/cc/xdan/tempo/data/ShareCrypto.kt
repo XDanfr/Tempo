@@ -50,7 +50,7 @@ object ShareCrypto {
         sessions = timetable.sessions.map { it.copy(location = if (options.rooms) it.location else "", notes = if (options.notes) it.notes else "") },
         exceptions = timetable.exceptions.map { day -> day.copy(sessions = day.sessions.map { it.copy(location = if (options.rooms) it.location else "", notes = if (options.notes) it.notes else "") }) },
         periods = timetable.periods.map { if (options.rooms) it else it.copy(location = "") },
-        checkIns = emptyList(), person = null, setupStep = null, progress = cc.xdan.tempo.model.ProgressMode.CELEBRATIONS,
+        checkIns = emptyList(), frozenDays = emptyList(), person = null, setupStep = null, progress = cc.xdan.tempo.model.ProgressMode.CELEBRATIONS,
     )
 
     fun encrypt(sharer: String, timetable: Timetable, options: ShareOptions, key: String): ByteArray {
