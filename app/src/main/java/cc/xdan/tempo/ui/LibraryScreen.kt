@@ -39,18 +39,18 @@ import cc.xdan.tempo.schedule.removeSubject
 import java.util.UUID
 
 @Composable
-fun LibraryScreen(timetable: Timetable, update: (label: String?, (Timetable) -> Timetable) -> Unit) {
+fun LibraryScreen(timetable: Timetable, readOnly: Boolean = false, update: (label: String?, (Timetable) -> Timetable) -> Unit) {
     var editor by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Subject?>(null) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text("Make it yours", style = MaterialTheme.typography.headlineMedium)
             Text("Subjects, work activities and the places you go.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = { selected = null; editor = true }, modifier = Modifier.padding(top = 16.dp)) { Icon(Icons.Outlined.Add, null); Text("Add subject", Modifier.padding(start = 8.dp)) }
+            if (!readOnly) Button(onClick = { selected = null; editor = true }, modifier = Modifier.padding(top = 16.dp)) { Icon(Icons.Outlined.Add, null); Text("Add subject", Modifier.padding(start = 8.dp)) }
         }
         if (timetable.subjects.isEmpty()) item { Text("Your library is empty. Add your first subject to start scheduling.") }
         items(timetable.subjects, key = { it.id }) { subject ->
-            Card(onClick = { selected = subject; editor = true }, modifier = Modifier.fillMaxWidth(),
+            Card(onClick = { selected = subject; editor = true }, enabled = !readOnly, modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = if (timetable.appearance.blockStyle == BlockStyle.OUTLINED) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh),
                 border = if (timetable.appearance.blockStyle == BlockStyle.OUTLINED) BorderStroke(1.5.dp, subjectOutline(Color(subject.colour), MaterialTheme.colorScheme.surface)) else null) {
                 Row(Modifier.padding(20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {

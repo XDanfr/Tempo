@@ -81,6 +81,13 @@ class TempoViewModel(private val repository: TimetableRepository) : ViewModel() 
     }
     /** App-wide celebrations, XP and streaks. */
     fun setProgress(mode: ProgressMode) = save { changeCollection(null) { it.copy(progress = mode) } }
+    /** Your theme: edits your own timetable's appearance even while viewing someone else's. */
+    fun setOwnAppearance(appearance: Appearance) = save {
+        changeCollection(null) { c ->
+            val target = if (c.active.person == null) c.activeId else c.timetables.firstOrNull { it.timetable.person == null }?.id ?: c.activeId
+            c.update(target) { it.copy(appearance = appearance) }
+        }
+    }
     /** App-wide achievement notices. */
     fun setAchievements(on: Boolean) = save { changeCollection(null) { it.copy(achievements = on) } }
     fun setProfileName(name: String) = save { changeCollection(null) { it.copy(profileName = name.trim().take(40)) } }

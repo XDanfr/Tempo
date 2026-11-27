@@ -3,6 +3,8 @@ package cc.xdan.tempo.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -22,20 +24,22 @@ fun DatedScheduleSettings(timetable: Timetable, update: ((Timetable) -> Timetabl
     var exceptionEditor by remember { mutableStateOf(false) }
     var exception by remember { mutableStateOf<DatedException?>(null) }
     var batchEditor by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Dates and repeating weeks", style = MaterialTheme.typography.titleLarge)
-        Text("${timetable.cycle.weeks}-week cycle · week 1 starts in the week of ${friendlyDate(timetable.cycle.anchorDate)}")
-        OutlinedButton(onClick = { cycleEditor = true }, modifier = Modifier.fillMaxWidth()) { Text("Edit week cycle") }
-        Text("Holidays close every block, including automatic frees. Dated replacements take priority; the cycle keeps counting through days off.", style = MaterialTheme.typography.bodySmall)
+    Column {
+        SettingsHeader("Weeks")
+        SettingsRow(Icons.Outlined.Autorenew, "Week cycle", if (timetable.cycle.weeks == 1) "Every week is the same" else "${timetable.cycle.weeks} weeks · from ${friendlyDate(timetable.cycle.anchorDate)}") { cycleEditor = true }
+        SettingsRow(Icons.Outlined.EditCalendar, "Edit several sessions", enabled = timetable.sessions.isNotEmpty()) { batchEditor = true }
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        SettingsHeader("Holidays")
         timetable.holidays.forEach { item ->
-            TextButton(onClick = { holiday = item; holidayEditor = true }) { Text("${item.name} · ${friendlyDate(item.startDate)} to ${friendlyDate(item.endDate)}") }
+            SettingsRow(Icons.Outlined.BeachAccess, item.name, "${friendlyDate(item.startDate)} – ${friendlyDate(item.endDate)}") { holiday = item; holidayEditor = true }
         }
-        OutlinedButton(onClick = { holiday = null; holidayEditor = true }, modifier = Modifier.fillMaxWidth()) { Text("Add holiday") }
+        SettingsRow(Icons.Outlined.Add, "Add holiday", chevron = false) { holiday = null; holidayEditor = true }
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        SettingsHeader("One-off days")
         timetable.exceptions.sortedBy { it.date }.forEach { item ->
-            TextButton(onClick = { exception = item; exceptionEditor = true }) { Text("${friendlyDate(item.date)} · ${item.name.ifBlank { if (item.closed) "Day off" else "Replacement schedule" }}") }
+            SettingsRow(if (item.closed) Icons.Outlined.EventBusy else Icons.Outlined.Event, item.name.ifBlank { if (item.closed) "Day off" else "Different day" }, friendlyDate(item.date)) { exception = item; exceptionEditor = true }
         }
-        OutlinedButton(onClick = { exception = null; exceptionEditor = true }, modifier = Modifier.fillMaxWidth()) { Text("Add dated exception") }
-        OutlinedButton(onClick = { batchEditor = true }, enabled = timetable.sessions.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("Edit selected recurring sessions") }
+        SettingsRow(Icons.Outlined.Add, "Add a one-off day", chevron = false) { exception = null; exceptionEditor = true }
     }
     if (cycleEditor) {
         var weeks by rememberSaveable { mutableStateOf(timetable.cycle.weeks.toString()) }

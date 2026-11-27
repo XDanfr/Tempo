@@ -110,10 +110,8 @@ fun ProfileScreen(timetable: Timetable, profileName: String, setProfileName: (St
     opened?.let { achievement ->
         val done = achievement in unlocked
         val progress = remember(timetable, achievement) { achievementProgress(achievement, timetable) }
-        AlertDialog(onDismissRequest = { opened = null },
-            icon = { AchievementBadge(achievement, done, size = 72.dp) },
-            title = { Text(achievement.title, textAlign = TextAlign.Center) },
-            text = {
+        EditorSheet(achievement.title, { opened = null }) {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { AchievementBadge(achievement, done, size = 88.dp) }
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(achievement.detail, textAlign = TextAlign.Center)
                     if (done) Text("Unlocked ${java.time.Instant.ofEpochMilli(unlocked.getValue(achievement)).atZone(java.time.ZoneId.systemDefault()).toLocalDate().let { friendlyDate(it) }} · +${Achievements.XP} XP",
@@ -126,8 +124,7 @@ fun ProfileScreen(timetable: Timetable, profileName: String, setProfileName: (St
                         Text("Worth ${Achievements.XP} XP", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            },
-            confirmButton = { TextButton(onClick = { opened = null }) { Text("Done") } })
+        }
     }
     if (editing) AlertDialog(onDismissRequest = { editing = false }, title = { Text("Your name") },
         text = { OutlinedTextField(draft, { draft = it.take(40) }, singleLine = true, modifier = Modifier.fillMaxWidth(),

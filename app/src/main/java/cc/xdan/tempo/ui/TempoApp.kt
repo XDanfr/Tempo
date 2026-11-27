@@ -113,13 +113,17 @@ fun TempoApp(model: TempoViewModel) {
                 val scopeControls: @Composable () -> Unit = {
                     EditScopeControl(scopeDate, datedTarget != null, scopeLocked) { editorDate = if (it) editingBaseDate else null }
                 }
+                val achievementContext = androidx.compose.ui.platform.LocalContext.current
+                // Timetables added from a link follow their owner, so they're view-only here.
+                val readOnly = remember(state.collection) { state.collection?.activeId?.let { cc.xdan.tempo.share.ShareStore.followed(achievementContext).containsKey(it) } == true }
                 fun beginEdit() {
                     editingBaseDate = visibleDate.toString()
                     editorDate = if (timetable.exceptions.any { it.date == editingBaseDate }) editingBaseDate else null
                 }
-                val editFree: (Int, TimeSpan) -> Unit = { d, time -> beginEdit(); slotDay = d; initialStart = time.start; initialEnd = time.end; showFree = true }
-                val editPause: (ScheduledBreak) -> Unit = { pause -> beginEdit(); breakId = pause.id; initialStart = null; initialEnd = null; showBreak = true }
-                val achievementContext = androidx.compose.ui.platform.LocalContext.current
+                var freeDate by remember { mutableStateOf(LocalDate.now()) }
+                val editFree: (LocalDate, TimeSpan) -> Unit = { d, time -> beginEdit(); freeDate = d; slotDay = d.dayOfWeek.value; initialStart = time.start; initialEnd = time.end; showFree = true }
+                val editPause: (ScheduledBreak) -> Unit = { pause -> if (!readOnly) { beginEdit(); breakId = pause.id; initialStart = null; initialEnd = null; showBreak = true } }
+                val editSession: (Session) -> Unit = { session -> if (!readOnly) { beginEdit(); editingSessionId = session.id; initialStart = null; initialEnd = null; showEditor = true } }
                 LaunchedEffect(destination) { if (destination == Destination.WEEK) Achievements.mark(achievementContext, Achievement.WEEK_AT_A_GLANCE) }
                 LaunchedEffect(state.feedback) {
                     when (val f = state.feedback) {
@@ -160,7 +164,7 @@ fun TempoApp(model: TempoViewModel) {
                     } },
                     floatingActionButton = {
                         // Shrinks to an icon while scrolling so it never hides the timeline.
-                        if (destination == Destination.SCHEDULE) ExtendedFloatingActionButton(
+                        if (destination == Destination.SCHEDULE && !readOnly) ExtendedFloatingActionButton(
                             onClick = { navHaptics.press(); beginEdit(); editingSessionId = null; initialStart = null; initialEnd = null; showEditor = true },
                             expanded = fabExpanded, icon = { Icon(Icons.Outlined.Add, "Add ${timetable.sessionWord}") }, text = { Text("Add ${timetable.sessionWord}") })
                     },
@@ -169,8 +173,7 @@ fun TempoApp(model: TempoViewModel) {
                         PredictiveRouteHost(destination, enabled = !showEditor && !showFree && !showBreak && !showTimetables && !showComparison && state.importPreview == null, navigate = { destination = it }) { shown ->
                         when (shown) {
                             Destination.SCHEDULE -> ScheduleScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
-                                { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true },
-                                { d, time -> editFree(d.dayOfWeek.value, time) }, editPause, onTopChanged = { fabExpanded = it },
+                                editSession, editFree, editPause, onTopChanged = { fabExpanded = it },
                                 people = people,
                                 checkIn = { day, session, on ->
                                     val subject = timetable.subjects.firstOrNull { it.id == session.subjectId }?.name ?: timetable.sessionWord
@@ -181,16 +184,16 @@ fun TempoApp(model: TempoViewModel) {
                                 })
                             Destination.WEEK -> WeekScreen(timetable, now, LocalDate.parse(selectedDate), { selectedDate = it.toString() },
                                 { day -> selectedDate = day.toString(); destination = Destination.SCHEDULE }, people)
-                            Destination.LIBRARY -> LibraryScreen(timetable) { label, change -> model.update(label, change) }
+                            Destination.LIBRARY -> LibraryScreen(timetable, readOnly) { label, change -> if (!readOnly) model.update(label, change) }
                             Destination.HOME -> HomeScreen(timetable, now, state.collection?.profileName ?: "", people,
                                 { day -> day?.let { selectedDate = it.toString() }; destination = Destination.SCHEDULE }, { destination = Destination.WEEK },
                                 { destination = Destination.PROFILE }, { showTimetables = true },
-                                { beginEdit(); editingSessionId = it.id; initialStart = null; initialEnd = null; showEditor = true },
-                                { time -> editFree(now.dayOfWeek.value, time) }, editPause, model::update)
+                                editSession, { time -> editFree(now.toLocalDate(), time) }, editPause, model::update)
                             Destination.PROFILE -> ProfileScreen(timetable, state.collection?.profileName ?: "", model::setProfileName) { destination = Destination.SETTINGS }
                             Destination.SETTINGS -> SettingsScreen(timetable, model::update, state.collection?.profileName ?: "", model::setProfileName,
                                 progress = state.collection?.progressMode ?: ProgressMode.CELEBRATIONS, setProgress = model::setProgress,
-                                achievements = state.collection?.achievements != false, setAchievements = model::setAchievements, openUpdate = { forceUpdatePrompt = true })
+                                achievements = state.collection?.achievements != false, setAchievements = model::setAchievements, openUpdate = { forceUpdatePrompt = true },
+                                appearance = state.collection?.ownAppearance ?: timetable.appearance, setAppearance = model::setOwnAppearance, editable = !readOnly)
                         }
                         }
                     }
@@ -204,7 +207,12 @@ fun TempoApp(model: TempoViewModel) {
                     initialCycleWeek = ScheduleResolver.cycleWeek(timetable, visibleDate), dated = datedTarget != null,
                     onSplit = { split -> model.update(sessionLabel("Split", split.first().subjectId, editorTable)) { it.editSessions(datedTarget) { sessions -> sessions.filterNot { s -> s.id == split.first().id } + split } }; showEditor = false }, scopeControls = scopeControls)
                 if (showFree) FreeSlotEditor(slotDay, TimeSpan(initialStart!!, initialEnd!!), { showFree = false },
-                    { showFree = false; editingSessionId = null; showEditor = true }, { showFree = false; breakId = null; showBreak = true })
+                    { showFree = false; editingSessionId = null; showEditor = true }, { showFree = false; breakId = null; showBreak = true },
+                    people = remember(timetable, people, freeDate, initialStart, initialEnd) {
+                        val gap = TimeSpan(initialStart!!, initialEnd!!)
+                        cc.xdan.tempo.schedule.sharedFrees(timetable, people, freeDate).filter { it.time.start < gap.end && gap.start < it.time.end }
+                            .flatMap { free -> free.people.map { it to TimeSpan(maxOf(free.time.start, gap.start), minOf(free.time.end, gap.end)) } }
+                    }, readOnly = readOnly)
                 if (showBreak) BreakEditor(editorTable, editorTable.breaks.firstOrNull { it.id == breakId },
                     initialDay = datedTarget?.dayOfWeek?.value ?: if (initialStart != null) slotDay else null,
                     initialTime = initialStart?.let { a -> initialEnd?.let { b -> TimeSpan(a, b) } },
@@ -215,10 +223,11 @@ fun TempoApp(model: TempoViewModel) {
             }
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
             WhatsNewOnUpdate(state.collection)
+            val progressSummary = timetable?.takeIf { it.onboarded && it.progress == ProgressMode.STREAKS }?.let { t ->
+                remember(t) { cc.xdan.tempo.schedule.Progress.summary(t, java.time.LocalDate.now()) } }
             val (achievementQueue, consumeAchievement) = rememberAchievementQueue(state.collection.takeIf { timetable?.onboarded == true },
                 celebrate = state.collection?.achievements != false && state.collection?.progressMode != ProgressMode.OFF,
-                level = timetable?.takeIf { it.onboarded && it.progress == ProgressMode.STREAKS }?.let { t ->
-                    remember(t) { cc.xdan.tempo.schedule.Progress.summary(t, java.time.LocalDate.now()).level } })
+                level = progressSummary?.level, checkInXp = progressSummary?.let { it.xp - achievementXp }, scope = state.collection?.activeId)
             AchievementNotices(achievementQueue, consumeAchievement, Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp))
             val shareContext = androidx.compose.ui.platform.LocalContext.current
             state.sharePreview?.let { SharePreviewDialog(it, {

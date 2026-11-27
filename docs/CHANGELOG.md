@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Redesigned Settings**: a clean list in two groups, App (Appearance, Progress, Updates) and the open timetable (what it's for, dates and weeks, day hours, periods), with each opening its own page.
+- Appearance always changes your own theme, even while you're viewing someone else's timetable.
+- **Timetables added from a link are view-only**: they follow their owner's changes, so there's no Add button and sessions, breaks and subjects can't be edited. Timetables imported from a file, or as your own, stay editable.
+- Tap a free you share and the drawer lists who's free with you, and when if it's only part of the gap.
+- **In the same lesson**: when a friend has the same subject in the same room at the same time, the lesson shows them too. Lessons without a room never match.
+- Checking in now shows your XP bar filling up instead of a floating +XP. Achievement notices fade into the XP they added, and how much you need for the next level.
+- Achievement details open in a drawer, like the rest of the app.
 - **Achievements give XP**: each one adds 25 XP, including ones you'd already earned. Tap any achievement on your profile to see its details, when you unlocked it, or how close you are.
 - **Level up**: reaching a new level shows a bigger notice with a spinning level badge and more confetti. Swipe any notice up to dismiss it.
 - **Quicker Add session**: pick a subject and it's added in the next free period or slot straight away; tap it to change the time or room. **Set time and details instead** opens the full editor.

@@ -1,107 +1,128 @@
 package cc.xdan.tempo.ui
 
-import android.os.Build
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import cc.xdan.tempo.model.*
-import java.util.UUID
 
-private enum class SettingsPage(val label: String, val detail: String) {
-    APPEARANCE("Appearance", "Themes, colours and block styles"),
-    SCHEDULE("Schedule", "Repeating weeks, holidays, day hours and usual periods"),
-    UPDATES("Updates", "Release checks and downloads")
+private enum class SettingsPage(val label: String) {
+    APPEARANCE("Appearance"), CELEBRATIONS("Progress"), UPDATES("Updates"),
+    SCHEDULE("Dates and weeks"), HOURS("Day hours"), PERIODS("Periods")
 }
 
+private fun ProgressMode.label() = when (this) { ProgressMode.OFF -> "Off"; ProgressMode.CELEBRATIONS -> "Celebrations"; ProgressMode.STREAKS -> "Streaks and XP" }
+
+/**
+ * Settings as a list of pages: app-wide settings first, then the open timetable's own. Timetables
+ * that follow someone else's link have no timetable section, since they can't be edited.
+ */
 @Composable
 fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit, profileName: String = "", setProfileName: (String) -> Unit = {}, openUpdate: () -> Unit = {},
-    progress: ProgressMode = ProgressMode.CELEBRATIONS, setProgress: (ProgressMode) -> Unit = {}, achievements: Boolean = true, setAchievements: (Boolean) -> Unit = {}) {
+    progress: ProgressMode = ProgressMode.CELEBRATIONS, setProgress: (ProgressMode) -> Unit = {}, achievements: Boolean = true, setAchievements: (Boolean) -> Unit = {},
+    appearance: Appearance = timetable.appearance, setAppearance: (Appearance) -> Unit = { a -> update { it.copy(appearance = a) } }, editable: Boolean = true) {
     var editingDay by remember { mutableStateOf<DayHours?>(null) }
     var page by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
     PredictiveSettingsHost(page?.name, { page = null }) { shownPage ->
     val currentPage = shownPage?.let(SettingsPage::valueOf)
     key(currentPage) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 12.dp)) {
         if (currentPage == null) {
-        items(SettingsPage.entries) { section ->
-            ElevatedCard(onClick = { page = section }, modifier = Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Icon(when (section) { SettingsPage.APPEARANCE -> Icons.Outlined.Palette; SettingsPage.SCHEDULE -> Icons.Outlined.CalendarMonth; SettingsPage.UPDATES -> Icons.Outlined.SystemUpdate }, null)
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(section.label, style = MaterialTheme.typography.titleMedium)
-                    Text(section.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Icon(Icons.Outlined.ChevronRight, null)
-                }
+            item {
+                SettingsHeader("App")
+                SettingsRow(Icons.Outlined.Palette, "Appearance", appearance.selectedPreset.label()) { page = SettingsPage.APPEARANCE }
+                SettingsRow(Icons.Outlined.Celebration, "Progress", progress.label()) { page = SettingsPage.CELEBRATIONS }
+                SettingsRow(Icons.Outlined.SystemUpdate, "Updates") { page = SettingsPage.UPDATES }
             }
-        }
-        item { HorizontalDivider(Modifier.padding(top = 12.dp)); AboutTempo() }
+            if (editable) item {
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                SettingsHeader(timetable.name)
+                ListItem(headlineContent = { Text("Timetable for") }, leadingContent = { Icon(Icons.Outlined.Category, null) },
+                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent), modifier = Modifier.padding(horizontal = 4.dp))
+                FlowChoice(timetable.purpose) { purpose -> update { it.copy(purpose = purpose) } }
+                SettingsRow(Icons.Outlined.CalendarMonth, "Dates and weeks", if (timetable.cycle.weeks > 1) "${timetable.cycle.weeks}-week cycle" else null) { page = SettingsPage.SCHEDULE }
+                SettingsRow(Icons.Outlined.Schedule, "Day hours", timetable.days.sortedBy { it.day }.let { days ->
+                    if (days.isEmpty()) "Off" else days.joinToString(" ") { weekdayNames[it.day - 1].take(3) } }) { page = SettingsPage.HOURS }
+                SettingsRow(Icons.Outlined.ViewAgenda, "Periods", if (timetable.periods.isEmpty()) "Off" else countLabel(timetable.periods.size, "period")) { page = SettingsPage.PERIODS }
+            }
+            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)); Box(Modifier.padding(horizontal = 20.dp)) { AboutTempo() } }
         } else item {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalIconButton(onClick = { page = null }, shape = CircleShape) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to settings") }
-                Text(currentPage.label, style = MaterialTheme.typography.headlineMedium)
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FilledTonalIconButton(onClick = { page = null }, shape = CircleShape) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
+                Text(currentPage.label, style = MaterialTheme.typography.headlineSmall)
             }
         }
-        if (currentPage == SettingsPage.APPEARANCE) item { AppearanceControls(timetable.appearance) { appearance -> update { it.copy(appearance = appearance) } } }
-        if (currentPage == SettingsPage.APPEARANCE) item {
-            // App-wide: the same for every timetable.
-            ChoiceField("Celebrations", progress, ProgressMode.entries, { when (it) {
-                ProgressMode.OFF -> "Off"; ProgressMode.CELEBRATIONS -> "Celebrations"; ProgressMode.STREAKS -> "Celebrations, streaks and XP" } },
-                setProgress)
-            Row(Modifier.fillMaxWidth().padding(top = 8.dp).hapticToggleable(achievements, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = setAchievements),
-                verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Achievement notices", style = MaterialTheme.typography.bodyLarge)
-                    Text("Show a notice when you unlock one. They're always on your profile.", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+        val padded = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+        when (currentPage) {
+            SettingsPage.APPEARANCE -> item { Box(padded) { AppearanceControls(appearance, setAppearance) } }
+            SettingsPage.CELEBRATIONS -> item {
+                ProgressMode.entries.forEach { mode ->
+                    SettingsRow(when (mode) { ProgressMode.OFF -> Icons.Outlined.DoNotDisturbOn; ProgressMode.CELEBRATIONS -> Icons.Outlined.Celebration; ProgressMode.STREAKS -> Icons.Outlined.LocalFireDepartment },
+                        mode.label(), chevron = false, trailing = { RadioButton(progress == mode, null) }) { setProgress(mode) }
                 }
-                Switch(achievements, null)
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                SettingsRow(Icons.Outlined.EmojiEvents, "Achievement notices", chevron = false, enabled = progress != ProgressMode.OFF,
+                    trailing = { Switch(achievements && progress != ProgressMode.OFF, null, enabled = progress != ProgressMode.OFF) }) { setAchievements(!achievements) }
             }
-        }
-        if (currentPage == SettingsPage.SCHEDULE) {
-        item {
-            ChoiceField("Timetable for", timetable.purpose, listOf<TimetablePurpose?>(null) + TimetablePurpose.entries, { it?.label ?: "Not set" },
-                { purpose -> update { it.copy(purpose = purpose) } })
-        }
-        item { DatedScheduleSettings(timetable, update) }
-        item { Text("Day lengths", style = MaterialTheme.typography.titleLarge) }
-        items((1..7).toList()) { day ->
-            val hours = timetable.days.firstOrNull { it.day == day }
-            ElevatedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(weekdayNames[day - 1], Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                        Switch(checked = hours != null, onCheckedChange = { enabled ->
+            SettingsPage.UPDATES -> item { Box(padded) { UpdateControls(openUpdate) } }
+            SettingsPage.SCHEDULE -> item { DatedScheduleSettings(timetable, update) }
+            SettingsPage.HOURS -> item {
+                (1..7).forEach { day ->
+                    val hours = timetable.days.firstOrNull { it.day == day }
+                    SettingsRow(null, weekdayNames[day - 1], hours?.let { "${minuteLabel(it.time.start)}–${minuteLabel(it.time.end)}" } ?: "Off", chevron = false,
+                        trailing = { Switch(hours != null, { enabled ->
                             update { t -> t.copy(days = t.days.filterNot { it.day == day } + if (enabled) listOf(DayHours(day, TimeSpan(540, 990))) else emptyList()) }
-                        })
-                    }
-                    if (hours != null) TextButton(onClick = { editingDay = hours }) { Text("${minuteLabel(hours.time.start)}–${minuteLabel(hours.time.end)} · Edit hours") }
-                    else Text("No automatic frees. Existing sessions stay visible.", style = MaterialTheme.typography.bodySmall)
+                        }) }) { hours?.let { editingDay = it } }
                 }
             }
+            SettingsPage.PERIODS -> item { Box(padded) { PeriodSetup(timetable, update) } }
+            null -> Unit
         }
-        item { PeriodSetup(timetable, update) }
-        }
-        if (currentPage == SettingsPage.UPDATES) item { UpdateControls(openUpdate) }
-
     }
     }
     }
     editingDay?.let { hours ->
         HoursEditor(hours, { editingDay = null }) { new -> update { t -> t.copy(days = t.days.filterNot { it.day == new.day } + new) }; editingDay = null }
+    }
+}
+
+/** Small primary-coloured label above a group of rows. */
+@Composable
+fun SettingsHeader(text: String) {
+    Text(text, Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+}
+
+/** One tappable settings row: icon, title, current value, and a chevron or a control. */
+@Composable
+fun SettingsRow(icon: ImageVector?, title: String, value: String? = null, enabled: Boolean = true, chevron: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null, onClick: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = value?.let { { Text(it) } },
+        leadingContent = icon?.let { { Icon(it, null) } },
+        trailingContent = trailing ?: if (chevron) ({ Icon(Icons.Outlined.ChevronRight, null) }) else null,
+        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+        modifier = Modifier.alpha(if (enabled) 1f else .5f).hapticClickable(enabled, Role.Button, onClick).padding(horizontal = 4.dp))
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FlowChoice(selected: TimetablePurpose?, choose: (TimetablePurpose) -> Unit) {
+    FlowRow(Modifier.padding(start = 60.dp, end = 20.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TimetablePurpose.entries.forEach { purpose ->
+            FilterChip(selected == purpose, { choose(purpose) }, label = { Text(purpose.label) })
+        }
     }
 }
 

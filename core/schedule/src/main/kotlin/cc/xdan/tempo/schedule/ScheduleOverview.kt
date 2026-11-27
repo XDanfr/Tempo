@@ -88,6 +88,23 @@ fun sharedFrees(me: Timetable, people: List<Pair<String, Timetable>>, date: Loca
     return perPerson.groupBy({ it.second }, { it.first }).map { (time, names) -> SharedFree(time, names.distinct()) }.sortedBy { it.time.start }
 }
 
+/**
+ * People in the same lesson as you on [date]: same subject name and same room at overlapping times.
+ * Lessons without a room never match, since the same subject alone doesn't mean the same class.
+ */
+fun sharedLessons(me: Timetable, people: List<Pair<String, Timetable>>, date: LocalDate): Map<String, List<String>> {
+    fun key(lesson: ScheduleBlock.Lesson) = lesson.subject.name.trim().lowercase() to lesson.location.trim().lowercase()
+    val mine = ScheduleResolver.resolve(me, date).filterIsInstance<ScheduleBlock.Lesson>().filter { it.location.isNotBlank() }
+    if (mine.isEmpty()) return emptyMap()
+    val theirs = people.flatMap { (name, timetable) ->
+        ScheduleResolver.resolve(timetable, date).filterIsInstance<ScheduleBlock.Lesson>().filter { it.location.isNotBlank() }.map { name to it }
+    }
+    return mine.associate { lesson ->
+        lesson.session.id to theirs.filter { (_, other) -> key(other) == key(lesson) && other.time.start < lesson.time.end && lesson.time.start < other.time.end }
+            .map { it.first }.distinct()
+    }.filterValues { it.isNotEmpty() }
+}
+
 /** Intervals where everyone (you plus all [people]) is free. */
 fun everyoneFree(me: Timetable, people: List<Timetable>, date: LocalDate): List<TimeSpan> =
     if (people.isEmpty()) emptyList() else mergeSpans(compareTimetables(listOf(me) + people, date).filter { it.sharedFree }.map { it.time })

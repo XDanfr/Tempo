@@ -37,6 +37,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -296,6 +297,7 @@ private fun DayTimeline(timetable: Timetable, date: LocalDate, now: LocalDateTim
     val minute = now.hour * 60 + now.minute
     val conflicts = remember(timetable, date) { ScheduleResolver.blockConflicts(ScheduleResolver.resolvedTemplate(timetable, date), date.dayOfWeek.value).isNotEmpty() }
     val shared = remember(timetable, people, date) { if (people.isEmpty()) emptyList() else sharedFrees(timetable, people, date) }
+    val together = remember(timetable, people, date) { if (people.isEmpty()) emptyMap() else cc.xdan.tempo.schedule.sharedLessons(timetable, people, date) }
     val list = rememberLazyListState()
     val streakBonus = remember(timetable, today) { if (timetable.progress == ProgressMode.STREAKS) Progress.summary(timetable, today).multiplier else 1f }
     val latestTop by rememberUpdatedState(onTopChanged)
@@ -327,7 +329,7 @@ private fun DayTimeline(timetable: Timetable, date: LocalDate, now: LocalDateTim
             val checked = block is ScheduleBlock.Lesson && timetable.checkIns.any { it.date == date.toString() && it.sessionId == block.session.id }
             TimelineRow(block, timetable.appearance, past, current, progress, Modifier.animateItem(
                 fadeInSpec = TempoMotion.effects(), placementSpec = TempoMotion.spatial(), fadeOutSpec = TempoMotion.exit()),
-                edit, editFree, editBreak, if (checkable) checked else null, alsoFree = shared.filter { it.time.start < block.time.end && it.time.end > block.time.start }.flatMap { it.people }.distinct(), toggleCheckIn = { on -> (block as? ScheduleBlock.Lesson)?.let { checkIn(it.session, on) } })
+                edit, editFree, editBreak, if (checkable) checked else null, alsoFree = if (block is ScheduleBlock.Lesson) together[block.session.id].orEmpty() else shared.filter { it.time.start < block.time.end && it.time.end > block.time.start }.flatMap { it.people }.distinct(), toggleCheckIn = { on -> (block as? ScheduleBlock.Lesson)?.let { checkIn(it.session, on) } })
         }
         if (afterDay) item(key = "now-line-end") { NowLine(minute) }
     }
@@ -428,7 +430,7 @@ private fun TimelineRow(block: ScheduleBlock, appearance: Appearance, past: Bool
         Box(Modifier.weight(1f).alpha(fade)) {
             when (block) {
                 is ScheduleBlock.Free -> FreeGap(block, appearance, alsoFree) { editFree(block.time) }
-                else -> BlockCard(block, appearance, current, animatedProgress, checkedIn, toggleCheckIn) {
+                else -> BlockCard(block, appearance, current, animatedProgress, checkedIn, toggleCheckIn, together = alsoFree) {
                     when (block) { is ScheduleBlock.Lesson -> edit(block.session); is ScheduleBlock.Break -> editBreak(block.scheduled); else -> Unit }
                 }
             }
@@ -464,7 +466,7 @@ fun breakColour(kind: BreakKind): Color = when (kind) {
 
 @Composable
 private fun BlockCard(block: ScheduleBlock, appearance: Appearance, current: Boolean, progress: Float,
-    checkedIn: Boolean? = null, toggleCheckIn: (Boolean) -> Unit = {}, onClick: () -> Unit) {
+    checkedIn: Boolean? = null, toggleCheckIn: (Boolean) -> Unit = {}, together: List<String> = emptyList(), onClick: () -> Unit) {
     val outlined = (if (block is ScheduleBlock.Break) appearance.effectiveBreakStyle else appearance.blockStyle) == BlockStyle.OUTLINED
     val colour = when (block) { is ScheduleBlock.Lesson -> Color(block.subject.colour); is ScheduleBlock.Break -> breakColour(block.scheduled.kind); else -> Color.Transparent }
     val surface = MaterialTheme.colorScheme.surface
@@ -500,6 +502,8 @@ private fun BlockCard(block: ScheduleBlock, appearance: Appearance, current: Boo
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Icon(Icons.Outlined.Place, null, Modifier.size(14.dp)); Text(block.location, style = MaterialTheme.typography.bodySmall)
                     }
+                // Same subject, same room: they're in this lesson with you.
+                if (together.isNotEmpty()) Box(Modifier.padding(top = 4.dp)) { PeopleFree(together, textColour = LocalContentColor.current) }
             }
             if (checkedIn != null) CheckInButton(checkedIn, foreground, toggleCheckIn)
             else if (current) Surface(shape = CircleShape, color = foreground.copy(alpha = .14f), contentColor = foreground) {
@@ -785,12 +789,6 @@ private fun CheckInButton(checked: Boolean, ink: Color, toggle: (Boolean) -> Uni
                 contentDescription = if (checked) "Attended. Undo check-in" else "Check in as attended"; stateDescription = if (checked) "Checked in" else "Not checked in" }) {
             Box(contentAlignment = Alignment.Center) { Icon(if (checked) Icons.Outlined.Check else Icons.Outlined.TaskAlt, null, Modifier.size(22.dp)) }
         }
-        if (burst > 0) key(burst) {
-            val rise = remember { androidx.compose.animation.core.Animatable(0f) }
-            LaunchedEffect(Unit) { rise.animateTo(1f, androidx.compose.animation.core.tween(900)) }
-            Text("+${kotlin.math.round(Progress.XP_PER_CHECK_IN * LocalStreakBonus.current).toInt()} XP", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = ink,
-                modifier = Modifier.graphicsLayer { translationY = -rise.value * 90f; alpha = 1f - rise.value; scaleX = 1f + rise.value * .2f; scaleY = scaleX })
-        }
     }
 }
 
@@ -912,9 +910,9 @@ fun peopleList(names: List<String>): String = when (names.size) {
 
 /** Overlapping initials for people who share this free, with "Alex is free too". */
 @Composable
-fun PeopleFree(names: List<String>, showText: Boolean = true) {
+fun PeopleFree(names: List<String>, showText: Boolean = true, textColour: Color = Color.Unspecified) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = "${peopleList(names)} ${if (names.size == 1) "is" else "are"} free too" }) {
+        modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = "${peopleList(names)} too" }) {
         Box {
             names.take(3).forEachIndexed { i, name ->
                 Surface(shape = CircleShape, color = personColour(name), contentColor = subjectForeground(personColour(name)),
@@ -923,7 +921,7 @@ fun PeopleFree(names: List<String>, showText: Boolean = true) {
                 }
             }
         }
-        if (showText) Text(if (names.size == 1) "${names[0]} too" else "${names.size} too", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
+        if (showText) Text(if (names.size == 1) "${names[0]} too" else "${names.size} too", style = MaterialTheme.typography.labelMedium, color = textColour.takeOrElse { MaterialTheme.colorScheme.tertiary }, maxLines = 1)
     }
 }
 

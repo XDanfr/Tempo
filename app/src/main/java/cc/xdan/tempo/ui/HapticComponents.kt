@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -177,6 +178,13 @@ fun Surface(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean
     content: @Composable () -> Unit) {
     val haptics = rememberTempoHaptics()
     M3Surface({ haptics.press(); onClick() }, modifier, enabled, shape, color, contentColor, tonalElevation, shadowElevation, border, interactionSource, content)
+}
+
+/** A whole row that acts like a button, with the press haptic. */
+@Composable
+fun Modifier.hapticClickable(enabled: Boolean = true, role: Role? = null, onClick: () -> Unit): Modifier {
+    val haptics = rememberTempoHaptics()
+    return clickable(enabled = enabled, role = role) { haptics.press(); onClick() }
 }
 
 /** A whole row that toggles a switch or checkbox, with the matching toggle haptic. */

@@ -139,8 +139,35 @@ fun AchievementBadge(achievement: Achievement, unlocked: Boolean, modifier: Modi
 
 /** Something worth a notice at the top of the screen. */
 sealed interface Celebration {
-    data class Unlocked(val achievement: Achievement) : Celebration
+    /** [xpAfter] is your total XP once it's added, or null when XP is off. */
+    data class Unlocked(val achievement: Achievement, val xpAfter: Int? = null) : Celebration
     data class LevelUp(val level: Int) : Celebration
+    data class XpGain(val xpBefore: Int, val xpAfter: Int) : Celebration
+}
+
+/** Level, XP into it, and its goal for a total. */
+private fun levelOf(total: Int): Triple<Int, Int, Int> {
+    var level = 1; var remaining = total
+    while (remaining >= Progress.levelGoal(level)) { remaining -= Progress.levelGoal(level); level++ }
+    return Triple(level, remaining, Progress.levelGoal(level))
+}
+
+/** XP bar that fills from [from] to [to] with an ease-in, and how much is left to the next level. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun XpFill(from: Int, to: Int, modifier: Modifier = Modifier) {
+    val (level, into, goal) = levelOf(to)
+    val start = if (levelOf(from).first == level) levelOf(from).second else 0
+    val fill = remember(from, to) { Animatable(start.toFloat() / goal) }
+    LaunchedEffect(from, to) { delay(150); fill.animateTo(into.toFloat() / goal, tween(900, easing = EaseIn)) }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("+${to - from} XP", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text("Level $level", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        }
+        LinearWavyProgressIndicator(progress = { fill.value }, modifier = Modifier.fillMaxWidth(), waveSpeed = 0.dp)
+        Text("${goal - into} XP to level ${level + 1}", style = MaterialTheme.typography.labelSmall)
+    }
 }
 
 /**
@@ -158,10 +185,10 @@ fun AchievementNotices(queue: List<Celebration>, consumed: () -> Unit, modifier:
     val scope = rememberCoroutineScope()
     LaunchedEffect(current) {
         if (current == null) return@LaunchedEffect
-        delay(400); visible = true; haptics.celebrate()
+        delay(400); visible = true; if (current is Celebration.XpGain) haptics.confirm() else haptics.celebrate()
         if (current is Celebration.LevelUp) { delay(180); haptics.celebrate() }
         // Long enough for the slowest confetti to finish falling, unless swiped away.
-        kotlinx.coroutines.withTimeoutOrNull(if (current is Celebration.LevelUp) 5_600L else 4_600L) { snapshotFlow { dismissed }.first { it } }
+        kotlinx.coroutines.withTimeoutOrNull(when (current) { is Celebration.LevelUp -> 5_600L; is Celebration.XpGain -> 2_600L; else -> 4_600L }) { snapshotFlow { dismissed }.first { it } }
         visible = false
         delay(450); consumed()
     }
@@ -181,18 +208,27 @@ fun AchievementNotices(queue: List<Celebration>, consumed: () -> Unit, modifier:
             }
             .semantics { liveRegion = LiveRegionMode.Polite; customActions = listOf(CustomAccessibilityAction("Dismiss") { dismissed = true; true }) }
         when (shown) {
-            is Celebration.Unlocked -> Surface(shape = CircleShape, color = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer,
-                shadowElevation = 10.dp, border = androidx.compose.foundation.BorderStroke(1.5.dp, scheme.primary.copy(alpha = .6f)), modifier = swipe) {
-                Box {
-                    FallingConfetti(confetti, Modifier.matchParentSize())
-                    Row(Modifier.padding(start = 8.dp, end = 22.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically,
+            is Celebration.XpGain -> Surface(shape = RoundedCornerShape(28.dp), color = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer,
+                shadowElevation = 10.dp, border = androidx.compose.foundation.BorderStroke(1.5.dp, scheme.primary.copy(alpha = .6f)), modifier = swipe.width(280.dp)) {
+                XpFill(shown.xpBefore, shown.xpAfter, Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
+            }
+            is Celebration.Unlocked -> Surface(shape = RoundedCornerShape(36.dp), color = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer,
+                shadowElevation = 10.dp, border = androidx.compose.foundation.BorderStroke(1.5.dp, scheme.primary.copy(alpha = .6f)), modifier = swipe.widthIn(min = 280.dp)) {
+                // The achievement first, then it fades into the XP it added.
+                var showXp by remember(shown) { mutableStateOf(false) }
+                LaunchedEffect(shown) { if (shown.xpAfter != null) { delay(2_000); showXp = true } }
+                Box(Modifier.animateContentSize(TempoMotion.spatial())) {
+                    FallingConfetti(confetti, Modifier.matchParentSize(), corner = 36.dp)
+                    Crossfade(showXp, label = "achievement xp") { xp -> if (xp && shown.xpAfter != null)
+                        XpFill(shown.xpAfter - Achievements.XP, shown.xpAfter, Modifier.width(260.dp).padding(horizontal = 20.dp, vertical = 12.dp))
+                    else Row(Modifier.padding(start = 8.dp, end = 22.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         AchievementBadge(shown.achievement, true, size = 44.dp)
                         Column {
                             Text("Achievement unlocked · +${Achievements.XP} XP", style = MaterialTheme.typography.labelMedium, color = scheme.primary)
                             Text(shown.achievement.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         }
-                    }
+                    } }
                 }
             }
             // Bigger and louder: a card with a spinning, pulsing level badge and a denser, longer fall.
@@ -234,13 +270,23 @@ fun rememberAchievementXp(): Int {
 
 /** Tracks the collection and surfaces newly unlocked achievements and level-ups. */
 @Composable
-fun rememberAchievementQueue(collection: TimetableCollection?, celebrate: Boolean, level: Int?): Pair<List<Celebration>, () -> Unit> {
+fun rememberAchievementQueue(collection: TimetableCollection?, celebrate: Boolean, level: Int?, checkInXp: Int? = null, scope: String? = null): Pair<List<Celebration>, () -> Unit> {
     val context = LocalContext.current
     var queue by remember { mutableStateOf(emptyList<Celebration>()) }
     var firstRun by remember { mutableStateOf(true) }
     var events by remember { mutableIntStateOf(0) }
-    var lastLevel by remember { mutableStateOf<Int?>(null) }
-    LaunchedEffect(level) {
+    var lastLevel by remember(scope) { mutableStateOf<Int?>(null) }
+    var lastCheckInXp by remember(scope) { mutableStateOf<Int?>(null) }
+    // Check-ins: show the XP filling up rather than a floating number.
+    LaunchedEffect(checkInXp, scope) {
+        val previous = lastCheckInXp
+        if (checkInXp != null && previous != null && checkInXp > previous && celebrate) {
+            val bonus = Achievements.xp(context)
+            queue = queue + Celebration.XpGain(previous + bonus, checkInXp + bonus)
+        }
+        lastCheckInXp = checkInXp
+    }
+    LaunchedEffect(level, scope) {
         val previous = lastLevel
         if (level != null && previous != null && level > previous && celebrate) queue = queue + Celebration.LevelUp(level)
         lastLevel = level
@@ -261,7 +307,8 @@ fun rememberAchievementQueue(collection: TimetableCollection?, celebrate: Boolea
         val alreadyHad = firstRun && context.getSharedPreferences("achievements", Context.MODE_PRIVATE).getBoolean("seeded", false).not()
         if (firstRun) context.getSharedPreferences("achievements", Context.MODE_PRIVATE).edit().putBoolean("seeded", true).apply()
         firstRun = false
-        if (celebrate && !alreadyHad) queue = queue + fresh.map { Celebration.Unlocked(it) }
+        val base = checkInXp?.let { it + Achievements.xp(context) - fresh.size * Achievements.XP }
+        if (celebrate && !alreadyHad) queue = queue + fresh.mapIndexed { i, a -> Celebration.Unlocked(a, base?.let { it + (i + 1) * Achievements.XP }) }
     }
     return queue to { queue = queue.drop(1) }
 }
