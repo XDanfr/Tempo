@@ -13,6 +13,7 @@
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="tempo.xdan.cc" android:pathPrefix="/t/"/>
+                <data android:pathPrefix="/f/"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/>

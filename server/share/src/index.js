@@ -242,6 +242,9 @@ async function me(request, env, part) {
       env.DB.prepare("UPDATE shares SET body = NULL, size = 0, deleted_at = ?, account_id = NULL WHERE account_id = ? AND deleted_at IS NULL").bind(now, id),
       env.DB.prepare("DELETE FROM passkeys WHERE account_id = ?").bind(id),
       env.DB.prepare("DELETE FROM vaults WHERE account_id = ?").bind(id),
+      env.DB.prepare("DELETE FROM friendships WHERE account_id = ? OR friend_id = ?").bind(id, id),
+      env.DB.prepare("DELETE FROM friend_requests WHERE from_account = ? OR to_account = ?").bind(id, id),
+      env.DB.prepare("DELETE FROM invites WHERE account_id = ?").bind(id),
       env.DB.prepare("DELETE FROM sessions WHERE account_id = ?").bind(id),
       env.DB.prepare("DELETE FROM accounts WHERE id = ?").bind(id),
     ]);
@@ -250,8 +253,71 @@ async function me(request, env, part) {
   return problem(405, "Method not allowed");
 }
 
+const INVITE_LIFETIME = 14 * DAY;
+const MAX_FRIENDS = 200;
+
+async function friends(request, env, parts) {
+  const me = await account(env, request);
+  if (!me) return problem(401, "Signed out");
+  const now = Date.now();
+  const [, , step, target] = parts; // ["api", "friends", step?, id?]
+  if (!step && request.method === "GET") {
+    const friendRows = await env.DB.prepare("SELECT a.id, a.profile, a.profile_rev FROM friendships f JOIN accounts a ON a.id = f.friend_id WHERE f.account_id = ?").bind(me).all();
+    const incoming = await env.DB.prepare("SELECT r.id, r.from_account, r.payload, a.profile FROM friend_requests r JOIN accounts a ON a.id = r.from_account WHERE r.to_account = ?").bind(me).all();
+    const outgoing = await env.DB.prepare("SELECT id, to_account FROM friend_requests WHERE from_account = ?").bind(me).all();
+    const blob = (b) => (b ? b64url(new Uint8Array(b)) : null);
+    return json({
+      friends: friendRows.results.map((r) => ({ accountId: r.id, profile: blob(r.profile), profileRev: r.profile_rev })),
+      incoming: incoming.results.map((r) => ({ id: r.id, accountId: r.from_account, payload: r.payload, profile: blob(r.profile) })),
+      outgoing: outgoing.results.map((r) => ({ id: r.id, accountId: r.to_account })),
+    });
+  }
+  if (step === "invite" && request.method === "POST") {
+    const id = random(16);
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM invites WHERE expires_at < ?").bind(now),
+      env.DB.prepare("INSERT INTO invites (id, account_id, expires_at) VALUES (?, ?, ?)").bind(id, me, now + INVITE_LIFETIME),
+    ]);
+    return json({ inviteId: id, expiresAt: now + INVITE_LIFETIME }, 201);
+  }
+  if (step === "request" && request.method === "POST") {
+    const body = await request.json().catch(() => ({}));
+    if (typeof body.payload !== "string" || body.payload.length > 300) return problem(400, "Bad request");
+    const invite = await env.DB.prepare("SELECT account_id, expires_at FROM invites WHERE id = ?").bind(body.inviteId || "").first();
+    if (!invite || invite.expires_at < now) return problem(404, "This invite has expired. Ask for a new one.");
+    if (invite.account_id === me) return problem(400, "That's your own invite.");
+    const already = await env.DB.prepare("SELECT 1 FROM friendships WHERE account_id = ? AND friend_id = ?").bind(me, invite.account_id).first();
+    if (already) return json({ status: "friends", accountId: invite.account_id });
+    const count = await env.DB.prepare("SELECT COUNT(*) AS n FROM friendships WHERE account_id = ?").bind(invite.account_id).first();
+    if (count.n >= MAX_FRIENDS) return problem(409, "They have the most friends Tempo allows.");
+    await env.DB.prepare("INSERT OR REPLACE INTO friend_requests (id, from_account, to_account, payload, created_at) VALUES (?, ?, ?, ?, ?)")
+      .bind(random(16), me, invite.account_id, body.payload, now).run();
+    return json({ status: "requested", accountId: invite.account_id }, 201);
+  }
+  if (step === "accept" && request.method === "POST" && target) {
+    const row = await env.DB.prepare("SELECT from_account FROM friend_requests WHERE id = ? AND to_account = ?").bind(target, me).first();
+    if (!row) return problem(404, "That request is no longer there.");
+    await env.DB.batch([
+      env.DB.prepare("INSERT OR IGNORE INTO friendships (account_id, friend_id, created_at) VALUES (?, ?, ?)").bind(me, row.from_account, now),
+      env.DB.prepare("INSERT OR IGNORE INTO friendships (account_id, friend_id, created_at) VALUES (?, ?, ?)").bind(row.from_account, me, now),
+      env.DB.prepare("DELETE FROM friend_requests WHERE (from_account = ? AND to_account = ?) OR (from_account = ? AND to_account = ?)").bind(row.from_account, me, me, row.from_account),
+    ]);
+    return json({ accountId: row.from_account });
+  }
+  if (step === "remove" && request.method === "POST" && target) {
+    // Unfriend, decline or cancel: removes friendship and requests between the two accounts, both ways.
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM friendships WHERE (account_id = ? AND friend_id = ?) OR (account_id = ? AND friend_id = ?)").bind(me, target, target, me),
+      env.DB.prepare("DELETE FROM friend_requests WHERE (from_account = ? AND to_account = ?) OR (from_account = ? AND to_account = ?)").bind(me, target, target, me),
+    ]);
+    return new Response(null, { status: 204 });
+  }
+  return problem(405, "Method not allowed");
+}
+
 async function api(request, env, url) {
   const parts = url.pathname.split("/").filter(Boolean); // ["api", "t", id?]
+  if (parts[1] === "friends") return friends(request, env, parts);
   if (parts[1] === "auth") return auth(request, env, parts[2]);
   if (parts[1] === "me") return me(request, env, parts[2]);
   const id = parts[2];
@@ -377,6 +443,7 @@ export default {
     if (view) return new Response(viewer(view[1]), { headers: { "content-type": "text/html; charset=utf-8",
       "content-security-policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src https://xdan.cc; connect-src 'self'; base-uri 'none'; form-action 'none'",
       "referrer-policy": "no-referrer", "x-content-type-options": "nosniff" } });
+    if (/^\/f\/[A-Za-z0-9_-]{22}$/.test(url.pathname)) return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Tempo friend invite</title><body style="font-family:system-ui;background:#0b0f0a;color:#e2e3dc;display:grid;place-items:center;min-height:90vh;text-align:center;padding:24px"><div><h1 style="font-weight:600">You're invited to be friends on Tempo</h1><p>Open this link on your phone with Tempo installed.</p><p><a style="color:#b7f397" href="https://xdan.cc/tempo">Get Tempo</a></p></div>`, { headers: { "content-type": "text/html; charset=utf-8", "referrer-policy": "no-referrer", "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'" } });
     if (url.pathname === "/") return Response.redirect("https://xdan.cc/tempo", 302);
     return new Response("Tempo shares timetables privately. Get Tempo at https://xdan.cc/tempo", { status: 404 });
   },

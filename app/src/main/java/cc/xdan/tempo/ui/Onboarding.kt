@@ -170,6 +170,8 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
                                 update { it.copy(purpose = purpose, periods = if (purpose == TimetablePurpose.WORK || purpose == TimetablePurpose.PERSONAL) emptyList() else it.periods) }
                             }
                         }
+                        // Importing lives here rather than on the first screen, so the account choice comes first.
+                        TextButton(onClick = importTimetable) { Icon(Icons.Outlined.FileOpen, null); Spacer(Modifier.width(8.dp)); Text("Import a Tempo timetable instead") }
                     }
                     Step.DAYS -> {
                         Question("Name it and pick your days", "Each day's hours can be adjusted later.")
@@ -373,7 +375,6 @@ private fun Welcome(importTimetable: () -> Unit, manageTimetables: (() -> Unit)?
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
-    TextButton(onClick = importTimetable) { Icon(Icons.Outlined.FileOpen, null); Spacer(Modifier.width(8.dp)); Text("Import a Tempo timetable") }
     manageTimetables?.let { TextButton(onClick = it) { Text("Choose another timetable") } }
 }
 

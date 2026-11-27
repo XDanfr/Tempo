@@ -31,11 +31,15 @@ import javax.crypto.spec.PBEKeySpec
  */
 data class SignedIn(val accountId: String, val session: String, val vaultKey: String?)
 
-/** The profile friends will see, stored on the server only as ciphertext. */
-data class Profile(val name: String, val level: Int, val achievements: Int) {
-    fun toJson(): ByteArray = JSONObject().put("name", name.take(40)).put("level", level).put("achievements", achievements).toString().toByteArray()
+/** The profile friends see, stored on the server only as ciphertext. [link] is the timetable shared with friends. */
+data class Profile(val name: String, val level: Int, val achievements: Int, val link: cc.xdan.tempo.data.ShareLink? = null) {
+    fun toJson(): ByteArray = JSONObject().put("name", name.take(40)).put("level", level).put("achievements", achievements)
+        .apply { link?.let { put("link", JSONObject().put("id", it.id).put("key", it.key)) } }.toString().toByteArray()
     companion object {
-        fun fromJson(bytes: ByteArray) = JSONObject(String(bytes)).let { Profile(it.optString("name"), it.optInt("level", 1), it.optInt("achievements")) }
+        fun fromJson(bytes: ByteArray) = JSONObject(String(bytes)).let { j ->
+            Profile(j.optString("name"), j.optInt("level", 1), j.optInt("achievements"),
+                j.optJSONObject("link")?.let { cc.xdan.tempo.data.ShareLink(it.getString("id"), it.getString("key")) })
+        }
     }
 }
 
@@ -210,8 +214,11 @@ object Accounts {
         account.copy(vaultKey = unwrap(wrapped, recoveryKey(code, account.accountId)))
     } catch (e: Exception) { throw AccountException("That recovery code doesn't match. Check it and try again.") }
 
+    /** Key for the profile, shared with friends. Derived from the vault key, which itself is never shared. */
+    fun profileKey(account: SignedIn): String? = account.vaultKey?.let { b64.encodeToString(MessageDigest.getInstance("SHA-256").digest((it + "tempo-profile").toByteArray())) }
+
     suspend fun saveProfile(account: SignedIn, profile: Profile) {
-        val key = account.vaultKey ?: return
+        val key = profileKey(account) ?: return
         val (code, body) = call("PUT", "/me/profile", bytes = ShareCrypto.seal(profile.toJson(), key), session = account.session)
         if (code != 204) fail(code, String(body))
     }
@@ -237,6 +244,58 @@ object Accounts {
         if (code == 412) return null
         if (code != 200) fail(code, String(response))
         return JSONObject(String(response)).getLong("rev")
+    }
+
+    // ---- Friends ----
+    data class Person(val accountId: String, val profile: Profile?)
+    data class Request(val id: String, val accountId: String, val profileKey: String?, val profile: Profile?)
+    data class Friends(val friends: List<Person>, val incoming: List<Request>, val outgoing: Set<String>)
+
+    private fun openProfile(blob: String?, key: String?): Profile? =
+        if (blob == null || key == null || blob == "null") null else runCatching { Profile.fromJson(ShareCrypto.open(unb64.decode(blob), key)) }.getOrNull()
+
+    /** A new invite link; the fragment carries this account's profile key, so only people you send it to can read your profile. */
+    suspend fun invite(account: SignedIn): String {
+        val key = profileKey(account) ?: throw AccountException("Unlock cloud saving first.")
+        val (code, body) = callJson("POST", "/friends/invite", JSONObject(), account.session)
+        if (code != 201) fail(code, body)
+        return "https://${ShareLink.HOST}/f/${JSONObject(body).getString("inviteId")}#k=$key"
+    }
+
+    /** Sends a friend request from an invite link. Returns the inviter's account ID and profile key. */
+    suspend fun request(account: SignedIn, inviteId: String, theirKey: String): String {
+        val mine = profileKey(account) ?: throw AccountException("Unlock cloud saving first.")
+        val payload = b64.encodeToString(ShareCrypto.seal(mine.toByteArray(), theirKey))
+        val (code, body) = callJson("POST", "/friends/request", JSONObject().put("inviteId", inviteId).put("payload", payload), account.session)
+        if (code != 200 && code != 201) fail(code, body)
+        return JSONObject(body).getString("accountId")
+    }
+
+    /** Friends and requests, with profiles decrypted using the keys this device knows. */
+    suspend fun friends(account: SignedIn, keys: Map<String, String>): Friends {
+        val mine = profileKey(account)
+        val (code, body) = callJson("GET", "/friends", session = account.session)
+        if (code != 200) fail(code, body)
+        val json = JSONObject(body)
+        val friends = json.getJSONArray("friends").let { a -> (0 until a.length()).map { a.getJSONObject(it) } }
+            .map { Person(it.getString("accountId"), openProfile(it.optString("profile"), keys[it.getString("accountId")])) }
+        val incoming = json.getJSONArray("incoming").let { a -> (0 until a.length()).map { a.getJSONObject(it) } }.map { r ->
+            val theirKey = mine?.let { k -> runCatching { String(ShareCrypto.open(unb64.decode(r.getString("payload")), k)) }.getOrNull() }
+            Request(r.getString("id"), r.getString("accountId"), theirKey, openProfile(r.optString("profile"), theirKey))
+        }
+        val outgoing = json.getJSONArray("outgoing").let { a -> (0 until a.length()).map { a.getJSONObject(it).getString("accountId") }.toSet() }
+        return Friends(friends, incoming, outgoing)
+    }
+
+    suspend fun accept(account: SignedIn, requestId: String) {
+        val (code, body) = callJson("POST", "/friends/accept/$requestId", JSONObject(), account.session)
+        if (code != 200) fail(code, body)
+    }
+
+    /** Unfriend, decline or cancel. */
+    suspend fun removeFriend(account: SignedIn, accountId: String) {
+        val (code, body) = callJson("POST", "/friends/remove/$accountId", JSONObject(), account.session)
+        if (code != 204) fail(code, body)
     }
 
     /** Ends this device's session. */

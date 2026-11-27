@@ -54,3 +54,25 @@ CREATE TABLE IF NOT EXISTS vaults (
   body BLOB NOT NULL,           -- AES-256-GCM ciphertext of the collection
   updated_at INTEGER NOT NULL
 );
+
+-- Friends. Invites are links whose #fragment carries the inviter's profile key; requests carry the requester's
+-- profile key encrypted to the inviter. The server sees only account IDs and ciphertext.
+CREATE TABLE IF NOT EXISTS invites (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS friend_requests (
+  id TEXT PRIMARY KEY,
+  from_account TEXT NOT NULL,
+  to_account TEXT NOT NULL,
+  payload TEXT NOT NULL,        -- requester's profile key, encrypted with the inviter's profile key
+  created_at INTEGER NOT NULL,
+  UNIQUE (from_account, to_account)
+);
+CREATE TABLE IF NOT EXISTS friendships (
+  account_id TEXT NOT NULL,
+  friend_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (account_id, friend_id)
+);

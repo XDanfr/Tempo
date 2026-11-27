@@ -69,6 +69,7 @@ object CloudSync {
                     else -> merge(remote, local, preferLocal = true)
                 }
             }
+            root.optJSONObject("friends")?.let { f -> FriendStore.importRaw(context, f.keys().asSequence().associateWith { f.getString(it) }) }
             root.optJSONObject("shares")?.let { shares -> ShareStore.importRaw(context, shares.keys().asSequence().associateWith { shares.getString(it) }) }
             rev = remoteRev
             prefs.edit().putLong("rev", rev).apply()
@@ -82,12 +83,15 @@ object CloudSync {
             if (current.timetables.none { it.timetable.onboarded }) return@withLock changed
             val encoded = TimetableCollectionCodec.encode(current)
             val currentHash = hash(encoded)
-            if (currentHash == prefs.getString("hash", null)) { prefs.edit().putLong("syncedAt", System.currentTimeMillis()).apply(); return@withLock changed }
+            // Links and friends travel in the same payload; a change to either also needs saving.
+            val extrasHash = hash(ShareStore.exportRaw(context).toSortedMap().toString() + FriendStore.exportRaw(context).toSortedMap().toString())
+            if (currentHash == prefs.getString("hash", null) && extrasHash == prefs.getString("extras", null)) { prefs.edit().putLong("syncedAt", System.currentTimeMillis()).apply(); return@withLock changed }
             val payload = JSONObject().put("format", FORMAT).put("formatVersion", 1).put("collection", encoded)
-                .put("shares", JSONObject(ShareStore.exportRaw(context) as Map<*, *>)).toString().toByteArray()
+                .put("shares", JSONObject(ShareStore.exportRaw(context) as Map<*, *>))
+                .put("friends", JSONObject(FriendStore.exportRaw(context) as Map<*, *>)).toString().toByteArray()
             val newRev = Accounts.putVault(account, rev, ShareCrypto.seal(payload, key))
             if (newRev != null) {
-                prefs.edit().putLong("rev", newRev).putString("hash", currentHash).putLong("syncedAt", System.currentTimeMillis()).apply()
+                prefs.edit().putLong("rev", newRev).putString("hash", currentHash).putString("extras", extrasHash).putLong("syncedAt", System.currentTimeMillis()).apply()
                 return@withLock changed
             }
             // Another device saved first: bring its changes in, then try once more.

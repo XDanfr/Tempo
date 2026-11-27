@@ -50,7 +50,7 @@ fun ProfileAvatar(name: String, size: androidx.compose.ui.unit.Dp, spin: Boolean
 /** Profile: your name, progress, achievements and settings. Everything here stays on this device. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun ProfileScreen(timetable: Timetable, profileName: String, setProfileName: (String) -> Unit, openSettings: () -> Unit) {
+fun ProfileScreen(timetable: Timetable, profileName: String, setProfileName: (String) -> Unit, collection: TimetableCollection? = null, openSettings: () -> Unit) {
     val context = LocalContext.current
     val unlocked = remember(timetable) { Achievements.unlocked(context) }
     var opened by remember { mutableStateOf<Achievement?>(null) }
@@ -85,7 +85,7 @@ fun ProfileScreen(timetable: Timetable, profileName: String, setProfileName: (St
                 }
             }
         }
-        item(span = { GridItemSpan(maxLineSpan) }) { AccountCard(profileName, timetable, unlocked.size) }
+        item(span = { GridItemSpan(maxLineSpan) }) { AccountCard(profileName, timetable, unlocked.size, collection) }
         item(span = { GridItemSpan(maxLineSpan) }) {
             Surface(onClick = openSettings, shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.padding(top = 8.dp)) {
                 Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -148,20 +148,23 @@ fun achievementProgress(achievement: Achievement, timetable: Timetable): Pair<In
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun AccountCard(profileName: String, timetable: Timetable, achievements: Int) {
+private fun AccountCard(profileName: String, timetable: Timetable, achievements: Int, collection: TimetableCollection?) {
     val context = LocalContext.current
     val flow = rememberAccountFlow(profileName)
     val account = flow.account
     var confirmDelete by remember { mutableStateOf(false) }
     val level = remember(timetable) { if (timetable.progress == ProgressMode.STREAKS) Progress.summary(timetable, LocalDate.now()).level else 1 }
-    // Keep the encrypted profile current while signed in.
-    LaunchedEffect(account, profileName, level, achievements) {
+    var profileVersion by remember { mutableIntStateOf(0) }
+    // Keep the encrypted profile current while signed in (name, level, achievements and the timetable friends see).
+    LaunchedEffect(account, profileName, level, achievements, profileVersion) {
         val signedIn = account ?: return@LaunchedEffect
-        kotlinx.coroutines.delay(1_500)
-        runCatching { cc.xdan.tempo.account.Accounts.saveProfile(signedIn, cc.xdan.tempo.account.Profile(profileName, level, achievements)) }
+        kotlinx.coroutines.delay(1_000)
+        val link = cc.xdan.tempo.account.FriendStore.sharedTimetable(context)?.let { cc.xdan.tempo.share.ShareStore.owned(context, it)?.link }
+        runCatching { cc.xdan.tempo.account.Accounts.saveProfile(signedIn, cc.xdan.tempo.account.Profile(profileName, level, achievements, link)) }
             .onFailure { if (it.message == "Signed out") { cc.xdan.tempo.account.AccountStore.clear(context); flow.account = null } }
     }
     val synced = remember(account, timetable) { cc.xdan.tempo.account.CloudSync.lastSynced(context) }
+    Column {
     Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.padding(top = 8.dp)) {
         Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -193,6 +196,8 @@ private fun AccountCard(profileName: String, timetable: Timetable, achievements:
                 }
             }
         }
+    }
+    if (account?.vaultKey != null) FriendsCard(account, collection, profileName) { profileVersion++ }
     }
     if (confirmDelete) EditorSheet("Delete your account?", { confirmDelete = false }) {
         Text("This removes your profile, your saved timetables in the cloud and every link your account owns, straight away. Friends' copies of your timetables disappear the next time they open Tempo. " +

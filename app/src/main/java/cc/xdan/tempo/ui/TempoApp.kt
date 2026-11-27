@@ -191,7 +191,7 @@ fun TempoApp(model: TempoViewModel) {
                                 { day -> day?.let { selectedDate = it.toString() }; destination = Destination.SCHEDULE }, { destination = Destination.WEEK },
                                 { destination = Destination.PROFILE }, { showTimetables = true },
                                 editSession, { time -> editFree(now.toLocalDate(), time) }, editPause, model::update)
-                            Destination.PROFILE -> ProfileScreen(timetable, state.collection?.profileName ?: "", model::setProfileName) { destination = Destination.SETTINGS }
+                            Destination.PROFILE -> ProfileScreen(timetable, state.collection?.profileName ?: "", model::setProfileName, state.collection) { destination = Destination.SETTINGS }
                             Destination.SETTINGS -> SettingsScreen(timetable, model::update, state.collection?.profileName ?: "", model::setProfileName,
                                 progress = state.collection?.progressMode ?: ProgressMode.CELEBRATIONS, setProgress = model::setProgress,
                                 achievements = state.collection?.achievements != false, setAchievements = model::setAchievements, openUpdate = { forceUpdatePrompt = true },

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Friends**: signed in, invite friends from your profile with a link. Once they accept, you see each other's name, level and achievements, and you can let friends see your timetable (without rooms or notes): it appears for them as a person, with shared frees, and stays up to date. Profiles are encrypted, and only friends have the key. Remove a friend at any time.
+- The first screen now offers **Sign in**, **Create account** or **Continue without an account**. Importing a timetable file moved to the next screen.
 - **Cloud saving**: signed in, your timetables are saved to your account and come back on any phone you sign in on. They're encrypted on your phone with a key unlocked by your passkey, so Tempo's server can't read them. Share links you made keep working on your new phone. Accounts are now offered at the start of setup; signing in with saved timetables skips setup.
 - **Tempo accounts (preview)**: optional sign-in with a passkey, from your profile. No password, email or phone number. Your profile is encrypted on your phone before it's saved, links you share while signed in belong to your account, and Delete account removes everything straight away.
 
