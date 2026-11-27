@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Last week**: from Monday to Wednesday, Home shows how many sessions you checked in to last week, the XP you earned and your best day. Hide it once you've seen it.
+- The streak chip at the top is now just your flame and streak, leaving room for the timetable name. Today's XP is on Home and in the progress sheet.
+- Fixed opening Tempo from a widget showing a share-link error.
 - **Redesigned Settings**: a clean list in two groups, App (Appearance, Progress, Updates) and the open timetable (what it's for, dates and weeks, day hours, periods), with each opening its own page.
 - Appearance always changes your own theme, even while you're viewing someone else's timetable.
 - **Timetables added from a link are view-only**: they follow their owner's changes, so there's no Add button and sessions, breaks and subjects can't be edited. Timetables imported from a file, or as your own, stay editable.

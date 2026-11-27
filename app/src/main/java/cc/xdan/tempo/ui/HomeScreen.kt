@@ -74,8 +74,43 @@ fun HomeScreen(timetable: Timetable, now: LocalDateTime, profileName: String, pe
         item(key = "now") { NowCard(timetable, blocks, today, edit, editFree, editBreak, { openSchedule(it) }, shared) }
         item(key = "today") { RestOfToday(timetable, blocks, minute) { openSchedule(today) } }
         item(key = "frees") { FreesCard(timetable, upcomingFrees, people.isNotEmpty(), today, openWeek, openTimetables) }
+        if (timetable.progress == ProgressMode.STREAKS && today.dayOfWeek.value <= 3) item(key = "recap") { WeekRecapCard(timetable, today) }
         if (timetable.progress == ProgressMode.STREAKS) item(key = "progress") { ProgressCard(timetable, today, openProfile) }
         item(key = "achievements") { AchievementsCard(achievementsUnlocked, openProfile) }
+    }
+}
+
+/** Last week in three numbers, shown Monday to Wednesday until hidden. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun WeekRecapCard(timetable: Timetable, today: LocalDate) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val monday = today.with(java.time.DayOfWeek.MONDAY).minusWeeks(1)
+    val prefs = remember { context.getSharedPreferences("home", android.content.Context.MODE_PRIVATE) }
+    var hidden by remember(monday) { mutableStateOf(prefs.getString("recapHidden", null) == monday.toString()) }
+    val recap = remember(timetable, monday) { Progress.weekRecap(timetable, monday) }
+    androidx.compose.animation.AnimatedVisibility(!hidden && recap.scheduled > 0, exit = androidx.compose.animation.shrinkVertically(TempoMotion.spatial()) + androidx.compose.animation.fadeOut()) {
+        Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Last week", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { prefs.edit().putString("recapHidden", monday.toString()).apply(); hidden = true }) { Text("Hide") }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("${recap.attended}/${recap.scheduled}" to "checked in", "+${recap.xp}" to "XP",
+                        (recap.bestDay?.let { weekdayNames[it.dayOfWeek.value - 1].take(3) } ?: "–") to "best day").forEach { (value, label) ->
+                        Surface(Modifier.weight(1f), shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = .5f)) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, maxLines = 1)
+                                Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                            }
+                        }
+                    }
+                }
+                LinearWavyProgressIndicator(progress = { recap.attended.toFloat() / recap.scheduled }, modifier = Modifier.fillMaxWidth(), waveSpeed = 0.dp,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer, trackColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = .2f))
+            }
+        }
     }
 }
 

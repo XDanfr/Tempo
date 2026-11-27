@@ -804,14 +804,6 @@ fun StreakChip(summary: Progress.Summary, open: () -> Unit) {
             AnimatedContent(summary.streak, label = "streak", transitionSpec = { (slideInVertically { it } + fadeIn()) togetherWith (slideOutVertically { -it } + fadeOut()) }) {
                 Text(it.toString(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             }
-            // Today's progress rides along inside the chip.
-            AnimatedVisibility(summary.xpToday > 0, enter = expandHorizontally(TempoMotion.spatial()) + fadeIn(), exit = shrinkHorizontally(TempoMotion.spatial()) + fadeOut()) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.onTertiary, modifier = Modifier.padding(start = 4.dp)) {
-                    AnimatedContent(summary.xpToday, label = "xp today", transitionSpec = { (slideInVertically { it } + fadeIn()) togetherWith (slideOutVertically { -it } + fadeOut()) }) {
-                        Text("+$it XP", Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
         }
     }
 }

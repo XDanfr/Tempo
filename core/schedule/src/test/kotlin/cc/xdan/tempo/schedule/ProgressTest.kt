@@ -45,6 +45,13 @@ class ProgressTest {
         assertEquals(2f, Progress.multiplierFor(25), 0.001f)
         assertEquals(1f, Progress.multiplierFor(0), 0.001f)
     }
+    @Test fun weekRecapCountsCheckInsAndXp() {
+        val recap = Progress.weekRecap(table.copy(checkIns = checks(0, 1)), monday)
+        assertEquals(2, recap.attended)
+        assertTrue(recap.scheduled >= 2)
+        assertEquals(Progress.summary(table.copy(checkIns = checks(0, 1)), monday.plusDays(6)).xp, recap.xp)
+        assertNotNull(recap.bestDay)
+    }
     @Test fun bonusXpCountsTowardsLevels() {
         val summary = Progress.summary(table.copy(bonusXp = 100), monday)
         assertEquals(100, summary.xp); assertEquals(2, summary.level)

@@ -92,4 +92,15 @@ object Progress {
         return Summary(xp, level, remaining, levelGoal(level), streak, maxOf(best, streak), paused,
             byDate[today.toString()].orEmpty().size, xpToday, if (dates.isEmpty()) 1f else todayMultiplier)
     }
+
+    /** A finished week at a glance: check-ins out of scheduled sessions, XP earned, and the day with the most check-ins. */
+    data class WeekRecap(val attended: Int, val scheduled: Int, val xp: Int, val bestDay: LocalDate?)
+
+    fun weekRecap(timetable: Timetable, monday: LocalDate): WeekRecap {
+        val days = (0L..6L).map { monday.plusDays(it) }
+        val lessons = days.associateWith { day -> ScheduleResolver.resolve(timetable, day).filterIsInstance<ScheduleBlock.Lesson>().map { it.session.id }.toSet() }
+        val checked = days.associateWith { day -> timetable.checkIns.count { it.date == day.toString() && it.sessionId in lessons.getValue(day) } }
+        val xp = summary(timetable.copy(bonusXp = 0), days.last()).xp - summary(timetable.copy(bonusXp = 0), monday.minusDays(1)).xp
+        return WeekRecap(checked.values.sum(), lessons.values.sumOf { it.size }, xp, checked.filterValues { it > 0 }.maxByOrNull { it.value }?.key)
+    }
 }
