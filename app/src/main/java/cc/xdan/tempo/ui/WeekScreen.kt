@@ -129,8 +129,7 @@ private fun WeekBody(timetable: Timetable, days: List<WeekDay>, now: LocalDateTi
                 val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                 FilterChip(ahead == value, { ahead = value }, label = { Text(label) }, modifier = squishWeight(press), interactionSource = press)
             }
-        } else Text(if (past) "This week has passed, so these are its full totals." else "Everything here is still ahead.",
-            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         if (timetable.progress == ProgressMode.STREAKS) WeekXp(timetable, days, now.toLocalDate())
         StatTiles(stats, timetable.sessionWord)
         var hidden by rememberSaveable { mutableStateOf(emptyList<String>()) }

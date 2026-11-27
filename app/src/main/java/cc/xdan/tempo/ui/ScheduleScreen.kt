@@ -87,7 +87,8 @@ fun ScheduleScreen(timetable: Timetable, now: LocalDateTime, date: LocalDate, se
     val anchor = remember { today }
     fun pageOf(day: LocalDate) = (CentrePage + ChronoUnit.DAYS.between(anchor, day)).toInt().coerceIn(0, DayPages - 1)
     fun dateOf(page: Int): LocalDate = anchor.plusDays((page - CentrePage).toLong())
-    val pager = rememberPagerState(initialPage = pageOf(date)) { DayPages }
+    // Not saved across visits: a restored page would override the date you just opened (e.g. from a shared free).
+    val pager = remember { androidx.compose.foundation.pager.PagerState(currentPage = pageOf(date)) { DayPages } }
     val haptics = rememberTempoHaptics()
     val latestSelect by rememberUpdatedState(selectDate)
     val latestDate by rememberUpdatedState(date)
@@ -830,12 +831,14 @@ fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit, f
                 }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("${summary.xp} XP", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("${summary.xp} XP", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    StreakBonusTag(summary.multiplier)
+                }
                 val fraction by animateFloatAsState(summary.levelXp.toFloat() / summary.levelGoal, TempoMotion.spatial(), label = "level")
                 // Still waves: the bar only moves when XP actually changes.
                 LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth(), waveSpeed = 0.dp)
-                Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}" +
-                    (if (summary.multiplier > 1f) " · ×${"%.1f".format(summary.multiplier)} streak bonus" else ""), style = MaterialTheme.typography.bodySmall,
+                Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -859,18 +862,47 @@ fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit, f
             } else FilledTonalButton(onClick = { freezeToday(true) }, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Outlined.AcUnit, null); Spacer(Modifier.width(8.dp)); Text("Freeze today")
             }
-            Text(if (frozenToday) "Today won't count against your streak or bonus." else "Off sick or can't make it? Freezing keeps your streak and bonus safe.",
+            if (frozenToday) Text("Today won't count against your streak or bonus.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (summary.paused) Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
             Text("Your streak is paused after a missed day. Check in on your next ${timetable.sessionWord} day to keep it going.", Modifier.padding(14.dp))
         }
         Text("How it works", style = MaterialTheme.typography.titleMedium)
-        Text("Tap the check on a ${timetable.sessionWord} you attended to earn ${Progress.XP_PER_CHECK_IN} XP, plus ${Progress.FULL_DAY_BONUS} for checking in to a whole day. " +
-            "Each streak day adds 10% more XP, up to double at ${Progress.MAX_BONUS_DAYS} days; missing a day resets the bonus unless you freeze it. " +
-            "Streaks count days that have ${timetable.sessionWord}s, so weekends and holidays never break them, and one missed day only pauses it. " +
-            "Levels are just for fun and never lock anything. Turn this off in Settings › Appearance › Celebrations.",
-            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+            Column(Modifier.padding(vertical = 6.dp)) {
+                listOf(
+                    Icons.Outlined.CheckCircle to ("Check in" to "+${Progress.XP_PER_CHECK_IN} XP per ${timetable.sessionWord}, +${Progress.FULL_DAY_BONUS} for a full day"),
+                    Icons.Outlined.LocalFireDepartment to ("Streaks" to "Only days with ${timetable.sessionWord}s count. One miss pauses it"),
+                    Icons.Outlined.Bolt to ("Streak bonus" to "+10% XP a day, up to ×2. A miss resets it"),
+                    Icons.Outlined.AcUnit to ("Freeze" to "Ill or away? Freeze the day to keep both"),
+                    Icons.Outlined.MilitaryTech to ("Levels" to "Just for fun. They never lock anything"),
+                ).forEach { (icon, text) ->
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Box(Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
+                            Icon(icon, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text(text.first, style = MaterialTheme.typography.titleSmall)
+                            Text(text.second, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** "×1.3" pill for the current streak bonus; nothing when there's no bonus. */
+@Composable
+fun StreakBonusTag(multiplier: Float) {
+    if (multiplier <= 1f) return
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.onTertiary,
+        modifier = Modifier.semantics { contentDescription = "${"%.1f".format(multiplier)} times streak bonus" }) {
+        Row(Modifier.padding(horizontal = 8.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Bolt, null, Modifier.size(14.dp))
+            Text("×${"%.1f".format(multiplier)}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        }
     }
 }
 

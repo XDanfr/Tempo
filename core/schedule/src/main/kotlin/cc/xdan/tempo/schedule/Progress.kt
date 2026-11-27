@@ -59,6 +59,7 @@ object Progress {
                 walk = walk.plusDays(1)
             }
         }
+        xp += timetable.bonusXp
         var level = 1; var remaining = xp
         while (remaining >= levelGoal(level)) { remaining -= levelGoal(level); level++ }
         val scheduled = scheduledDay

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Achievements give XP**: each one adds 25 XP, including ones you'd already earned. Tap any achievement on your profile to see its details, when you unlocked it, or how close you are.
+- **Level up**: reaching a new level shows a bigger notice with a spinning level badge and more confetti. Swipe any notice up to dismiss it.
+- **Quicker Add session**: pick a subject and it's added in the next free period or slot straight away; tap it to change the time or room. **Set time and details instead** opens the full editor.
+- The streak bonus shows as a ×1.3 tag next to your XP and on the Home streak tile, and the progress sheet's How it works is now a short list with icons.
+- Settings now sits above achievements on your profile, and the top-right avatar becomes a Settings button there.
+- Fixed tapping a shared free sometimes opening the wrong day in Schedule.
 - **Streak bonus**: each day of your streak adds 10% to check-in XP, up to double at 10 days. Missing a scheduled day resets the bonus. If you're ill or away, **Freeze today** in the progress sheet protects your streak and bonus.
 - **Fill in your week**: setup now asks what's on in each period (or lets you add sessions day by day). If you skip it, Home shows a **Build your timetable** card until you've added some.
 - Celebrations, streaks and XP are now app-wide settings, with a new **Achievement notices** switch. They're no longer saved into a timetable or exported with it, and viewing someone else's timetable keeps your own theme and progress.

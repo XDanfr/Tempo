@@ -1,6 +1,7 @@
 package cc.xdan.tempo.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -51,6 +52,7 @@ fun ProfileAvatar(name: String, size: androidx.compose.ui.unit.Dp, spin: Boolean
 fun ProfileScreen(timetable: Timetable, profileName: String, setProfileName: (String) -> Unit, openSettings: () -> Unit) {
     val context = LocalContext.current
     val unlocked = remember(timetable) { Achievements.unlocked(context) }
+    var opened by remember { mutableStateOf<Achievement?>(null) }
     var editing by rememberSaveable { mutableStateOf(false) }
     var draft by rememberSaveable { mutableStateOf(profileName) }
     LazyVerticalGrid(GridCells.Adaptive(104.dp), Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp),
@@ -82,16 +84,6 @@ fun ProfileScreen(timetable: Timetable, profileName: String, setProfileName: (St
                 }
             }
         }
-        item(span = { GridItemSpan(maxLineSpan) }) { Text("Achievements", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp, start = 4.dp)) }
-        items(Achievement.entries, key = { it.name }) { achievement ->
-            val done = achievement in unlocked
-            Column(Modifier.fillMaxWidth().alpha(if (done) 1f else .7f).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AchievementBadge(achievement, done, size = 60.dp)
-                Text(achievement.title, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, maxLines = 2)
-                Text(achievement.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, maxLines = 3)
-            }
-        }
         item(span = { GridItemSpan(maxLineSpan) }) {
             Surface(onClick = openSettings, shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.padding(top = 8.dp)) {
                 Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -104,9 +96,49 @@ fun ProfileScreen(timetable: Timetable, profileName: String, setProfileName: (St
                 }
             }
         }
+        item(span = { GridItemSpan(maxLineSpan) }) { Text("Achievements", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp, start = 4.dp)) }
+        items(Achievement.entries, key = { it.name }) { achievement ->
+            val done = achievement in unlocked
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable { opened = achievement }.alpha(if (done) 1f else .7f).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                AchievementBadge(achievement, done, size = 60.dp)
+                Text(achievement.title, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, maxLines = 2)
+                Text(achievement.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, maxLines = 3)
+            }
+        }
+    }
+    opened?.let { achievement ->
+        val done = achievement in unlocked
+        val progress = remember(timetable, achievement) { achievementProgress(achievement, timetable) }
+        AlertDialog(onDismissRequest = { opened = null },
+            icon = { AchievementBadge(achievement, done, size = 72.dp) },
+            title = { Text(achievement.title, textAlign = TextAlign.Center) },
+            text = {
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(achievement.detail, textAlign = TextAlign.Center)
+                    if (done) Text("Unlocked ${java.time.Instant.ofEpochMilli(unlocked.getValue(achievement)).atZone(java.time.ZoneId.systemDefault()).toLocalDate().let { friendlyDate(it) }} · +${Achievements.XP} XP",
+                        style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
+                    else {
+                        progress?.let { (have, need) ->
+                            LinearWavyProgressIndicator(progress = { have.coerceAtMost(need).toFloat() / need }, modifier = Modifier.fillMaxWidth(), waveSpeed = 0.dp)
+                            Text("${have.coerceAtMost(need)} of $need", style = MaterialTheme.typography.labelLarge)
+                        }
+                        Text("Worth ${Achievements.XP} XP", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { opened = null }) { Text("Done") } })
     }
     if (editing) AlertDialog(onDismissRequest = { editing = false }, title = { Text("Your name") },
         text = { OutlinedTextField(draft, { draft = it.take(40) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
             supportingText = { Text("Shown to people you share with. Stays on this device.") }) },
         confirmButton = { Button(onClick = { setProfileName(draft); editing = false }) { Text("Save") } })
+}
+
+/** How far along a countable achievement is, as (have, need); null for one-off actions. */
+fun achievementProgress(achievement: Achievement, timetable: Timetable): Pair<Int, Int>? = when (achievement) {
+    Achievement.FULL_LIBRARY -> timetable.subjects.size to 5
+    Achievement.ON_A_ROLL -> Progress.summary(timetable, LocalDate.now()).bestStreak to 5
+    Achievement.LEVEL_THREE -> Progress.summary(timetable, LocalDate.now()).level to 3
+    else -> null
 }

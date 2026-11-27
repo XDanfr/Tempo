@@ -163,6 +163,8 @@ data class Timetable(
     val frozenDays: List<String> = emptyList(),
     /** Set when this is someone else's timetable saved on this device, e.g. "Alex". */
     val person: String? = null,
+    /** XP earned app-wide outside check-ins (achievements); filled in at runtime, never saved or shared. */
+    @kotlinx.serialization.Transient val bonusXp: Int = 0,
 ) {
     init {
         require(onboardingStep in 0..3)

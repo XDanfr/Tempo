@@ -46,8 +46,10 @@ enum class Destination(val label: String, val inBar: Boolean = true) {
 fun TempoApp(model: TempoViewModel) {
     val state by model.state.collectAsStateWithLifecycle()
     // Celebrations and streaks are app-wide, and never apply to someone else's timetable.
+    // Achievements add XP app-wide on top of check-ins.
+    val achievementXp = rememberAchievementXp()
     val timetable = state.timetable?.let { t ->
-        t.copy(progress = if (t.person != null) ProgressMode.OFF else state.collection?.progressMode ?: t.progress)
+        t.copy(progress = if (t.person != null) ProgressMode.OFF else state.collection?.progressMode ?: t.progress, bonusXp = achievementXp)
     }
     TempoTheme(state.collection?.ownAppearance ?: timetable?.appearance ?: Appearance()) {
         val view = LocalView.current
@@ -138,7 +140,9 @@ fun TempoApp(model: TempoViewModel) {
                         }
                         AppOverflowMenu(state.undoLabel, state.redoLabel, state.canUndo, state.canRedo,
                             undo = { model.undo() }, redo = { model.redo() }, shareImage = { showImageExport = true })
-                        IconButton(onClick = { destination = Destination.PROFILE }) { ProfileAvatar(state.collection?.profileName ?: "", 32.dp) }
+                        // On the profile itself the avatar would be redundant, so it becomes Settings.
+                        if (destination == Destination.PROFILE) IconButton(onClick = { destination = Destination.SETTINGS }) { Icon(Icons.Outlined.Settings, "Settings") }
+                        else IconButton(onClick = { destination = Destination.PROFILE }) { ProfileAvatar(state.collection?.profileName ?: "", 32.dp) }
                     }) },
                     snackbarHost = { feedbackHost(Modifier) },
                     bottomBar = { NavigationBar {
@@ -212,7 +216,9 @@ fun TempoApp(model: TempoViewModel) {
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
             WhatsNewOnUpdate(state.collection)
             val (achievementQueue, consumeAchievement) = rememberAchievementQueue(state.collection.takeIf { timetable?.onboarded == true },
-                celebrate = state.collection?.achievements != false && state.collection?.progressMode != ProgressMode.OFF)
+                celebrate = state.collection?.achievements != false && state.collection?.progressMode != ProgressMode.OFF,
+                level = timetable?.takeIf { it.onboarded && it.progress == ProgressMode.STREAKS }?.let { t ->
+                    remember(t) { cc.xdan.tempo.schedule.Progress.summary(t, java.time.LocalDate.now()).level } })
             AchievementNotices(achievementQueue, consumeAchievement, Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp))
             val shareContext = androidx.compose.ui.platform.LocalContext.current
             state.sharePreview?.let { SharePreviewDialog(it, {

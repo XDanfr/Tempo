@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.ScheduleResolver
 import cc.xdan.tempo.schedule.splitSession
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.ui.unit.dp
 import java.util.UUID
 
 @Composable
@@ -25,6 +27,35 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
     }
     val id = rememberSaveable { existing?.id ?: UUID.randomUUID().toString() }
     var subject by rememberSaveable { mutableStateOf(existing?.subjectId ?: timetable.subjects.first().id) }
+    // New sessions start with a quick subject pick that adds it straight away; tap it afterwards for the details.
+    var quick by rememberSaveable { mutableStateOf(existing == null) }
+    if (quick) {
+        val quickDay = initialDay
+        val quickWeek = if (dated || timetable.cycle.weeks <= 1) null else initialCycleWeek
+        EditorSheet("Add a ${timetable.sessionWord} on ${weekdayNames[quickDay - 1]}", onDismiss) {
+            Text("Pick what it is. It goes in the next free slot, and you can tap it to change the time or room.",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                timetable.subjects.forEach { item ->
+                    Surface(onClick = {
+                        val time = initialTime ?: nextFreeSlot(timetable, quickDay, quickWeek)
+                        onSave(Session(id, item.id, quickDay, time, "", "", quickWeek))
+                    }, shape = androidx.compose.foundation.shape.CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        Row(Modifier.padding(start = 6.dp, end = 16.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            SubjectBadge(item, 32); Text(item.name, style = MaterialTheme.typography.titleSmall)
+                        }
+                    }
+                }
+                AssistChip(onClick = { addingSubject = true }, label = { Text("New") }, leadingIcon = { Icon(androidx.compose.material.icons.Icons.Outlined.Add, null) },
+                    modifier = Modifier.height(44.dp))
+            }
+            TextButton(onClick = { quick = false }) { Text("Set time and details instead") }
+        }
+        if (addingSubject) SubjectEditor(null, 0, { addingSubject = false }, { onAddSubject(it); addingSubject = false }, {})
+        return
+    }
     var day by rememberSaveable { mutableIntStateOf(existing?.day ?: initialDay) }
     var week by rememberSaveable { mutableIntStateOf(existing?.cycleWeek ?: if (existing == null && timetable.cycle.weeks > 1) initialCycleWeek else 0) }
     val startingTime = existing?.time ?: initialTime ?: timetable.periods.firstOrNull()?.time ?: TimeSpan(540, 630)
@@ -69,4 +100,15 @@ fun SessionEditor(timetable: Timetable, existing: Session?, initialDay: Int, ini
             DeleteButton("Delete session", { onDelete(id) })
         }
     }
+}
+
+/** The first period with nothing in it that day, or the hour after the day's last session. */
+fun nextFreeSlot(timetable: Timetable, day: Int, week: Int?): TimeSpan {
+    val taken = timetable.sessions.filter { it.day == day && (week == null || it.cycleWeek == null || it.cycleWeek == week) }.map { it.time }
+    fun free(span: TimeSpan) = taken.none { span.start < it.end && it.start < span.end }
+    timetable.periods.map { it.time }.sortedBy { it.start }.firstOrNull(::free)?.let { return it }
+    val length = taken.lastOrNull()?.minutes ?: 60
+    val start = taken.maxOfOrNull { it.end } ?: timetable.days.firstOrNull { it.day == day }?.time?.start ?: 540
+    val from = start.coerceAtMost(24 * 60 - length)
+    return TimeSpan(from, (from + length).coerceAtMost(24 * 60))
 }

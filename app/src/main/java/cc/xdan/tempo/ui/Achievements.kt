@@ -29,6 +29,15 @@ import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.Progress
 import cc.xdan.tempo.schedule.sharedFrees
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import java.time.DayOfWeek
 import java.time.LocalDate
 
@@ -56,6 +65,10 @@ enum class Achievement(val title: String, val detail: String, val icon: ImageVec
 }
 
 object Achievements {
+    /** XP each achievement adds, app-wide. */
+    const val XP = 25
+    fun xp(context: Context): Int = unlocked(context).size * XP
+
     private fun prefs(context: Context) = context.getSharedPreferences("achievements", Context.MODE_PRIVATE)
 
     fun unlocked(context: Context): Map<Achievement, Long> = Achievement.entries.mapNotNull { a ->
@@ -83,7 +96,7 @@ object Achievements {
         val people = collection.timetables.filter { it.id != collection.activeId && it.timetable.person != null }
             .map { it.timetable.person!! to it.timetable }
         val today = LocalDate.now()
-        val summary = if (collection.progressMode == ProgressMode.STREAKS && active.person == null) Progress.summary(active, today) else null
+        val summary = if (collection.progressMode == ProgressMode.STREAKS && active.person == null) Progress.summary(active.copy(bonusXp = xp(context)), today) else null
         return buildSet {
             if (mine.any { it.onboarded }) add(Achievement.FIRST_TIMETABLE)
             if (mine.any { it.sessions.isNotEmpty() }) add(Achievement.FIRST_SESSION)
@@ -124,55 +137,114 @@ fun AchievementBadge(achievement: Achievement, unlocked: Boolean, modifier: Modi
     }
 }
 
+/** Something worth a notice at the top of the screen. */
+sealed interface Celebration {
+    data class Unlocked(val achievement: Achievement) : Celebration
+    data class LevelUp(val level: Int) : Celebration
+}
+
 /**
- * Rounded notice that drops in from the top when an achievement unlocks, one at a time. Quiet
- * (no notice) when celebrations are off; the achievement still appears on the profile.
+ * Rounded notice that drops in from the top when an achievement unlocks or you level up, one at a time.
+ * Swipe it up to dismiss early. Quiet (no notice) when celebrations are off.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun AchievementNotices(queue: List<Achievement>, consumed: () -> Unit, modifier: Modifier = Modifier) {
+fun AchievementNotices(queue: List<Celebration>, consumed: () -> Unit, modifier: Modifier = Modifier) {
     val haptics = rememberTempoHaptics()
     val current = queue.firstOrNull()
     var visible by remember(current) { mutableStateOf(false) }
+    var dismissed by remember(current) { mutableStateOf(false) }
+    val drag = remember(current) { androidx.compose.animation.core.Animatable(0f) }
+    val scope = rememberCoroutineScope()
     LaunchedEffect(current) {
         if (current == null) return@LaunchedEffect
         delay(400); visible = true; haptics.celebrate()
-        // Long enough for the slowest confetti to finish falling.
-        delay(4_600); visible = false
+        if (current is Celebration.LevelUp) { delay(180); haptics.celebrate() }
+        // Long enough for the slowest confetti to finish falling, unless swiped away.
+        kotlinx.coroutines.withTimeoutOrNull(if (current is Celebration.LevelUp) 5_600L else 4_600L) { snapshotFlow { dismissed }.first { it } }
+        visible = false
         delay(450); consumed()
     }
     AnimatedVisibility(visible && current != null, modifier = modifier,
         enter = slideInVertically(TempoMotion.slide) { -it * 2 } + fadeIn(TempoMotion.effects()) + scaleIn(TempoMotion.fastSpatial(), initialScale = .8f),
         exit = slideOutVertically(TempoMotion.slide) { -it * 2 } + fadeOut(TempoMotion.exit())) {
         val shown = current ?: return@AnimatedVisibility
-        // Theme colours, lifted off the page with a shadow and a primary outline so it stays visible on any screen.
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            shadowElevation = 10.dp, border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = .6f)),
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-            Box {
-            // A brief fall of dark Material shapes behind the text.
-            // Theme colours only, so the confetti belongs to the popup.
-            val scheme = MaterialTheme.colorScheme
-            FallingConfetti(listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.inversePrimary, scheme.tertiaryContainer, scheme.secondaryContainer), Modifier.matchParentSize())
-            Row(Modifier.padding(start = 8.dp, end = 22.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AchievementBadge(shown, true, size = 44.dp)
-                Column {
-                    Text("Achievement unlocked", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                    Text(shown.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        val scheme = MaterialTheme.colorScheme
+        val confetti = listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.inversePrimary, scheme.tertiaryContainer, scheme.secondaryContainer)
+        val swipe = Modifier
+            .graphicsLayer { translationY = drag.value; alpha = 1f - (-drag.value / 400f).coerceIn(0f, .6f) }
+            .pointerInput(shown) {
+                detectVerticalDragGestures(
+                    onDragEnd = { scope.launch { if (drag.value < -60f) dismissed = true else drag.animateTo(0f, TempoMotion.fastSpatial()) } },
+                    onDragCancel = { scope.launch { drag.animateTo(0f, TempoMotion.fastSpatial()) } },
+                ) { change, amount -> change.consume(); scope.launch { drag.snapTo((drag.value + amount).coerceAtMost(0f)) } }
+            }
+            .semantics { liveRegion = LiveRegionMode.Polite; customActions = listOf(CustomAccessibilityAction("Dismiss") { dismissed = true; true }) }
+        when (shown) {
+            is Celebration.Unlocked -> Surface(shape = CircleShape, color = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer,
+                shadowElevation = 10.dp, border = androidx.compose.foundation.BorderStroke(1.5.dp, scheme.primary.copy(alpha = .6f)), modifier = swipe) {
+                Box {
+                    FallingConfetti(confetti, Modifier.matchParentSize())
+                    Row(Modifier.padding(start = 8.dp, end = 22.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        AchievementBadge(shown.achievement, true, size = 44.dp)
+                        Column {
+                            Text("Achievement unlocked · +${Achievements.XP} XP", style = MaterialTheme.typography.labelMedium, color = scheme.primary)
+                            Text(shown.achievement.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
+            // Bigger and louder: a card with a spinning, pulsing level badge and a denser, longer fall.
+            is Celebration.LevelUp -> Surface(shape = RoundedCornerShape(32.dp), color = scheme.tertiaryContainer, contentColor = scheme.onTertiaryContainer,
+                shadowElevation = 14.dp, border = androidx.compose.foundation.BorderStroke(2.dp, scheme.tertiary.copy(alpha = .7f)), modifier = swipe.padding(horizontal = 24.dp)) {
+                Box {
+                    FallingConfetti(confetti, Modifier.matchParentSize(), durationMillis = 3_400, count = 80, corner = 32.dp)
+                    val spin = rememberInfiniteTransition(label = "level spin")
+                    val angle by spin.animateFloat(0f, 360f, infiniteRepeatable(tween(6_000, easing = LinearEasing)), label = "angle")
+                    val pulse by spin.animateFloat(.92f, 1.08f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "pulse")
+                    Column(Modifier.padding(horizontal = 32.dp, vertical = 20.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(88.dp).graphicsLayer { scaleX = pulse; scaleY = pulse }) {
+                            Box(Modifier.matchParentSize().graphicsLayer { rotationZ = angle }.clip(MaterialShapes.Sunny.toShape()).background(scheme.tertiary))
+                            Text(shown.level.toString(), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = scheme.onTertiary)
+                        }
+                        Text("Level up!", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("You've reached level ${shown.level}", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
         }
     }
 }
 
-/** Tracks the collection and surfaces newly unlocked achievements. */
+/** Total achievement XP, kept current as achievements unlock. */
 @Composable
-fun rememberAchievementQueue(collection: TimetableCollection?, celebrate: Boolean): Pair<List<Achievement>, () -> Unit> {
+fun rememberAchievementXp(): Int {
     val context = LocalContext.current
-    var queue by remember { mutableStateOf(emptyList<Achievement>()) }
+    var xp by remember { mutableIntStateOf(Achievements.xp(context)) }
+    DisposableEffect(Unit) {
+        val prefs = context.getSharedPreferences("achievements", Context.MODE_PRIVATE)
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> xp = Achievements.xp(context) }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    return xp
+}
+
+/** Tracks the collection and surfaces newly unlocked achievements and level-ups. */
+@Composable
+fun rememberAchievementQueue(collection: TimetableCollection?, celebrate: Boolean, level: Int?): Pair<List<Celebration>, () -> Unit> {
+    val context = LocalContext.current
+    var queue by remember { mutableStateOf(emptyList<Celebration>()) }
     var firstRun by remember { mutableStateOf(true) }
     var events by remember { mutableIntStateOf(0) }
+    var lastLevel by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(level) {
+        val previous = lastLevel
+        if (level != null && previous != null && level > previous && celebrate) queue = queue + Celebration.LevelUp(level)
+        lastLevel = level
+    }
     DisposableEffect(Unit) {
         val prefs = context.getSharedPreferences("achievements", Context.MODE_PRIVATE)
         val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key -> if (key?.startsWith("event:") == true) events++ }
@@ -189,7 +261,7 @@ fun rememberAchievementQueue(collection: TimetableCollection?, celebrate: Boolea
         val alreadyHad = firstRun && context.getSharedPreferences("achievements", Context.MODE_PRIVATE).getBoolean("seeded", false).not()
         if (firstRun) context.getSharedPreferences("achievements", Context.MODE_PRIVATE).edit().putBoolean("seeded", true).apply()
         firstRun = false
-        if (celebrate && !alreadyHad) queue = queue + fresh
+        if (celebrate && !alreadyHad) queue = queue + fresh.map { Celebration.Unlocked(it) }
     }
     return queue to { queue = queue.drop(1) }
 }
@@ -200,14 +272,15 @@ fun rememberAchievementQueue(collection: TimetableCollection?, celebrate: Boolea
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier: Modifier = Modifier, durationMillis: Int = 2_400) {
+fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier: Modifier = Modifier, durationMillis: Int = 2_400, count: Int = 44,
+    corner: androidx.compose.ui.unit.Dp? = null) {
     val context = LocalContext.current
     val animationsOn = remember { android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f }
     if (!animationsOn) return
     val shapes = listOf(MaterialShapes.Cookie4Sided, MaterialShapes.Clover4Leaf, MaterialShapes.Sunny, MaterialShapes.Pill, MaterialShapes.Circle, MaterialShapes.Gem).map { it.toShape() }
     val pieces = remember {
         val random = kotlin.random.Random(System.nanoTime())
-        List(44) { index ->
+        List(count) { index ->
             // A real mix of sizes: mostly small pieces, some medium, and a few big shapes that spin and sink slowly.
             val big = index % 11 == 0
             val medium = !big && index % 4 == 0
@@ -232,7 +305,7 @@ fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier:
         if (progress.value <= 0f || progress.value >= 1f) return@Canvas
         // Clip to the pill in the drawing itself, so pieces never spill outside the notice.
         val pill = androidx.compose.ui.graphics.Path().apply {
-            addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, size.width, size.height, androidx.compose.ui.geometry.CornerRadius(size.height / 2)))
+            addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, size.width, size.height, androidx.compose.ui.geometry.CornerRadius(corner?.toPx() ?: (size.height / 2))))
         }
         clipPath(pill) {
             pieces.forEach { piece ->

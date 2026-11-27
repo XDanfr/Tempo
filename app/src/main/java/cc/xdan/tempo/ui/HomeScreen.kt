@@ -157,15 +157,18 @@ private fun ProgressCard(timetable: Timetable, today: LocalDate, openProfile: ()
                 Surface(Modifier.weight(1f), shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(icon, null, Modifier.size(20.dp)); Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(icon, null, Modifier.size(20.dp)); Spacer(Modifier.weight(1f))
+                            if (icon == Icons.Outlined.LocalFireDepartment) StreakBonusTag(summary.multiplier)
+                        }
+                        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 }
             }
         }
         val fraction by androidx.compose.animation.core.animateFloatAsState(summary.levelXp.toFloat() / summary.levelGoal, TempoMotion.spatial(), label = "level")
         LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth(), waveSpeed = 0.dp)
-        Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}" +
-            (if (summary.multiplier > 1f) " · ×${"%.1f".format(summary.multiplier)} streak bonus" else ""), style = MaterialTheme.typography.bodySmall,
+        Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
