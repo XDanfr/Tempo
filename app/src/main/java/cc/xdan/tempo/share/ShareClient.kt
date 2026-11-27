@@ -20,7 +20,20 @@ object ShareStore {
         ?.let { OwnedShare(it[0], it[1], it[2], it[3] == "1", it[4] == "1") }
     fun save(context: Context, timetableId: String, share: OwnedShare) = prefs(context).edit()
         .putString("own:$timetableId", listOf(share.id, share.key, share.token, if (share.rooms) "1" else "0", if (share.notes) "1" else "0").joinToString("|")).apply()
-    fun forget(context: Context, timetableId: String) = prefs(context).edit().remove("own:$timetableId").apply()
+    fun forget(context: Context, timetableId: String) = prefs(context).edit().remove("own:$timetableId").remove("hash:$timetableId").apply()
+    /** Hash of the last uploaded content, so unchanged timetables aren't re-uploaded. */
+    fun uploadedHash(context: Context, timetableId: String) = prefs(context).getString("hash:$timetableId", null)
+    fun setUploadedHash(context: Context, timetableId: String, hash: String) = prefs(context).edit().putString("hash:$timetableId", hash).apply()
+    /** Someone else's link this timetable came from, and the revision we have. */
+    data class Followed(val link: ShareLink, val rev: Long)
+    fun follow(context: Context, timetableId: String, link: ShareLink, rev: Long = 0) =
+        prefs(context).edit().putString("follow:$timetableId", "${link.id}|${link.key}|$rev").apply()
+    fun followed(context: Context): Map<String, Followed> = prefs(context).all.mapNotNull { (key, value) ->
+        if (!key.startsWith("follow:")) return@mapNotNull null
+        val parts = (value as? String)?.split("|")?.takeIf { it.size == 3 } ?: return@mapNotNull null
+        key.removePrefix("follow:") to Followed(ShareLink(parts[0], parts[1]), parts[2].toLongOrNull() ?: 0)
+    }.toMap()
+    fun unfollow(context: Context, timetableId: String) = prefs(context).edit().remove("follow:$timetableId").apply()
     fun allOwned(context: Context): Map<String, OwnedShare> = prefs(context).all.keys.filter { it.startsWith("own:") }
         .mapNotNull { key -> owned(context, key.removePrefix("own:"))?.let { key.removePrefix("own:") to it } }.toMap()
 }
@@ -60,6 +73,22 @@ object ShareClient {
         return json.getString("id") to json.getString("ownerToken")
     }
     suspend fun fetch(id: String): ByteArray { val (code, body) = call("GET", "/$id"); if (code != 200) failure(code, body); return body }
+
+    /** Downloads only when the revision changed: returns null when unchanged, otherwise the new revision and ciphertext. */
+    suspend fun fetchIfChanged(id: String, rev: Long): Pair<Long, ByteArray>? = withContext(Dispatchers.IO) {
+        val connection = URL("$API/$id").openConnection() as HttpURLConnection
+        try {
+            connection.connectTimeout = 15_000; connection.readTimeout = 20_000
+            connection.setRequestProperty("User-Agent", "Tempo-Android")
+            if (rev > 0) connection.setRequestProperty("If-None-Match", "\"$rev\"")
+            when (val code = connection.responseCode) {
+                304 -> null
+                200 -> (connection.getHeaderField("x-tempo-rev")?.toLongOrNull() ?: 0L) to connection.inputStream.use { it.readBytes() }
+                else -> failure(code, connection.errorStream?.use { it.readBytes() } ?: ByteArray(0))
+            }
+        } catch (e: java.io.IOException) { throw ShareException("Couldn't reach Tempo's sharing service.") }
+        finally { connection.disconnect() }
+    }
     suspend fun update(id: String, token: String, ciphertext: ByteArray) { val (code, body) = call("PUT", "/$id", ciphertext, token); if (code != 200) failure(code, body) }
     suspend fun delete(id: String, token: String) { val (code, body) = call("DELETE", "/$id", token = token); if (code != 204 && code != 410) failure(code, body) }
 }

@@ -9,6 +9,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideOutVertically
@@ -375,9 +376,7 @@ private fun EmptyDay(timetable: Timetable, date: LocalDate) {
     val closed = timetable.exceptions.firstOrNull { it.date == date.toString() }?.closed == true
     Column(Modifier.fillMaxWidth().padding(vertical = 48.dp, horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(72.dp)) {
-            Box(contentAlignment = Alignment.Center) { Icon(Icons.Outlined.EventAvailable, null, Modifier.size(32.dp)) }
-        }
+        SpinningShapeBadge(Icons.Outlined.EventAvailable)
         Text(if (closed) "A day off" else "A little breathing room", style = MaterialTheme.typography.titleLarge)
         Text(if (closed) "Enjoy the time off." else "Tap Add session to plan something.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -646,6 +645,7 @@ private fun nowFollowing(state: NowState): String? = when (state) {
 }
 
 /** Countdown ring for the current block, a countdown for what's next, or a check when done. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun NowDial(state: NowState, seconds: Int, content: Color) {
     Box(Modifier.size(84.dp), contentAlignment = Alignment.Center) {
@@ -655,8 +655,9 @@ private fun NowDial(state: NowState, seconds: Int, content: Color) {
                 val total = span.minutes * 60f
                 val left = (span.end * 60 - seconds).coerceAtLeast(0)
                 val progress by animateFloatAsState(((total - left) / total).coerceIn(0f, 1f), TempoMotion.effects(), label = "ring")
-                CircularProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxSize(), color = content,
-                    trackColor = content.copy(alpha = .18f), strokeWidth = 6.dp, gapSize = 0.dp)
+                // A wavy ring: the remaining time ripples gently, which reads as "live" at a glance.
+                CircularWavyProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxSize(), color = content,
+                    trackColor = content.copy(alpha = .18f))
                 CountdownText(left, "left", content)
             }
             is NowState.Upcoming -> Box(Modifier.fillMaxSize().border(2.dp, content.copy(alpha = .3f), CircleShape), contentAlignment = Alignment.Center) {
@@ -825,7 +826,7 @@ fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("${summary.xp} XP", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 val fraction by animateFloatAsState(summary.levelXp.toFloat() / summary.levelGoal, TempoMotion.spatial(), label = "level")
-                LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(8.dp))
+                LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
                 Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -875,3 +876,15 @@ fun PeopleFree(names: List<String>, showText: Boolean = true) {
 
 /** A stable colour per person name. */
 fun personColour(name: String): Color = Color(cc.xdan.tempo.design.subjectColours[Math.floorMod(name.lowercase().hashCode(), cc.xdan.tempo.design.subjectColours.size)].argb)
+
+/** An icon on a slowly turning Material cookie shape, for calm empty states. Still when animations are off. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun SpinningShapeBadge(icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
+    val turn = androidx.compose.animation.core.rememberInfiniteTransition(label = "badge")
+    val rotation by turn.animateFloat(0f, 360f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(24_000, easing = androidx.compose.animation.core.LinearEasing)), label = "spin")
+    Box(modifier.size(88.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.matchParentSize().graphicsLayer { rotationZ = rotation }.clip(MaterialShapes.Cookie9Sided.toShape()).background(MaterialTheme.colorScheme.secondaryContainer))
+        Icon(icon, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
+    }
+}

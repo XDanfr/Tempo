@@ -70,7 +70,11 @@ fun ShareSheet(timetableId: String, timetable: Timetable, profileName: String, s
                         if (name.trim() != profileName) setProfileName(name)
                         val key = ShareCrypto.newKey()
                         val (id, token) = ShareClient.create(encrypt(key))
-                        OwnedShare(id, key, token, rooms, notes).also { ShareStore.save(context, timetableId, it); owned = it }
+                        OwnedShare(id, key, token, rooms, notes).also {
+                            ShareStore.save(context, timetableId, it); owned = it
+                            ShareStore.setUploadedHash(context, timetableId, cc.xdan.tempo.share.ShareSync.contentHash(name.trim(), timetable, it))
+                            cc.xdan.tempo.share.ShareSync.ensureScheduled(context)
+                        }
                     } }) { Icon(Icons.Outlined.Link, null); Spacer(Modifier.width(8.dp)); Text("Create link") }
                 } else {
                     Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
@@ -88,9 +92,12 @@ fun ShareSheet(timetableId: String, timetable: Timetable, profileName: String, s
                     }
                     OutlinedButton(enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = { run {
                         ShareClient.update(share.id, share.token, encrypt(share.key))
-                        share.copy(rooms = rooms, notes = notes).also { ShareStore.save(context, timetableId, it); owned = it }
+                        share.copy(rooms = rooms, notes = notes).also {
+                            ShareStore.save(context, timetableId, it); owned = it
+                            ShareStore.setUploadedHash(context, timetableId, cc.xdan.tempo.share.ShareSync.contentHash(name.trim(), timetable, it))
+                        }
                         message = "Shared copy updated"
-                    } }) { Icon(Icons.Outlined.Sync, null); Spacer(Modifier.width(8.dp)); Text("Update shared copy") }
+                    } }) { Icon(Icons.Outlined.Sync, null); Spacer(Modifier.width(8.dp)); Text("Update now") }
                     DeleteButton("Stop sharing", { run {
                         ShareClient.delete(share.id, share.token)
                         ShareStore.forget(context, timetableId); owned = null
@@ -101,7 +108,7 @@ fun ShareSheet(timetableId: String, timetable: Timetable, profileName: String, s
         }
         if (busy) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
         message?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary) }
-        Text("Links expire after 180 days without an update. Someone could still keep a screenshot or export.", style = MaterialTheme.typography.bodySmall,
+        Text("Changes you make update the shared copy automatically, and people who added it get them too. Links expire after 180 days without an update. Someone could still keep a screenshot or export.", style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

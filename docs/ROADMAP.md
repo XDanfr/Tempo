@@ -87,6 +87,11 @@ Agreed November 2026 after a device review of 0.5.2: remove duplicate controls, 
 - [ ] Replace short dropdowns with buttons or segmented choices, as with free gaps and break types
 - [ ] Add session opens a quick subject picker first, then the full editor with that subject chosen
 
+## Home — planned
+
+- [ ] Home screen with Up next, who's free when, progress and a profile page; Schedule opens from Home
+- [ ] Achievements designed around Home
+
 ## Social Tempo — plan
 
 Optional, end-to-end encrypted and free-tier only. Full plan, privacy rules and Cloudflare budget: [Social](SOCIAL.md).
@@ -95,8 +100,9 @@ Optional, end-to-end encrypted and free-tier only. Full plan, privacy rules and 
 - [x] People (timetables marked as someone else's) and shared frees on Schedule and the Week tab
 - [ ] Optional “Alex also has a free at 13:10” notification before a shared free
 - [x] Encrypted share links at `tempo.xdan.cc/t/<id>#<key>` (Worker + D1), app links and a web viewer — service live; app support in the next release
-- [ ] Live updates, and removal from other devices when the owner stops sharing
-- [ ] Groups for tracking shared frees
+- [x] Live updates, and removal from other devices when the owner stops sharing
+- [ ] Optional accounts (Google sign-in or passkey): profile, account-owned links, friends and one-tap delete account
+- [ ] Groups for tracking shared frees (account-owned)
 - [ ] Sync between your own devices
 
 ## Next — interaction feedback and safe recovery

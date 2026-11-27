@@ -299,6 +299,7 @@ private fun laneOf(blocks: List<ScheduleBlock>): List<Triple<ScheduleBlock, Int,
 
 /** XP earned this week so far and how far it is to the next level. */
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun WeekXp(timetable: Timetable, days: List<WeekDay>, today: LocalDate) {
     val weekXp = remember(timetable, days, today) { days.filter { !it.date.isAfter(today) }.sumOf { Progress.xpForDay(timetable, it.date) } }
     val summary = remember(timetable, today) { Progress.summary(timetable, today) }
@@ -309,7 +310,7 @@ private fun WeekXp(timetable: Timetable, days: List<WeekDay>, today: LocalDate) 
                 Text("+$weekXp XP", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Text("Level ${summary.level}", style = MaterialTheme.typography.labelLarge)
             }
-            LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(8.dp),
+            LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.onTertiaryContainer, trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .2f))
             Text("Earned this week · ${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodyMedium)
         }

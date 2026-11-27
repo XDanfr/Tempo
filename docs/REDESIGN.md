@@ -114,3 +114,14 @@ All progress is stored locally and included in backups only if the user chooses.
 6. **Library and Settings**: subject tiles and detail, grouped settings with values, single About row, duplicate file controls removed.
 
 Each step ships separately and keeps the existing data formats; new fields (purpose, progress) are additive and optional in the timetable schema.
+
+## Home (planned)
+
+Make the app open on a **Home** screen instead of straight into the timetable, so it feels like a complete app rather than tabs over a schedule.
+
+- **Up next**: the live Now card (countdown ring, check-in) and today's remaining sessions, with "Open timetable" into the full Schedule.
+- **Who's free when**: the next shared frees with people and groups ("Alex and Sam are free with you at 13:10"), tapping through to the Week tab.
+- **Progress**: streak, level and this week's XP, with the latest achievement and the next one to aim for.
+- **Profile** (top right avatar): name, level, achievements, friends and groups, and account settings once accounts exist.
+- Navigation becomes **Home · Schedule · Week · Library** with Settings under the profile, so the timetable is one tap away but not the whole app.
+- Achievements are designed against Home, so they land after it: they encourage exploring (first share, first shared free, first group, a full week of check-ins, trying the Week tab, customising a theme) and are never required for anything.

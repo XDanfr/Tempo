@@ -31,6 +31,7 @@ import java.time.LocalDate
 private data class ImageRequest(val plan: ScheduleImagePlan, val palette: ImagePalette)
 private data class RenderedImage(val request: ImageRequest, val result: Result<Bitmap>)
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Unit) {
     val context = LocalContext.current
@@ -105,7 +106,7 @@ fun PngExportSheet(table: Timetable, dismiss: () -> Unit, report: (String) -> Un
             Box(Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
                 if (bitmap != null) Image(bitmap.asImageBitmap(), "Exact PNG export preview", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                 else if (rendering == null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CircularProgressIndicator(Modifier.size(24.dp)); Text("Rendering preview…")
+                    LoadingIndicator(Modifier.size(32.dp)); Text("Rendering preview…")
                 }
                 else Text(rendering?.exceptionOrNull()?.message ?: "Could not render this image", color = MaterialTheme.colorScheme.error)
             }

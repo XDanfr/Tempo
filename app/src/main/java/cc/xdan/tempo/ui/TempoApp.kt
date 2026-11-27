@@ -36,7 +36,7 @@ import kotlinx.coroutines.delay
 /** Bottom-bar destinations. Today and Timetable were merged into the single day-first Schedule. */
 enum class Destination(val label: String) { SCHEDULE("Schedule"), WEEK("Week"), LIBRARY("Library"), SETTINGS("Settings") }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TempoApp(model: TempoViewModel) {
     val state by model.state.collectAsStateWithLifecycle()
@@ -67,7 +67,7 @@ fun TempoApp(model: TempoViewModel) {
             if (timetable == null) {
                 Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.Center) {
                     if (state.error != null) Text(state.error!!, Modifier.padding(24.dp))
-                    else CircularProgressIndicator()
+                    else LoadingIndicator()
                 }
             } else if (!timetable.onboarded) {
                 Onboarding(timetable, model::update, files.import, if ((state.collection?.timetables?.size ?: 0) > 1) ({ showTimetables = true }) else null)
@@ -184,10 +184,23 @@ fun TempoApp(model: TempoViewModel) {
             }
             if (showComparison) state.collection?.let { ComparisonScreen(it) { showComparison = false } }
             WhatsNewOnUpdate(state.collection)
-            state.sharePreview?.let { SharePreviewDialog(it, { model.acceptShare(true) }, { model.acceptShare(false) }, model::dismissSharePreview) }
+            val shareContext = androidx.compose.ui.platform.LocalContext.current
+            state.sharePreview?.let { SharePreviewDialog(it, {
+                model.acceptShare(true) { id, link -> cc.xdan.tempo.share.ShareStore.follow(shareContext, id, link); cc.xdan.tempo.share.ShareSync.ensureScheduled(shareContext) }
+            }, { model.acceptShare(false) }, model::dismissSharePreview) }
+            // Sync shared timetables: on open, and shortly after your edits settle.
+            LaunchedEffect(Unit) { cc.xdan.tempo.share.ShareSync.ensureScheduled(shareContext); cc.xdan.tempo.share.ShareSync.soon(shareContext, 0) }
+            LaunchedEffect(state.collection) {
+                if (state.collection != null && cc.xdan.tempo.share.ShareStore.allOwned(shareContext).isNotEmpty()) cc.xdan.tempo.share.ShareSync.soon(shareContext)
+            }
+            // Tell people once when someone stopped sharing and their copy was removed.
+            LaunchedEffect(state.collection) {
+                val prefs = shareContext.getSharedPreferences("shares", android.content.Context.MODE_PRIVATE)
+                prefs.getString("removedNotice", null)?.let { names -> model.info("$names stopped sharing, so their timetable was removed"); prefs.edit().remove("removedNotice").apply() }
+            }
             if (state.openingShare) Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp), shape = MaterialTheme.shapes.medium) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CircularProgressIndicator(Modifier.size(24.dp)); Text("Opening shared timetable…")
+                    LoadingIndicator(Modifier.size(32.dp)); Text("Opening shared timetable…")
                 }
             }
             // The updater waits until setup is finished, and never shows over the What's new sheet's first launch.
@@ -197,7 +210,7 @@ fun TempoApp(model: TempoViewModel) {
             if (showTimetables) state.collection?.let { TimetableManager(it, model, files, { showComparison = true }) { showTimetables = false } }
             if (state.fileBusy) Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp), shape = MaterialTheme.shapes.medium) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CircularProgressIndicator(Modifier.size(24.dp)); Text("Working with your timetable file…")
+                    LoadingIndicator(Modifier.size(32.dp)); Text("Working with your timetable file…")
                 }
             }
             // Outside the main Scaffold (onboarding, loading) feedback sits above the system bars.

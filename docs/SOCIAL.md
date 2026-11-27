@@ -60,9 +60,34 @@ Each idea can ship on its own, in this order. Later ones build on earlier ones.
 - Conflict handling starts simple: last write wins per timetable, with the replaced revision kept locally for undo.
 - Only after ideas 3–5 are solid.
 
-### 7. Accounts and public creator profiles (not planned)
+### 7. Optional Tempo accounts (planned, replaces "not planned")
 
-Optional public profiles with handles were floated in Feel & Flow. They need authentication, moderation, impersonation handling and legal work, and they clash with the "no server can read your data" model. **Not planned** unless there's strong demand; ideas 1–6 cover the social goals without accounts.
+Accounts make the social side feel integrated: one identity for links, friends and groups, and one place to delete everything. They're **always optional**. Without an account, Tempo works exactly as it does now, share links included.
+
+**What an account is**
+- An identity (Sign in with Google via Android Credential Manager, or a passkey; more SSO providers later) plus a **profile**: display name, avatar colour/emoji, level and achievements you choose to show.
+- **Ownership of your links**: links created while signed in belong to the account, so you can manage, update or delete them from any of your devices.
+- **Friends**: when you add someone's link while signed in, you can send a friend request; friends see each other's profile and shared frees without passing links around again.
+- **Groups**: an account-owned group with members, invites by link or code, and "everyone free" times (idea 5 becomes simpler: membership lives on the server, timetables stay encrypted).
+- **Delete account**: one button removes the profile, friends, group memberships and every link the account owns, and tombstones them so other devices remove their copies on the next check.
+
+**What doesn't change**
+- Timetables stay **end-to-end encrypted** with per-link keys. The server stores ciphertext, never names of subjects, rooms or times. Accounts add *who* may read a link's key, not the ability for the server to read it.
+- Keys reach friends through the existing link fragment, or wrapped to a friend's public key (each account device generates an X25519 key pair; the private key never leaves the device).
+- No public directory, search, feeds or follower counts. You can only find people you already share with.
+
+**Server additions (same Worker + D1, free tier)**
+- Tables: `accounts` (id, provider subject hash, created_at), `profiles`, `sessions` (hashed tokens, expiry), `devices` (public keys), `friendships`, `groups`, `group_members`, `wrapped_keys` (link id → recipient device → wrapped key).
+- Sign-in: the app sends Google's ID token; the Worker verifies it against Google's published keys with WebCrypto and issues a session token (stored hashed). Passkeys follow the same session model.
+- Deletion and retention follow the existing rules: immediate deletion, 30-day tombstones, nothing kept after.
+
+**App changes**
+- A **Profile** page (from Home) with sign-in, profile, friends, groups, achievements and "Delete account".
+- Link sharing stays where it is; when signed in, new links are account-owned automatically.
+
+**Before building**
+- Needs a Google Cloud OAuth client for `cc.xdan.tempo` with the release certificate's SHA-1, created by the app owner. Passkeys need the same `assetlinks.json` already published at `tempo.xdan.cc`.
+- Order: sign-in + profile + account-owned links + delete account → friends → groups → device-to-device key wrapping and sync.
 
 ## Architecture
 
