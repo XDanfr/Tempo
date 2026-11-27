@@ -83,7 +83,7 @@ fun HomeScreen(timetable: Timetable, now: LocalDateTime, profileName: String, pe
 /** Last week in three numbers, shown Monday to Wednesday until hidden. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun WeekRecapCard(timetable: Timetable, today: LocalDate) {
+internal fun WeekRecapCard(timetable: Timetable, today: LocalDate) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val monday = today.with(java.time.DayOfWeek.MONDAY).minusWeeks(1)
     val prefs = remember { context.getSharedPreferences("home", android.content.Context.MODE_PRIVATE) }
