@@ -18,7 +18,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
  * silent when the person has turned touch feedback off.
  */
 @Stable
-class TempoHaptics internal constructor(private val feedback: HapticFeedback) {
+class TempoHaptics internal constructor(private val feedback: HapticFeedback, private val context: android.content.Context? = null) {
     /** A selection moved: a day in the week strip, a chip, a segmented button. */
     fun tick() = feedback.performHapticFeedback(HapticFeedbackType.SegmentTick)
 
@@ -34,6 +34,26 @@ class TempoHaptics internal constructor(private val feedback: HapticFeedback) {
     /** Something failed or was refused. */
     fun reject() = feedback.performHapticFeedback(HapticFeedbackType.Reject)
 
+    /**
+     * One step of a counting animation. Played straight through the vibrator, because phones often drop
+     * touch-style haptics when nothing is being touched. Still follows the system touch-feedback setting.
+     */
+    fun count() {
+        val context = context ?: return tick()
+        val enabled = android.provider.Settings.System.getInt(context.contentResolver, android.provider.Settings.System.HAPTIC_FEEDBACK_ENABLED, 1) != 0
+        if (!enabled) return
+        val vibrator = if (android.os.Build.VERSION.SDK_INT >= 31) context.getSystemService(android.os.VibratorManager::class.java)?.defaultVibrator
+            else @Suppress("DEPRECATION") context.getSystemService(android.os.Vibrator::class.java)
+        vibrator ?: return
+        runCatching {
+            val primitive = android.os.VibrationEffect.Composition.PRIMITIVE_LOW_TICK
+            if (android.os.Build.VERSION.SDK_INT >= 31 && vibrator.areAllPrimitivesSupported(primitive))
+                vibrator.vibrate(android.os.VibrationEffect.startComposition().addPrimitive(primitive, .6f).compose())
+            else if (android.os.Build.VERSION.SDK_INT >= 29) vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK))
+            else vibrator.vibrate(android.os.VibrationEffect.createOneShot(8, 60))
+        }
+    }
+
     /** A rare, voluntary milestone. */
     fun celebrate() = feedback.performHapticFeedback(HapticFeedbackType.LongPress)
 }
@@ -41,7 +61,8 @@ class TempoHaptics internal constructor(private val feedback: HapticFeedback) {
 @Composable
 fun rememberTempoHaptics(): TempoHaptics {
     val feedback = LocalHapticFeedback.current
-    return remember(feedback) { TempoHaptics(feedback) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return remember(feedback, context) { TempoHaptics(feedback, context.applicationContext) }
 }
 
 /**

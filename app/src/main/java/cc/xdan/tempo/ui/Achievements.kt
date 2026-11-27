@@ -170,7 +170,7 @@ private fun XpFill(from: Int, to: Int, modifier: Modifier = Modifier) {
         // Counts down with the bar, with a tick for each point.
         val left = goal - kotlin.math.round(fill.value * goal).toInt()
         val haptics = rememberTempoHaptics()
-        LaunchedEffect(Unit) { snapshotFlow { left }.drop(1).collect { haptics.tick() } }
+        LaunchedEffect(Unit) { snapshotFlow { left }.drop(1).collect { haptics.count() } }
         Text("$left XP to level ${level + 1}", style = MaterialTheme.typography.labelSmall)
     }
 }
