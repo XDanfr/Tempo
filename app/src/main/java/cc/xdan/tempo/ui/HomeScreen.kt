@@ -39,11 +39,12 @@ fun HomeScreen(timetable: Timetable, now: LocalDateTime, profileName: String, pe
     val minute = now.hour * 60 + now.minute
     val blocks = remember(timetable, today) { ScheduleResolver.resolve(timetable, today) }
     val shared = remember(timetable, people, today) { if (people.isEmpty()) emptyList() else sharedFrees(timetable, people, today) }
+    // Only the first day that has shared frees: today if any are left, otherwise the next one.
     val upcomingFrees = remember(timetable, people, today, minute) {
-        if (people.isEmpty()) emptyList() else (0..6L).flatMap { offset ->
+        if (people.isEmpty()) emptyList() else (0..6L).asSequence().map { offset ->
             val day = today.plusDays(offset)
             sharedFrees(timetable, people, day).filter { offset > 0 || it.time.end > minute }.map { day to it }
-        }.take(3)
+        }.firstOrNull { it.isNotEmpty() }.orEmpty()
     }
     val achievementsUnlocked = remember(timetable) { Achievements.unlocked(context) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 32.dp),
@@ -57,7 +58,7 @@ fun HomeScreen(timetable: Timetable, now: LocalDateTime, profileName: String, pe
         }
         item(key = "now") { NowCard(timetable, blocks, today, edit, editFree, editBreak, { openSchedule(it) }, shared) }
         item(key = "today") { RestOfToday(timetable, blocks, minute) { openSchedule(today) } }
-        item(key = "frees") { FreesCard(upcomingFrees, people.isNotEmpty(), today, openWeek, openTimetables) }
+        item(key = "frees") { FreesCard(timetable, upcomingFrees, people.isNotEmpty(), today, openWeek, openTimetables) }
         if (timetable.progress == ProgressMode.STREAKS) item(key = "progress") { ProgressCard(timetable, today, openProfile) }
         item(key = "achievements") { AchievementsCard(achievementsUnlocked, openProfile) }
     }
@@ -103,23 +104,24 @@ private fun RestOfToday(timetable: Timetable, blocks: List<ScheduleBlock>, minut
 }
 
 @Composable
-private fun FreesCard(frees: List<Pair<LocalDate, SharedFree>>, hasPeople: Boolean, today: LocalDate, openWeek: () -> Unit, openTimetables: () -> Unit) {
-    HomeCard("Who's free when", if (hasPeople) "Week" else null, if (hasPeople) openWeek else null) {
+private fun FreesCard(timetable: Timetable, frees: List<Pair<LocalDate, SharedFree>>, hasPeople: Boolean, today: LocalDate, openWeek: () -> Unit, openTimetables: () -> Unit) {
+    val day = frees.firstOrNull()?.first
+    val dayName = when (day) { null -> null; today -> "today"; today.plusDays(1) -> "tomorrow"; else -> weekdayNames[day.dayOfWeek.value - 1] }
+    HomeCard(if (dayName != null) "Who's free $dayName" else "Who's free when", if (hasPeople) "Week" else null, if (hasPeople) openWeek else null) {
         when {
             !hasPeople -> {
                 Text("Share your timetable or add a friend's link to see when you're both free.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FilledTonalButton(onClick = openTimetables) { Icon(Icons.Outlined.GroupAdd, null); Spacer(Modifier.width(8.dp)); Text("Share or add a friend") }
             }
             frees.isEmpty() -> Text("No shared frees in the next week.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            else -> frees.forEach { (day, free) ->
+            else -> frees.forEach { (_, free) ->
                 Surface(onClick = openWeek, shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         PeopleFree(free.people, showText = false)
                         Column(Modifier.weight(1f)) {
                             Text(peopleList(free.people), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text((if (day == today) "Today" else if (day == today.plusDays(1)) "Tomorrow" else weekdayNames[day.dayOfWeek.value - 1]) +
-                                " · ${minuteLabel(free.time.start)}–${minuteLabel(free.time.end)}", style = MaterialTheme.typography.bodySmall,
+                            Text(freeTimeLabel(timetable, free.time) + " · ${durationLabel(free.time.minutes)}", style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }

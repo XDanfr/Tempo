@@ -889,3 +889,7 @@ fun SpinningShapeBadge(icon: androidx.compose.ui.graphics.vector.ImageVector, mo
         Icon(icon, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
     }
 }
+
+/** A shared free's time, by period name when it matches your periods exactly, otherwise as a time range. */
+fun freeTimeLabel(timetable: Timetable, span: TimeSpan): String =
+    periodLabel(timetable.periods, span) ?: "${minuteLabel(span.start)}–${minuteLabel(span.end)}"

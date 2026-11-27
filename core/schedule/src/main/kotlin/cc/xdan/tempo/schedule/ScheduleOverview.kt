@@ -97,3 +97,19 @@ private fun mergeSpans(spans: List<TimeSpan>): List<TimeSpan> = spans.sortedBy {
     if (last != null && last.end >= span.start) acc[acc.lastIndex] = TimeSpan(last.start, maxOf(last.end, span.end)) else acc += span
     acc
 }
+
+/**
+ * Names a span by its periods when it lines up exactly with one ("Period 2") or a run of them
+ * ("Periods 2–3", or "Registration – Period 1" for custom names). Returns null otherwise.
+ */
+fun periodLabel(periods: List<PeriodTemplate>, span: TimeSpan): String? {
+    val sorted = periods.sortedBy { it.time.start }
+    val first = sorted.indexOfFirst { it.time.start == span.start }
+    val last = sorted.indexOfLast { it.time.end == span.end }
+    if (first == -1 || last == -1 || last < first) return null
+    if (first == last) return sorted[first].name
+    val numbered = Regex("^Period (\\d+)$")
+    val a = numbered.find(sorted[first].name)?.groupValues?.get(1)
+    val b = numbered.find(sorted[last].name)?.groupValues?.get(1)
+    return if (a != null && b != null) "Periods $a–$b" else "${sorted[first].name} – ${sorted[last].name}"
+}

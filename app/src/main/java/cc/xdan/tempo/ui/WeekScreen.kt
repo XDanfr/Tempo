@@ -148,7 +148,7 @@ private fun WeekBody(timetable: Timetable, days: List<WeekDay>, now: LocalDateTi
                 }
             }
         }
-        if (people.isNotEmpty()) SharedFreesCard(people, hidden, { name -> hidden = if (name in hidden) hidden - name else hidden + name }, shared, openDay)
+        if (people.isNotEmpty()) SharedFreesCard(timetable, people, hidden, { name -> hidden = if (name in hidden) hidden - name else hidden + name }, shared, openDay)
         if (stats.bySubject.isNotEmpty()) SubjectBreakdown(stats)
         Text("Week at a glance", style = MaterialTheme.typography.titleMedium)
         WeekGrid(timetable, days, now, openDay, if (people.isEmpty()) emptyMap() else shared)
@@ -321,7 +321,7 @@ private fun WeekXp(timetable: Timetable, days: List<WeekDay>, today: LocalDate) 
 /** Who's free when you are this week, with people you can toggle in and out. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SharedFreesCard(people: List<Pair<String, Timetable>>, hidden: List<String>, toggle: (String) -> Unit,
+private fun SharedFreesCard(timetable: Timetable, people: List<Pair<String, Timetable>>, hidden: List<String>, toggle: (String) -> Unit,
     shared: Map<LocalDate, List<SharedFree>>, openDay: (LocalDate) -> Unit) {
     Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -342,7 +342,7 @@ private fun SharedFreesCard(people: List<Pair<String, Timetable>>, hidden: List<
                     Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Column(Modifier.weight(1f)) {
-                            Text("${weekdayNames[day.dayOfWeek.value - 1]} · ${minuteLabel(free.time.start)}–${minuteLabel(free.time.end)}", style = MaterialTheme.typography.titleSmall)
+                            Text("${weekdayNames[day.dayOfWeek.value - 1]} · ${freeTimeLabel(timetable, free.time)}", style = MaterialTheme.typography.titleSmall)
                             Text("${durationLabel(free.time.minutes)} with ${peopleList(free.people)}", style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

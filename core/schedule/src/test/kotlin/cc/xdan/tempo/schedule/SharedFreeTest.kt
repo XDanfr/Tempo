@@ -24,3 +24,14 @@ class SharedFreeTest {
         assertTrue(everyoneFree(me, listOf(alex, busySam), monday).isEmpty())
     }
 }
+
+class PeriodLabelTest {
+    private val periods = listOf(PeriodTemplate("1", "Period 1", TimeSpan(540, 630)), PeriodTemplate("2", "Period 2", TimeSpan(650, 740)),
+        PeriodTemplate("3", "Period 3", TimeSpan(790, 880)))
+    @Test fun namesExactPeriodsAndRuns() {
+        assertEquals("Period 2", periodLabel(periods, TimeSpan(650, 740)))
+        assertEquals("Periods 2–3", periodLabel(periods, TimeSpan(650, 880)))
+        assertNull(periodLabel(periods, TimeSpan(650, 700)))
+        assertEquals("Registration – Period 1", periodLabel(listOf(PeriodTemplate("r", "Registration", TimeSpan(520, 535))) + periods, TimeSpan(520, 630)))
+    }
+}
