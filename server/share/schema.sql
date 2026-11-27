@@ -43,3 +43,14 @@ CREATE TABLE IF NOT EXISTS challenges (
   user_id TEXT,                 -- set for sign-up
   expires_at INTEGER NOT NULL
 );
+
+-- Encrypted cloud copy of each account's timetables. The vault key is wrapped per passkey (via the
+-- passkey's PRF secret) or by a recovery code; the server can unwrap neither.
+ALTER TABLE passkeys ADD COLUMN wrapped_vault TEXT;
+ALTER TABLE accounts ADD COLUMN recovery_vault TEXT;
+CREATE TABLE IF NOT EXISTS vaults (
+  account_id TEXT PRIMARY KEY,
+  rev INTEGER NOT NULL,
+  body BLOB NOT NULL,           -- AES-256-GCM ciphertext of the collection
+  updated_at INTEGER NOT NULL
+);

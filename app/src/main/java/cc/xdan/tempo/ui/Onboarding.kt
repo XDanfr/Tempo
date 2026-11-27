@@ -152,7 +152,7 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 when (shown) {
-                    Step.WELCOME -> Welcome(importTimetable, manageTimetables)
+                    Step.WELCOME -> Welcome(importTimetable, manageTimetables, ::next)
                     Step.PURPOSE -> {
                         Question("What's this timetable for?", "Tempo uses this to pick sensible defaults and words. You can change it later.")
                         TimetablePurpose.entries.forEach { purpose ->
@@ -327,7 +327,8 @@ private fun DayToggle(letter: String, name: String, on: Boolean, modifier: Modif
 }
 
 @Composable
-private fun Welcome(importTimetable: () -> Unit, manageTimetables: (() -> Unit)?) {
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+private fun Welcome(importTimetable: () -> Unit, manageTimetables: (() -> Unit)?, next: () -> Unit) {
     Spacer(Modifier.height(24.dp))
     // A small stack of sample blocks springs into place, previewing what Tempo makes.
     val sample = listOf(Triple("Maths", 0xFFA2DFFF, Icons.Outlined.Calculate), Triple("Break", 0xFFFFB6C6, Icons.Outlined.Coffee),
@@ -349,8 +350,28 @@ private fun Welcome(importTimetable: () -> Unit, manageTimetables: (() -> Unit)?
     }
     Spacer(Modifier.height(16.dp))
     Text("Your week, in view.", style = MaterialTheme.typography.displaySmall)
-    Text("A timetable for school, college, work or anything that fills your days. It stays on your device.",
+    Text("A timetable for school, college, work or anything that fills your days.",
         style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    // Optional account first: signing in brings back saved timetables and skips the rest of setup.
+    // With nothing saved yet, setup simply carries on.
+    val account = rememberAccountFlow("") { next() }
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (account.account != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(Icons.Outlined.CloudDone, null, tint = MaterialTheme.colorScheme.primary)
+                Text("Signed in. Your timetables will be saved to your account.", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Text("Optional: sign in to get your saved timetables back, or create an account to save them.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                account.error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+                if (account.busy) LoadingIndicator(Modifier.size(36.dp).align(Alignment.CenterHorizontally))
+                else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilledTonalButton(onClick = account::signInAccount, modifier = Modifier.weight(1f)) { Icon(Icons.Outlined.Key, null); Spacer(Modifier.width(8.dp)); Text("Sign in") }
+                    OutlinedButton(onClick = account::createAccount, modifier = Modifier.weight(1f)) { Text("Create account") }
+                }
+            }
+        }
+    }
     TextButton(onClick = importTimetable) { Icon(Icons.Outlined.FileOpen, null); Spacer(Modifier.width(8.dp)); Text("Import a Tempo timetable") }
     manageTimetables?.let { TextButton(onClick = it) { Text("Choose another timetable") } }
 }

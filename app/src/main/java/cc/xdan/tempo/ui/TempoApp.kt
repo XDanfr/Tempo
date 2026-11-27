@@ -235,6 +235,12 @@ fun TempoApp(model: TempoViewModel) {
             state.sharePreview?.let { SharePreviewDialog(it, {
                 model.acceptShare(true) { id, link -> cc.xdan.tempo.share.ShareStore.follow(shareContext, id, link); cc.xdan.tempo.share.ShareSync.ensureScheduled(shareContext) }
             }, { model.acceptShare(false) }, model::dismissSharePreview) }
+            // Cloud saving: on open, and shortly after edits settle. Quiet when signed out.
+            LaunchedEffect(Unit) { runCatching { cc.xdan.tempo.account.CloudSync.sync(shareContext) } }
+            LaunchedEffect(state.collection) {
+                if (state.collection == null) return@LaunchedEffect
+                delay(15_000); runCatching { cc.xdan.tempo.account.CloudSync.sync(shareContext) }
+            }
             // Sync shared timetables: on open, and shortly after your edits settle.
             LaunchedEffect(Unit) { cc.xdan.tempo.share.ShareSync.ensureScheduled(shareContext); cc.xdan.tempo.share.ShareSync.soon(shareContext, 0) }
             LaunchedEffect(state.collection) {

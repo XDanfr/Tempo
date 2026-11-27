@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Cloud saving**: signed in, your timetables are saved to your account and come back on any phone you sign in on. They're encrypted on your phone with a key unlocked by your passkey, so Tempo's server can't read them. Share links you made keep working on your new phone. Accounts are now offered at the start of setup; signing in with saved timetables skips setup.
 - **Tempo accounts (preview)**: optional sign-in with a passkey, from your profile. No password, email or phone number. Your profile is encrypted on your phone before it's saved, links you share while signed in belong to your account, and Delete account removes everything straight away.
 
 ## 0.7.0 — Home, achievements and share links

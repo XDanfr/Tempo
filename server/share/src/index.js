@@ -1,5 +1,6 @@
 // Tempo share Worker. Stores opaque ciphertext; keys live only in link fragments and on devices.
 const MAX_BODY = 64 * 1024;
+const MAX_VAULT = 1024 * 1024;
 const DAY = 86_400_000;
 const LIFETIME = 180 * DAY;
 const TOMBSTONE = 30 * DAY;
@@ -165,7 +166,7 @@ async function auth(request, env, step) {
       return json({ accountId: pending.user_id, session: await newSession(env, pending.user_id) }, 201);
     }
     if (step === "login" && !pending.user_id) {
-      const key = await env.DB.prepare("SELECT account_id, public_key, alg, sign_count FROM passkeys WHERE id = ?").bind(body.credentialId || response.id || "").first();
+      const key = await env.DB.prepare("SELECT account_id, public_key, alg, sign_count, wrapped_vault FROM passkeys WHERE id = ?").bind(body.credentialId || response.id || "").first();
       if (!key) return problem(404, "This passkey isn't linked to a Tempo account any more.");
       const clientHash = await checkClientData(env, response.clientDataJSON, "webauthn.get", pending.challenge);
       const raw = fromB64url(response.authenticatorData);
@@ -178,7 +179,8 @@ async function auth(request, env, step) {
       if (!ok) throw new Error("Signature check failed");
       if (data.signCount > 0 && data.signCount <= key.sign_count) throw new Error("Passkey counter went backwards");
       await env.DB.prepare("UPDATE passkeys SET sign_count = ? WHERE id = ?").bind(data.signCount, body.credentialId || response.id).run();
-      return json({ accountId: key.account_id, session: await newSession(env, key.account_id) });
+      const recovery = await env.DB.prepare("SELECT recovery_vault FROM accounts WHERE id = ?").bind(key.account_id).first();
+      return json({ accountId: key.account_id, session: await newSession(env, key.account_id), wrappedVault: key.wrapped_vault || null, recoveryVault: recovery?.recovery_vault || null });
     }
   } catch (e) {
     return problem(400, "Couldn't verify the passkey. " + e.message);
@@ -203,6 +205,33 @@ async function me(request, env, part) {
     await env.DB.prepare("UPDATE accounts SET profile = ?, profile_rev = profile_rev + 1 WHERE id = ?").bind(body, id).run();
     return new Response(null, { status: 204 });
   }
+  if (part === "vault-key" && request.method === "PUT") {
+    // A wrapped copy of the vault key: for one passkey (PRF) or for a recovery code. Opaque to the server.
+    const body = await request.json().catch(() => ({}));
+    if (typeof body.wrapped !== "string" || body.wrapped.length > 200) return problem(400, "Bad key");
+    if (body.credentialId) await env.DB.prepare("UPDATE passkeys SET wrapped_vault = ? WHERE id = ? AND account_id = ?").bind(body.wrapped, body.credentialId, id).run();
+    else await env.DB.prepare("UPDATE accounts SET recovery_vault = ? WHERE id = ?").bind(body.wrapped, id).run();
+    return new Response(null, { status: 204 });
+  }
+  if (part === "vault" && request.method === "GET") {
+    const row = await env.DB.prepare("SELECT rev, body FROM vaults WHERE account_id = ?").bind(id).first();
+    if (!row) return problem(404, "Nothing saved yet");
+    return new Response(new Uint8Array(row.body), { headers: { "content-type": "application/octet-stream", "x-tempo-rev": String(row.rev), "cache-control": "no-store" } });
+  }
+  if (part === "vault" && request.method === "PUT") {
+    // Optimistic concurrency: the client sends the revision it last saw; a mismatch means another device saved first.
+    const length = Number(request.headers.get("content-length") || 0);
+    if (length > MAX_VAULT) return problem(413, "Too much to save");
+    const body = new Uint8Array(await request.arrayBuffer());
+    if (!body.length || body.length > MAX_VAULT) return problem(413, "Too much to save");
+    const expected = Number(request.headers.get("x-tempo-rev") || 0);
+    const row = await env.DB.prepare("SELECT rev FROM vaults WHERE account_id = ?").bind(id).first();
+    if ((row?.rev || 0) !== expected) return json({ error: "Changed on another device", rev: row?.rev || 0 }, 412);
+    const rev = expected + 1;
+    if (row) await env.DB.prepare("UPDATE vaults SET rev = ?, body = ?, updated_at = ? WHERE account_id = ? AND rev = ?").bind(rev, body, now, id, expected).run();
+    else await env.DB.prepare("INSERT INTO vaults (account_id, rev, body, updated_at) VALUES (?, ?, ?, ?)").bind(id, rev, body, now).run();
+    return json({ rev });
+  }
   if (part === "session" && request.method === "DELETE") {
     await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256(request.headers.get("x-tempo-session"))).run();
     return new Response(null, { status: 204 });
@@ -212,6 +241,7 @@ async function me(request, env, part) {
     await env.DB.batch([
       env.DB.prepare("UPDATE shares SET body = NULL, size = 0, deleted_at = ?, account_id = NULL WHERE account_id = ? AND deleted_at IS NULL").bind(now, id),
       env.DB.prepare("DELETE FROM passkeys WHERE account_id = ?").bind(id),
+      env.DB.prepare("DELETE FROM vaults WHERE account_id = ?").bind(id),
       env.DB.prepare("DELETE FROM sessions WHERE account_id = ?").bind(id),
       env.DB.prepare("DELETE FROM accounts WHERE id = ?").bind(id),
     ]);

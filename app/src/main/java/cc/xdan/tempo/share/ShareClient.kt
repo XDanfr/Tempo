@@ -34,6 +34,14 @@ object ShareStore {
         key.removePrefix("follow:") to Followed(ShareLink(parts[0], parts[1]), parts[2].toLongOrNull() ?: 0)
     }.toMap()
     fun unfollow(context: Context, timetableId: String) = prefs(context).edit().remove("follow:$timetableId").apply()
+    /** Owned and followed links as stored, for the encrypted cloud copy. Upload hashes stay per device. */
+    fun exportRaw(context: Context): Map<String, String> = prefs(context).all
+        .filter { (k, v) -> (k.startsWith("own:") || k.startsWith("follow:")) && v is String }.mapValues { it.value as String }
+    /** Adds links from the cloud copy that this device doesn't know yet; never overwrites local ones. */
+    fun importRaw(context: Context, entries: Map<String, String>) {
+        val prefs = prefs(context)
+        prefs.edit().apply { entries.filterKeys { (it.startsWith("own:") || it.startsWith("follow:")) && !prefs.contains(it) }.forEach { (k, v) -> putString(k, v) } }.apply()
+    }
     fun allOwned(context: Context): Map<String, OwnedShare> = prefs(context).all.keys.filter { it.startsWith("own:") }
         .mapNotNull { key -> owned(context, key.removePrefix("own:"))?.let { key.removePrefix("own:") to it } }.toMap()
 }
