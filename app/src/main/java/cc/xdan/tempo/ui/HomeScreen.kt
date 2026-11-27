@@ -159,9 +159,9 @@ private fun ProgressCard(timetable: Timetable, today: LocalDate, openProfile: ()
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(icon, null, Modifier.size(20.dp)); Spacer(Modifier.weight(1f))
-                            if (icon == Icons.Outlined.LocalFireDepartment) StreakBonusTag(summary.multiplier)
+                            if (icon == Icons.Outlined.LocalFireDepartment) StreakBonusTag(summary.multiplier, showIcon = false)
                         }
-                        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 2, minLines = 2)
                     }
                 }
             }

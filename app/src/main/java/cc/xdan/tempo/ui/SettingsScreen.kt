@@ -81,9 +81,12 @@ fun SettingsScreen(timetable: Timetable, update: ((Timetable) -> Timetable) -> U
                 (1..7).forEach { day ->
                     val hours = timetable.days.firstOrNull { it.day == day }
                     SettingsRow(null, weekdayNames[day - 1], hours?.let { "${minuteLabel(it.time.start)}–${minuteLabel(it.time.end)}" } ?: "Off", chevron = false,
-                        trailing = { Switch(hours != null, { enabled ->
+                        trailing = { Row(Modifier.height(32.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // The divider separates the tappable hours from the on/off switch.
+                            VerticalDivider(Modifier.padding(end = 16.dp))
+                            Switch(hours != null, { enabled ->
                             update { t -> t.copy(days = t.days.filterNot { it.day == day } + if (enabled) listOf(DayHours(day, TimeSpan(540, 990))) else emptyList()) }
-                        }) }) { hours?.let { editingDay = it } }
+                        }) } }) { hours?.let { editingDay = it } }
                 }
             }
             SettingsPage.PERIODS -> item { Box(padded) { PeriodSetup(timetable, update) } }

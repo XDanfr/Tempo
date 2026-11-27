@@ -893,13 +893,13 @@ fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit, f
 
 /** "×1.3" pill for the current streak bonus; nothing when there's no bonus. */
 @Composable
-fun StreakBonusTag(multiplier: Float) {
+fun StreakBonusTag(multiplier: Float, showIcon: Boolean = true) {
     if (multiplier <= 1f) return
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.onTertiary,
         modifier = Modifier.semantics { contentDescription = "${"%.1f".format(multiplier)} times streak bonus" }) {
         Row(Modifier.padding(horizontal = 8.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.Bolt, null, Modifier.size(14.dp))
-            Text("×${"%.1f".format(multiplier)}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            if (showIcon) Icon(Icons.Outlined.Bolt, null, Modifier.size(14.dp))
+            Text("×${"%.1f".format(multiplier)}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
         }
     }
 }
