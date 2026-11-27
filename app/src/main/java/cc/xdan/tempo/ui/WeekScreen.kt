@@ -311,7 +311,8 @@ private fun WeekXp(timetable: Timetable, days: List<WeekDay>, today: LocalDate) 
                 Text("Level ${summary.level}", style = MaterialTheme.typography.labelLarge)
             }
             LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.onTertiaryContainer, trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .2f))
+                color = MaterialTheme.colorScheme.onTertiaryContainer, trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = .2f),
+                waveSpeed = 0.dp)
             Text("Earned this week · ${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodyMedium)
         }
     }

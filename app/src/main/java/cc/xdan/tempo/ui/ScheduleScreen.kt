@@ -826,7 +826,8 @@ fun ProgressSheet(timetable: Timetable, today: LocalDate, dismiss: () -> Unit) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("${summary.xp} XP", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 val fraction by animateFloatAsState(summary.levelXp.toFloat() / summary.levelGoal, TempoMotion.spatial(), label = "level")
-                LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+                // Still waves: the bar only moves when XP actually changes.
+                LinearWavyProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth(), waveSpeed = 0.dp)
                 Text("${summary.levelGoal - summary.levelXp} XP to level ${summary.level + 1}", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
