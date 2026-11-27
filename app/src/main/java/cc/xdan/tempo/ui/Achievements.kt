@@ -30,6 +30,7 @@ import cc.xdan.tempo.schedule.Progress
 import cc.xdan.tempo.schedule.sharedFrees
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -166,7 +167,11 @@ private fun XpFill(from: Int, to: Int, modifier: Modifier = Modifier) {
             Text("Level $level", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         }
         LinearWavyProgressIndicator(progress = { fill.value }, modifier = Modifier.fillMaxWidth(), waveSpeed = 0.dp)
-        Text("${goal - into} XP to level ${level + 1}", style = MaterialTheme.typography.labelSmall)
+        // Counts down with the bar, with a tick for each point.
+        val left = goal - kotlin.math.round(fill.value * goal).toInt()
+        val haptics = rememberTempoHaptics()
+        LaunchedEffect(Unit) { snapshotFlow { left }.drop(1).collect { haptics.tick() } }
+        Text("$left XP to level ${level + 1}", style = MaterialTheme.typography.labelSmall)
     }
 }
 

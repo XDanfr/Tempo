@@ -49,7 +49,9 @@ fun TempoApp(model: TempoViewModel) {
     // Achievements add XP app-wide on top of check-ins.
     val achievementXp = rememberAchievementXp()
     val timetable = state.timetable?.let { t ->
-        t.copy(progress = if (t.person != null) ProgressMode.OFF else state.collection?.progressMode ?: t.progress, bonusXp = achievementXp)
+        // Someone else's timetable keeps their content but shows with your own appearance (theme, block style, icons).
+        t.copy(progress = if (t.person != null) ProgressMode.OFF else state.collection?.progressMode ?: t.progress, bonusXp = achievementXp,
+            appearance = if (t.person != null) state.collection?.ownAppearance ?: t.appearance else t.appearance)
     }
     TempoTheme(state.collection?.ownAppearance ?: timetable?.appearance ?: Appearance()) {
         val view = LocalView.current
