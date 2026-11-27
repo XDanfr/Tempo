@@ -136,25 +136,27 @@ fun AchievementNotices(queue: List<Achievement>, consumed: () -> Unit, modifier:
     LaunchedEffect(current) {
         if (current == null) return@LaunchedEffect
         delay(400); visible = true; haptics.celebrate()
-        delay(3_600); visible = false
+        delay(4_000); visible = false
         delay(450); consumed()
     }
     AnimatedVisibility(visible && current != null, modifier = modifier,
         enter = slideInVertically(TempoMotion.slide) { -it * 2 } + fadeIn(TempoMotion.effects()) + scaleIn(TempoMotion.fastSpatial(), initialScale = .8f),
         exit = slideOutVertically(TempoMotion.slide) { -it * 2 } + fadeOut(TempoMotion.exit())) {
         val shown = current ?: return@AnimatedVisibility
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.inverseSurface, contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-            shadowElevation = 6.dp, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+        // Theme colours, lifted off the page with a shadow and a primary outline so it stays visible on any screen.
+        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            shadowElevation = 10.dp, border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = .6f)),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
             Box {
             // A brief fall of dark Material shapes behind the text.
-            val base = personColour(shown.name)
-            FallingConfetti(listOf(base, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
-                .map { androidx.compose.ui.graphics.lerp(it, androidx.compose.ui.graphics.Color.Black, .45f).copy(alpha = .55f) }, Modifier.matchParentSize())
+            // Colourful but kept a touch deeper than the card so the text stays easy to read on top.
+            FallingConfetti((cc.xdan.tempo.design.subjectColours.map { androidx.compose.ui.graphics.Color(it.argb) } + MaterialTheme.colorScheme.primary + MaterialTheme.colorScheme.tertiary)
+                .map { androidx.compose.ui.graphics.lerp(it, androidx.compose.ui.graphics.Color.Black, .18f).copy(alpha = .7f) }, Modifier.matchParentSize())
             Row(Modifier.padding(start = 8.dp, end = 22.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AchievementBadge(shown, true, size = 44.dp)
                 Column {
-                    Text("Achievement unlocked", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.inversePrimary)
+                    Text("Achievement unlocked", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     Text(shown.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
@@ -192,19 +194,19 @@ fun rememberAchievementQueue(collection: TimetableCollection?, celebrate: Boolea
 }
 
 /**
- * A short (about 1.5 s) fall of Material Expressive shapes, clipped to its container and drawn
+ * A short (about 2.4 s) fall of Material Expressive shapes, released over the first half, clipped to its container and drawn
  * behind content. Skipped when system animations are off.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier: Modifier = Modifier, durationMillis: Int = 1_500) {
+fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier: Modifier = Modifier, durationMillis: Int = 2_400) {
     val context = LocalContext.current
     val animationsOn = remember { android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f }
     if (!animationsOn) return
     val shapes = listOf(MaterialShapes.Cookie4Sided, MaterialShapes.Clover4Leaf, MaterialShapes.Sunny, MaterialShapes.Pill, MaterialShapes.Circle, MaterialShapes.Gem).map { it.toShape() }
     val pieces = remember {
         val random = kotlin.random.Random(System.nanoTime())
-        List(18) { listOf(random.nextFloat(), random.nextFloat() * .6f, 6f + random.nextFloat() * 6f, (random.nextFloat() - .5f) * 540f, random.nextFloat() * .35f,
+        List(44) { listOf(random.nextFloat(), random.nextFloat() * .6f, 6f + random.nextFloat() * 6f, (random.nextFloat() - .5f) * 540f, random.nextFloat() * .55f,
             random.nextInt(shapes.size).toFloat(), random.nextInt(colours.size).toFloat(), (random.nextFloat() - .5f) * .2f) }
     }
     val progress = remember { androidx.compose.animation.core.Animatable(0f) }
@@ -223,8 +225,9 @@ fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier:
             val local = ((t - delay) / (1f - delay)).coerceIn(0f, 1f)
             if (local <= 0f) return@forEach
             val side = sizeDp.dp.toPx()
-            val px = size.width * (x + drift * local)
-            val py = -side + (size.height * (1.3f + startY)) * local * local + size.height * startY * (1 - local) - size.height * startY
+            // Each piece falls the full height, easing in like gravity, with a gentle sway.
+            val px = size.width * x + kotlin.math.sin((local + startY) * 6.3f) * side * (1.5f + drift * 10f)
+            val py = -side + (size.height + side * 2) * (local * (0.35f + 0.65f * local))
             val outline = shapes[shapeIndex.toInt()].createOutline(androidx.compose.ui.geometry.Size(side, side), layout, density)
             drawContext.canvas.save()
             drawContext.transform.translate(px - side / 2, py)
