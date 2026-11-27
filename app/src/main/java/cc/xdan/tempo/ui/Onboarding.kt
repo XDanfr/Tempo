@@ -265,7 +265,8 @@ fun Onboarding(timetable: Timetable, update: ((Timetable) -> Timetable) -> Unit,
             Step.DONE -> "Open my schedule"
             else -> "Continue"
         }
-        Button(enabled = canContinue, onClick = {
+        // The welcome screen has its own three choices instead of one button.
+        if (step != Step.WELCOME) Button(enabled = canContinue, onClick = {
             if (step == Step.DONE) { haptics.confirm(); update { it.copy(onboarded = true) } } else next()
         }, modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp).height(56.dp)) {
             Text(label, style = MaterialTheme.typography.titleMedium)
@@ -352,24 +353,24 @@ private fun Welcome(importTimetable: () -> Unit, manageTimetables: (() -> Unit)?
     Text("Your week, in view.", style = MaterialTheme.typography.displaySmall)
     Text("A timetable for school, college, work or anything that fills your days.",
         style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    // Optional account first: signing in brings back saved timetables and skips the rest of setup.
-    // With nothing saved yet, setup simply carries on.
+    // Three ways in: sign in (brings saved timetables back and skips setup), create an account, or carry on without one.
     val account = rememberAccountFlow("") { next() }
-    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (account.account != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Icon(Icons.Outlined.CloudDone, null, tint = MaterialTheme.colorScheme.primary)
-                Text("Signed in. Your timetables will be saved to your account.", style = MaterialTheme.typography.bodyMedium)
-            } else {
-                Text("Optional: sign in to get your saved timetables back, or create an account to save them.",
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                account.error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
-                if (account.busy) LoadingIndicator(Modifier.size(36.dp).align(Alignment.CenterHorizontally))
-                else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilledTonalButton(onClick = account::signInAccount, modifier = Modifier.weight(1f)) { Icon(Icons.Outlined.Key, null); Spacer(Modifier.width(8.dp)); Text("Sign in") }
-                    OutlinedButton(onClick = account::createAccount, modifier = Modifier.weight(1f)) { Text("Create account") }
-                }
-            }
+    account.error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+    if (account.busy) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { LoadingIndicator(Modifier.size(48.dp)) }
+    else Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Button(onClick = account::signInAccount, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Icon(Icons.Outlined.Key, null); Spacer(Modifier.width(8.dp)); Text("Sign in", style = MaterialTheme.typography.titleMedium)
+        }
+        FilledTonalButton(onClick = account::createAccount, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Text("Create account", style = MaterialTheme.typography.titleMedium)
+        }
+        OutlinedButton(onClick = next, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Text("Continue without an account", style = MaterialTheme.typography.titleMedium)
+        }
+        Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(Icons.Outlined.Fingerprint, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("No password: one tap with your fingerprint, face or screen lock. An account saves your timetables and is optional.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
     TextButton(onClick = importTimetable) { Icon(Icons.Outlined.FileOpen, null); Spacer(Modifier.width(8.dp)); Text("Import a Tempo timetable") }
