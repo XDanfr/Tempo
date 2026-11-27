@@ -44,6 +44,8 @@ class ShareException(message: String, val gone: Boolean = false) : Exception(mes
 /** Talks to the share Worker. Only ciphertext and the owner token are ever sent. */
 object ShareClient {
     private const val API = "https://${ShareLink.HOST}/api/t"
+    /** The signed-in account's session; new links are then account-owned too. */
+    @Volatile var session: String? = null
 
     private suspend fun call(method: String, path: String = "", body: ByteArray? = null, token: String? = null): Pair<Int, ByteArray> = withContext(Dispatchers.IO) {
         val connection = URL(API + path).openConnection() as HttpURLConnection
@@ -52,6 +54,7 @@ object ShareClient {
             connection.connectTimeout = 15_000; connection.readTimeout = 20_000
             connection.setRequestProperty("User-Agent", "Tempo-Android")
             token?.let { connection.setRequestProperty("Authorization", "Bearer $it") }
+            session?.let { connection.setRequestProperty("X-Tempo-Session", it) }
             if (body != null) { connection.doOutput = true; connection.setRequestProperty("Content-Type", "application/octet-stream"); connection.outputStream.use { it.write(body) } }
             val code = connection.responseCode
             val stream = if (code >= 400) connection.errorStream else connection.inputStream

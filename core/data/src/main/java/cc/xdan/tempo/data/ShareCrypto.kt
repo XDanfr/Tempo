@@ -64,6 +64,20 @@ object ShareCrypto {
         return iv + cipher.doFinal(plain)
     }
 
+    /** AES-256-GCM for small blobs such as an encrypted profile: iv || ciphertext. */
+    fun seal(plain: ByteArray, key: String): ByteArray {
+        val iv = ByteArray(12).also(random::nextBytes)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(decoder.decode(key), "AES"), GCMParameterSpec(128, iv))
+        return iv + cipher.doFinal(plain)
+    }
+    fun open(data: ByteArray, key: String): ByteArray {
+        require(data.size > 28) { "Damaged data" }
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(decoder.decode(key), "AES"), GCMParameterSpec(128, data.copyOfRange(0, 12)))
+        return cipher.doFinal(data, 12, data.size - 12)
+    }
+
     fun decrypt(data: ByteArray, key: String): SharedTimetable {
         require(data.size > 28) { "This shared timetable is damaged" }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")

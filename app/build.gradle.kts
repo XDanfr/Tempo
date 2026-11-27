@@ -68,6 +68,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.5")
     implementation("androidx.core:core-ktx:1.17.0")
     implementation(libs.lifecycle.compose)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play)
     implementation(libs.lifecycle.viewmodel)
     testImplementation(libs.junit)
     testImplementation("org.robolectric:robolectric:4.17")

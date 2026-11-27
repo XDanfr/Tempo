@@ -24,14 +24,206 @@ async function readBody(request) {
 
 async function owner(env, request, id) {
   const token = (request.headers.get("authorization") || "").replace(/^Bearer /, "");
-  if (!token) return null;
-  const row = await env.DB.prepare("SELECT owner_hash, rev, deleted_at FROM shares WHERE id = ?").bind(id).first();
+  const row = await env.DB.prepare("SELECT owner_hash, rev, deleted_at, account_id FROM shares WHERE id = ?").bind(id).first();
   if (!row || row.deleted_at) return null;
-  return row.owner_hash === await sha256(token) ? row : null;
+  if (token && row.owner_hash === await sha256(token)) return row;
+  // Account-owned links can also be managed with the account's session.
+  const signedIn = row.account_id ? await account(env, request) : null;
+  return signedIn && signedIn === row.account_id ? row : null;
+}
+
+// ---- Passkey accounts (WebAuthn). Only public keys, encrypted profiles and hashed session tokens are stored. ----
+const RP_ID = "tempo.xdan.cc";
+const SESSION_LIFETIME = 365 * DAY;
+const CHALLENGE_LIFETIME = 5 * 60_000;
+const fromB64url = (text) => Uint8Array.from(atob(text.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((text.length + 3) % 4)), (c) => c.charCodeAt(0));
+const concat = (...parts) => { const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0)); let i = 0; for (const p of parts) { out.set(p, i); i += p.length; } return out; };
+const digest = async (bytes) => new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+const equal = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+/** Minimal CBOR decoder: enough for WebAuthn attestation objects and COSE keys. */
+function cbor(bytes) {
+  let i = 0;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const length = (info) => {
+    if (info < 24) return info;
+    if (info === 24) return bytes[i++];
+    if (info === 25) { const v = view.getUint16(i); i += 2; return v; }
+    if (info === 26) { const v = view.getUint32(i); i += 4; return v; }
+    if (info === 27) { const v = Number(view.getBigUint64(i)); i += 8; return v; }
+    throw new Error("Unsupported CBOR length");
+  };
+  const item = () => {
+    const head = bytes[i++], major = head >> 5, info = head & 31;
+    if (major === 7) { if (info === 20) return false; if (info === 21) return true; if (info === 22) return null; throw new Error("Unsupported CBOR simple value"); }
+    const n = length(info);
+    switch (major) {
+      case 0: return n;
+      case 1: return -1 - n;
+      case 2: { const v = bytes.slice(i, i + n); i += n; return v; }
+      case 3: { const v = new TextDecoder().decode(bytes.slice(i, i + n)); i += n; return v; }
+      case 4: return Array.from({ length: n }, item);
+      case 5: { const m = new Map(); for (let k = 0; k < n; k++) m.set(item(), item()); return m; }
+      default: throw new Error("Unsupported CBOR type");
+    }
+  };
+  const value = item();
+  return { value, end: i };
+}
+
+/** Parses authenticator data; with attested credential data when present. */
+function authData(bytes) {
+  const flags = bytes[32];
+  const result = { rpIdHash: bytes.slice(0, 32), up: !!(flags & 1), uv: !!(flags & 4), signCount: new DataView(bytes.buffer, bytes.byteOffset).getUint32(33) };
+  if (flags & 64) {
+    const idLength = (bytes[53] << 8) | bytes[54];
+    result.credentialId = bytes.slice(55, 55 + idLength);
+    result.coseKey = cbor(bytes.slice(55 + idLength)).value;
+  }
+  return result;
+}
+
+/** COSE public key → JWK and algorithm. ES256 and RS256 only. */
+function coseToJwk(key) {
+  const alg = key.get(3);
+  if (alg === -7 && key.get(1) === 2 && key.get(-1) === 1) return { alg, jwk: { kty: "EC", crv: "P-256", x: b64url(key.get(-2)), y: b64url(key.get(-3)), ext: true } };
+  if (alg === -257 && key.get(1) === 3) return { alg, jwk: { kty: "RSA", n: b64url(key.get(-1)), e: b64url(key.get(-2)), alg: "RS256", ext: true } };
+  throw new Error("Unsupported passkey algorithm");
+}
+
+/** DER ECDSA signature → raw r||s, as WebCrypto expects. */
+function derToRaw(der) {
+  let i = 2;
+  const part = () => { i++; let len = der[i++]; let v = der.slice(i, i + len); i += len; while (v.length > 32 && v[0] === 0) v = v.slice(1); const out = new Uint8Array(32); out.set(v, 32 - v.length); return out; };
+  return concat(part(), part());
+}
+
+/** Origins allowed to use the passkey: the Android app(s), by signing certificate, and the website. */
+function allowedOrigins(env) {
+  const prints = (env.ANDROID_CERT_FINGERPRINTS || "").split(",").concat((env.QA_CERT_FINGERPRINTS || "").split(",")).map((s) => s.trim()).filter(Boolean);
+  return new Set([`https://${RP_ID}`, ...prints.map((p) => "android:apk-key-hash:" + b64url(Uint8Array.from(p.split(":"), (h) => parseInt(h, 16))))]);
+}
+
+async function takeChallenge(env, id) {
+  const row = await env.DB.prepare("SELECT challenge, user_id, expires_at FROM challenges WHERE id = ?").bind(id || "").first();
+  if (!row) return null;
+  await env.DB.prepare("DELETE FROM challenges WHERE id = ?").bind(id).run();
+  return row.expires_at < Date.now() ? null : row;
+}
+
+/** Checks clientDataJSON: type, single-use challenge and origin. Returns its SHA-256. */
+async function checkClientData(env, encoded, type, challenge) {
+  const raw = fromB64url(encoded);
+  const data = JSON.parse(new TextDecoder().decode(raw));
+  if (data.type !== type) throw new Error("Wrong ceremony");
+  if (data.challenge !== challenge) throw new Error("Challenge mismatch");
+  if (!allowedOrigins(env).has(data.origin)) throw new Error("Origin not allowed: " + data.origin);
+  return digest(raw);
+}
+
+async function newSession(env, accountId) {
+  const token = random(32);
+  await env.DB.prepare("INSERT INTO sessions (token_hash, account_id, expires_at) VALUES (?, ?, ?)").bind(await sha256(token), accountId, Date.now() + SESSION_LIFETIME).run();
+  return token;
+}
+
+/** The signed-in account for a request, from its session token. */
+async function account(env, request) {
+  const token = request.headers.get("x-tempo-session");
+  if (!token) return null;
+  const row = await env.DB.prepare("SELECT account_id, expires_at FROM sessions WHERE token_hash = ?").bind(await sha256(token)).first();
+  return row && row.expires_at > Date.now() ? row.account_id : null;
+}
+
+async function auth(request, env, step) {
+  const now = Date.now();
+  if (request.method !== "POST") return problem(405, "Method not allowed");
+  const body = await request.json().catch(() => ({}));
+  if (step === "challenge") {
+    const id = random(16), challenge = random(32), userId = body.kind === "register" ? random(16) : null;
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM challenges WHERE expires_at < ?").bind(now),
+      env.DB.prepare("INSERT INTO challenges (id, challenge, user_id, expires_at) VALUES (?, ?, ?, ?)").bind(id, challenge, userId, now + CHALLENGE_LIFETIME),
+    ]);
+    return json({ challengeId: id, challenge, rpId: RP_ID, userId });
+  }
+  const pending = await takeChallenge(env, body.challengeId);
+  if (!pending) return problem(400, "Sign-in took too long. Try again.");
+  const response = body.response || {};
+  try {
+    if (step === "register" && pending.user_id) {
+      await checkClientData(env, response.clientDataJSON, "webauthn.create", pending.challenge);
+      const attestation = cbor(fromB64url(response.attestationObject)).value;
+      const data = authData(attestation.get("authData"));
+      if (!equal(data.rpIdHash, await digest(new TextEncoder().encode(RP_ID))) || !data.up || !data.credentialId) throw new Error("Bad authenticator data");
+      const { alg, jwk } = coseToJwk(data.coseKey);
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO accounts (id, created_at) VALUES (?, ?)").bind(pending.user_id, now),
+        env.DB.prepare("INSERT INTO passkeys (id, account_id, public_key, alg, sign_count, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+          .bind(b64url(data.credentialId), pending.user_id, JSON.stringify(jwk), alg, data.signCount, now),
+      ]);
+      return json({ accountId: pending.user_id, session: await newSession(env, pending.user_id) }, 201);
+    }
+    if (step === "login" && !pending.user_id) {
+      const key = await env.DB.prepare("SELECT account_id, public_key, alg, sign_count FROM passkeys WHERE id = ?").bind(body.credentialId || response.id || "").first();
+      if (!key) return problem(404, "This passkey isn't linked to a Tempo account any more.");
+      const clientHash = await checkClientData(env, response.clientDataJSON, "webauthn.get", pending.challenge);
+      const raw = fromB64url(response.authenticatorData);
+      const data = authData(raw);
+      if (!equal(data.rpIdHash, await digest(new TextEncoder().encode(RP_ID))) || !data.up) throw new Error("Bad authenticator data");
+      const es = key.alg === -7;
+      const publicKey = await crypto.subtle.importKey("jwk", JSON.parse(key.public_key), es ? { name: "ECDSA", namedCurve: "P-256" } : { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+      const signature = fromB64url(response.signature);
+      const ok = await crypto.subtle.verify(es ? { name: "ECDSA", hash: "SHA-256" } : { name: "RSASSA-PKCS1-v1_5" }, publicKey, es ? derToRaw(signature) : signature, concat(raw, clientHash));
+      if (!ok) throw new Error("Signature check failed");
+      if (data.signCount > 0 && data.signCount <= key.sign_count) throw new Error("Passkey counter went backwards");
+      await env.DB.prepare("UPDATE passkeys SET sign_count = ? WHERE id = ?").bind(data.signCount, body.credentialId || response.id).run();
+      return json({ accountId: key.account_id, session: await newSession(env, key.account_id) });
+    }
+  } catch (e) {
+    return problem(400, "Couldn't verify the passkey. " + e.message);
+  }
+  return problem(400, "Unknown step");
+}
+
+async function me(request, env, part) {
+  const id = await account(env, request);
+  if (!id) return problem(401, "Signed out");
+  const now = Date.now();
+  if (!part && request.method === "GET") {
+    const row = await env.DB.prepare("SELECT profile, profile_rev, created_at FROM accounts WHERE id = ?").bind(id).first();
+    if (!row) return problem(401, "Signed out");
+    const shares = await env.DB.prepare("SELECT id FROM shares WHERE account_id = ? AND deleted_at IS NULL").bind(id).all();
+    return json({ accountId: id, createdAt: row.created_at, profileRev: row.profile_rev,
+      profile: row.profile ? b64url(new Uint8Array(row.profile)) : null, shares: shares.results.map((r) => r.id) });
+  }
+  if (part === "profile" && request.method === "PUT") {
+    const body = await readBody(request);
+    if (!body || body.length > 8 * 1024) return problem(413, "Profile missing or too large");
+    await env.DB.prepare("UPDATE accounts SET profile = ?, profile_rev = profile_rev + 1 WHERE id = ?").bind(body, id).run();
+    return new Response(null, { status: 204 });
+  }
+  if (part === "session" && request.method === "DELETE") {
+    await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(await sha256(request.headers.get("x-tempo-session"))).run();
+    return new Response(null, { status: 204 });
+  }
+  if (!part && request.method === "DELETE") {
+    // Everything goes now; owned links become tombstones so other devices remove their copies.
+    await env.DB.batch([
+      env.DB.prepare("UPDATE shares SET body = NULL, size = 0, deleted_at = ?, account_id = NULL WHERE account_id = ? AND deleted_at IS NULL").bind(now, id),
+      env.DB.prepare("DELETE FROM passkeys WHERE account_id = ?").bind(id),
+      env.DB.prepare("DELETE FROM sessions WHERE account_id = ?").bind(id),
+      env.DB.prepare("DELETE FROM accounts WHERE id = ?").bind(id),
+    ]);
+    return new Response(null, { status: 204 });
+  }
+  return problem(405, "Method not allowed");
 }
 
 async function api(request, env, url) {
   const parts = url.pathname.split("/").filter(Boolean); // ["api", "t", id?]
+  if (parts[1] === "auth") return auth(request, env, parts[2]);
+  if (parts[1] === "me") return me(request, env, parts[2]);
   const id = parts[2];
   if (parts[1] !== "t") return problem(404, "Not found");
   const now = Date.now();
@@ -40,8 +232,9 @@ async function api(request, env, url) {
     const body = await readBody(request);
     if (!body) return problem(413, "Snapshot missing or larger than 64 KB");
     const newId = random(16), token = random(32);
-    await env.DB.prepare("INSERT INTO shares (id, rev, body, size, owner_hash, created_at, updated_at, expires_at) VALUES (?, 1, ?, ?, ?, ?, ?, ?)")
-      .bind(newId, body, body.length, await sha256(token), now, now, now + LIFETIME).run();
+    // Signed in: the link also belongs to the account, so any of its devices can manage it.
+    await env.DB.prepare("INSERT INTO shares (id, rev, body, size, owner_hash, created_at, updated_at, expires_at, account_id) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(newId, body, body.length, await sha256(token), now, now, now + LIFETIME, await account(env, request)).run();
     return json({ id: newId, ownerToken: token, rev: 1 }, 201);
   }
   if (!id || !ID.test(id)) return problem(404, "Not found");
@@ -75,9 +268,13 @@ async function api(request, env, url) {
 }
 
 function assetLinks(env) {
-  const prints = (env.ANDROID_CERT_FINGERPRINTS || "").split(",").map((s) => s.trim()).filter(Boolean);
-  return json([{ relation: ["delegate_permission/common.handle_all_urls"],
-    target: { namespace: "android_app", package_name: "cc.xdan.tempo", sha256_cert_fingerprints: prints } }], 200, { "cache-control": "max-age=3600" });
+  const list = (v) => (v || "").split(",").map((s) => s.trim()).filter(Boolean);
+  // App links and passkeys (get_login_creds) for the release app; passkeys only for QA builds.
+  const links = [{ relation: ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"],
+    target: { namespace: "android_app", package_name: "cc.xdan.tempo", sha256_cert_fingerprints: list(env.ANDROID_CERT_FINGERPRINTS) } }];
+  if (list(env.QA_CERT_FINGERPRINTS).length) links.push({ relation: ["delegate_permission/common.get_login_creds"],
+    target: { namespace: "android_app", package_name: "cc.xdan.tempo.qa", sha256_cert_fingerprints: list(env.QA_CERT_FINGERPRINTS) } });
+  return json(links, 200, { "cache-control": "max-age=3600" });
 }
 
 // Read-only viewer in the xdan.cc/tempo style. Decrypts in the browser with the key from the #fragment;
@@ -156,6 +353,10 @@ export default {
   // Daily: remove expired snapshots and old tombstones.
   async scheduled(event, env) {
     const now = Date.now();
-    await env.DB.prepare("DELETE FROM shares WHERE (deleted_at IS NULL AND expires_at < ?) OR (deleted_at IS NOT NULL AND deleted_at < ?)").bind(now, now - TOMBSTONE).run();
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM shares WHERE (deleted_at IS NULL AND expires_at < ?) OR (deleted_at IS NOT NULL AND deleted_at < ?)").bind(now, now - TOMBSTONE),
+      env.DB.prepare("DELETE FROM sessions WHERE expires_at < ?").bind(now),
+      env.DB.prepare("DELETE FROM challenges WHERE expires_at < ?").bind(now),
+    ]);
   },
 };

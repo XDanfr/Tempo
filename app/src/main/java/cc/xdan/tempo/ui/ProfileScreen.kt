@@ -29,6 +29,7 @@ import cc.xdan.tempo.design.subjectForeground
 import cc.xdan.tempo.model.*
 import cc.xdan.tempo.schedule.Progress
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 /** Your initial on a slowly turning cookie shape. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -84,6 +85,7 @@ fun ProfileScreen(timetable: Timetable, profileName: String, setProfileName: (St
                 }
             }
         }
+        item(span = { GridItemSpan(maxLineSpan) }) { AccountCard(profileName, timetable, unlocked.size) }
         item(span = { GridItemSpan(maxLineSpan) }) {
             Surface(onClick = openSettings, shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.padding(top = 8.dp)) {
                 Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -138,4 +140,79 @@ fun achievementProgress(achievement: Achievement, timetable: Timetable): Pair<In
     Achievement.ON_A_ROLL -> Progress.summary(timetable, LocalDate.now()).bestStreak to 5
     Achievement.LEVEL_THREE -> Progress.summary(timetable, LocalDate.now()).level to 3
     else -> null
+}
+
+/**
+ * Optional Tempo account with a passkey. Signed out: create or sign in. Signed in: the profile is kept in sync
+ * (encrypted, so the server can't read it), with sign out and delete account.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AccountCard(profileName: String, timetable: Timetable, achievements: Int) {
+    val context = LocalContext.current
+    val activity = context as? android.app.Activity
+    val scope = rememberCoroutineScope()
+    var account by remember { mutableStateOf(cc.xdan.tempo.account.AccountStore.current(context)) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    val level = remember(timetable) { if (timetable.progress == ProgressMode.STREAKS) Progress.summary(timetable, LocalDate.now()).level else 1 }
+    // Keep the encrypted profile current while signed in.
+    LaunchedEffect(account, profileName, level, achievements) {
+        val signedIn = account ?: return@LaunchedEffect
+        kotlinx.coroutines.delay(1_500)
+        runCatching { cc.xdan.tempo.account.Accounts.saveProfile(signedIn, cc.xdan.tempo.account.Profile(profileName, level, achievements)) }
+            .onFailure { if (it.message == "Signed out") { cc.xdan.tempo.account.AccountStore.clear(context); account = null } }
+    }
+    fun run(action: suspend () -> Unit) {
+        busy = true; error = null
+        scope.launch {
+            try { action() } catch (e: cc.xdan.tempo.account.AccountException) { if (!e.cancelled) error = e.message }
+            finally { busy = false }
+        }
+    }
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.padding(top = 8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Icon(if (account != null) Icons.Outlined.VerifiedUser else Icons.Outlined.Key, null)
+                Column(Modifier.weight(1f)) {
+                    Text(if (account != null) "Signed in" else "Tempo account", style = MaterialTheme.typography.titleMedium)
+                    Text(if (account != null) "Your profile is encrypted on this phone before it's saved."
+                        else "Optional. Sign in with a passkey, no password or email. Friends and groups are coming next.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+            if (busy) LoadingIndicator(Modifier.size(36.dp).align(Alignment.CenterHorizontally))
+            else if (account == null) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { activity?.let { a -> run {
+                    val signedIn = cc.xdan.tempo.account.Accounts.create(a, profileName)
+                    cc.xdan.tempo.account.AccountStore.save(context, signedIn); account = signedIn
+                } } }, modifier = Modifier.weight(1f)) { Text("Create account") }
+                OutlinedButton(onClick = { activity?.let { a -> run {
+                    val signedIn = cc.xdan.tempo.account.Accounts.signIn(a)
+                    cc.xdan.tempo.account.AccountStore.save(context, signedIn); account = signedIn
+                } } }, modifier = Modifier.weight(1f)) { Text("Sign in") }
+            } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { val signedIn = account!!; run {
+                    cc.xdan.tempo.account.Accounts.signOut(signedIn); cc.xdan.tempo.account.AccountStore.clear(context); account = null
+                } }, modifier = Modifier.weight(1f)) { Text("Sign out") }
+                TextButton(onClick = { confirmDelete = true }, modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Delete account") }
+            }
+        }
+    }
+    if (confirmDelete) EditorSheet("Delete your account?", { confirmDelete = false }) {
+        Text("This removes your profile and every link your account owns, straight away. Friends' copies of your timetables disappear the next time they open Tempo. " +
+            "Your timetables stay on this phone. Remove the passkey from your password manager afterwards if you like.")
+        Button(onClick = { val signedIn = account!!; confirmDelete = false; run {
+            // Forget the links the server is about to remove, so nothing tries to update them afterwards.
+            val owned = runCatching { cc.xdan.tempo.account.Accounts.ownedShares(signedIn) }.getOrDefault(emptySet())
+            cc.xdan.tempo.account.Accounts.delete(signedIn)
+            cc.xdan.tempo.share.ShareStore.allOwned(context).filterValues { it.id in owned }.keys.forEach { cc.xdan.tempo.share.ShareStore.forget(context, it) }
+            cc.xdan.tempo.account.AccountStore.clear(context); account = null
+        } }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)) {
+            Text("Delete account")
+        }
+    }
 }

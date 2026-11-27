@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        cc.xdan.tempo.account.AccountStore.restore(this)
         enableEdgeToEdge()
         val repository = TimetableRepository(applicationContext)
         if (savedInstanceState == null) intent?.let(::shareLinkOf)?.let { shareIntent = it }

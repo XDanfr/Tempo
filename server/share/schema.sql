@@ -12,3 +12,34 @@ CREATE TABLE IF NOT EXISTS shares (
 );
 CREATE INDEX IF NOT EXISTS shares_expiry ON shares (expires_at);
 CREATE INDEX IF NOT EXISTS shares_deleted ON shares (deleted_at);
+
+-- Optional passkey accounts. Profiles are stored encrypted; the server never sees names.
+ALTER TABLE shares ADD COLUMN account_id TEXT;
+CREATE INDEX IF NOT EXISTS shares_account ON shares (account_id);
+CREATE TABLE IF NOT EXISTS accounts (
+  id TEXT PRIMARY KEY,          -- 128 random bits, also the WebAuthn user handle
+  profile BLOB,                 -- AES-256-GCM ciphertext of the profile, key stays on devices
+  profile_rev INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS passkeys (
+  id TEXT PRIMARY KEY,          -- credential ID, base64url
+  account_id TEXT NOT NULL,
+  public_key TEXT NOT NULL,     -- JWK of the credential's public key
+  alg INTEGER NOT NULL,         -- COSE algorithm: -7 (ES256) or -257 (RS256)
+  sign_count INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS passkeys_account ON passkeys (account_id);
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,  -- SHA-256 of the session token
+  account_id TEXT NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS sessions_account ON sessions (account_id);
+CREATE TABLE IF NOT EXISTS challenges (
+  id TEXT PRIMARY KEY,
+  challenge TEXT NOT NULL,      -- base64url, single use
+  user_id TEXT,                 -- set for sign-up
+  expires_at INTEGER NOT NULL
+);

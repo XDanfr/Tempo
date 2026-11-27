@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Tempo accounts (preview)**: optional sign-in with a passkey, from your profile. No password, email or phone number. Your profile is encrypted on your phone before it's saved, links you share while signed in belong to your account, and Delete account removes everything straight away.
+
 ## 0.7.0 — Home, achievements and share links
 
 - **Your week** in Settings › Dates and weeks replaces Edit several sessions: pick a day at the top, then tap a period to edit what's in it, or tap an empty one to choose a subject.
