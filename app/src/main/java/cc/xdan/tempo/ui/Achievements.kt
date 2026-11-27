@@ -136,7 +136,8 @@ fun AchievementNotices(queue: List<Achievement>, consumed: () -> Unit, modifier:
     LaunchedEffect(current) {
         if (current == null) return@LaunchedEffect
         delay(400); visible = true; haptics.celebrate()
-        delay(4_000); visible = false
+        // Long enough for the slowest confetti to finish falling.
+        delay(4_600); visible = false
         delay(450); consumed()
     }
     AnimatedVisibility(visible && current != null, modifier = modifier,
@@ -149,9 +150,9 @@ fun AchievementNotices(queue: List<Achievement>, consumed: () -> Unit, modifier:
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
             Box {
             // A brief fall of dark Material shapes behind the text.
-            // Colourful but kept a touch deeper than the card so the text stays easy to read on top.
-            FallingConfetti((cc.xdan.tempo.design.subjectColours.map { androidx.compose.ui.graphics.Color(it.argb) } + MaterialTheme.colorScheme.primary + MaterialTheme.colorScheme.tertiary)
-                .map { androidx.compose.ui.graphics.lerp(it, androidx.compose.ui.graphics.Color.Black, .18f).copy(alpha = .7f) }, Modifier.matchParentSize())
+            // Theme colours only, so the confetti belongs to the popup.
+            val scheme = MaterialTheme.colorScheme
+            FallingConfetti(listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.inversePrimary, scheme.tertiaryContainer, scheme.secondaryContainer), Modifier.matchParentSize())
             Row(Modifier.padding(start = 8.dp, end = 22.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AchievementBadge(shown, true, size = 44.dp)
@@ -206,10 +207,16 @@ fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier:
     val shapes = listOf(MaterialShapes.Cookie4Sided, MaterialShapes.Clover4Leaf, MaterialShapes.Sunny, MaterialShapes.Pill, MaterialShapes.Circle, MaterialShapes.Gem).map { it.toShape() }
     val pieces = remember {
         val random = kotlin.random.Random(System.nanoTime())
-        List(44) { listOf(random.nextFloat(), random.nextFloat() * .6f, 6f + random.nextFloat() * 6f, (random.nextFloat() - .5f) * 540f, random.nextFloat() * .55f,
-            random.nextInt(shapes.size).toFloat(), random.nextInt(colours.size).toFloat(), (random.nextFloat() - .5f) * .2f,
-            // Each piece falls at its own speed, like real confetti: some flutter down, some drop quickly.
-            0.55f + random.nextFloat() * 0.95f) }
+        List(44) { index ->
+            // A real mix of sizes: mostly small pieces, some medium, and a few big shapes that spin and sink slowly.
+            val big = index % 11 == 0
+            val medium = !big && index % 4 == 0
+            val size = when { big -> 26f + random.nextFloat() * 18f; medium -> 11f + random.nextFloat() * 6f; else -> 4f + random.nextFloat() * 5f }
+            val speed = if (big) 0.4f + random.nextFloat() * 0.2f else 0.6f + random.nextFloat() * 0.9f
+            val spin = (random.nextFloat() - .5f) * (if (big) 200f else 620f)
+            listOf(random.nextFloat(), 0f, size, spin, random.nextFloat() * .55f, random.nextInt(shapes.size).toFloat(),
+                random.nextInt(colours.size).toFloat(), if (big) 1f else 0f, speed)
+        }
     }
     // Pieces are released over the first part, each falls at its own speed, and the animation lasts
     // exactly until the slowest piece has left the bottom, so nothing vanishes mid-air.
@@ -240,7 +247,9 @@ fun FallingConfetti(colours: List<androidx.compose.ui.graphics.Color>, modifier:
                 drawContext.canvas.save()
                 drawContext.transform.translate(px - side / 2, py)
                 drawContext.transform.rotate(piece[3] * local, androidx.compose.ui.geometry.Offset(side / 2, side / 2))
-                drawOutline(outline, colours[piece[6].toInt()])
+                // Big shapes are softer so the text on top stays easy to read.
+                val colour = colours[piece[6].toInt()]
+                drawOutline(outline, colour, alpha = if (piece[7] == 1f) .35f else .85f)
                 drawContext.canvas.restore()
             }
         }
